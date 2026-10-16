@@ -24,7 +24,7 @@ iso = lambda n: (dt.date(1970, 1, 1) + dt.timedelta(days=n)).isoformat()
 base_last = iso(days[-1])
 start = (dt.date.fromisoformat(base_last) - dt.timedelta(days=20)).isoformat()
 
-ndx, qqq, tb, fx = {}, {}, {}, {}
+ndx, qqq, tb, fx, vix = {}, {}, {}, {}, {}
 used = []
 
 # ---------- fallback mirrors first, Yahoo overrides ----------
@@ -44,6 +44,10 @@ def mirrors():
     if ok['kyd']:
         for row in json.load(open(os.path.join(work, 'kyd/data/ndx-snapshot.json'))):
             ndx[row['date'][:10]] = float(row['value'])
+        try:
+            for row in json.load(open(os.path.join(work, 'kyd/data/vix-snapshot.json'))):
+                vix[row['date'][:10]] = float(row['value'])
+        except Exception: pass
         for row in json.load(open(os.path.join(work, 'kyd/data/qqq-snapshot.json'))):
             if row.get('adjClose') is not None:
                 qqq[row['date'][:10]] = float(row['adjClose'])
@@ -83,14 +87,14 @@ def yahoo():
             print(f'yahoo {ticker} failed:', e, file=sys.stderr); return {}
     got = 0
     for target, ticker, name, scale in [(ndx, '^NDX', 'Close', 1), (qqq, 'QQQ', 'Adj Close', 1),
-                                        (fx, 'KRW=X', 'Close', 1), (tb, '^IRX', 'Close', 0.01)]:
+                                        (fx, 'KRW=X', 'Close', 1), (tb, '^IRX', 'Close', 0.01), (vix, '^VIX', 'Close', 1)]:
         d = col(ticker, name)
         if d:
             got += 1
             # QQQ adjusted prices are rescaled after each dividend: only ratios matter, keep the series self-consistent
             if target is qqq: qqq.clear()
             target.update({k: v * scale for k, v in d.items()})
-    if got: used.append(f'yahoo({got}/4)')
+    if got: used.append(f'yahoo({got}/5)')
 
 mirrors()
 yahoo()
@@ -101,6 +105,7 @@ def ffill(series, date, prev):
     return series[max(keys)] if keys else prev
 
 px, rq, tbl, fxl = list(base['px']), list(base['rq']), list(base['tb']), list(base['fx'])
+vxl = list(base.get('vix') or [None] * len(px))
 dd = list(base['dd'])
 prev_date, prev_px = base_last, px[-1]
 added = 0
@@ -113,9 +118,10 @@ for d in sorted(k for k in ndx if k > base_last):
     dd.append(n - days[-1]); days.append(n)
     px.append(round(p, 2)); rq.append(float('%.7g' % r))
     tbl.append(round(ffill(tb, d, tbl[-1]), 4)); fxl.append(round(ffill(fx, d, fxl[-1]), 2))
+    vv = ffill(vix, d, vxl[-1]); vxl.append(round(vv, 2) if vv is not None else None)
     prev_date, prev_px = d, p; added += 1
 
-data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl)
+data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl)
 data_js = json.dumps(data, separators=(',', ':'))
 last = iso(days[-1])
 y, m, d_ = last.split('-')
@@ -138,6 +144,7 @@ PRESETS = {
     'def': ('방어형', "{peakRatio:0.67}"),
     'bal': ('균형형', "{maGate:50,reentryFrac:0}"),
     'reb': ('반등형', "{maGate:20,volHi:0.40,reentryFrac:0}"),
+    'or': ('추세 OR형', "{maGate:200,maMode:'or',maBand:0.04,reentryFrac:0}"),
 }
 js = os.path.join(tempfile.mkdtemp(), 'status.js')
 open(js, 'w').write(f"""
@@ -175,7 +182,7 @@ if prev.get('date') != last:
         if old and old != v['regime']:
             msgs.append(f"{v['name']}: {NAME.get(old)} → **{NAME[v['regime']]}**")
     if prev.get('rv20') is not None and status['rv20'] >= ALERT_VOL > prev['rv20']:
-        msgs.append(f"20일 변동성이 {pv(status['rv20'])}로 30%를 넘었습니다 (방어형·균형형 이탈 기준 35%, 반등형 40%).")
+        msgs.append(f"20일 변동성이 {pv(status['rv20'])}로 30%를 넘었습니다 (방어형·균형형·추세 OR형 이탈 기준 35%, 반등형 40%).")
     if status['regime'] == 'in' and status['rv20'] > 0.35 and not (prev.get('rv20', 0) > 0.35):
         msgs.append(f"20일 변동성 {pv(status['rv20'])}이 35%를 넘었습니다. 방어형은 다음 거래일 종가에 QLD를 SGOV로 옮깁니다.")
 if msgs:

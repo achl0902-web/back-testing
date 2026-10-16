@@ -107,6 +107,9 @@ td.num { font-family: var(--f-num); }
 .t.staged { color: var(--warn); background: var(--warn-bg); }
 .t.tax, .t.year, .t.harvest { color: var(--muted); background: var(--sunken); }
 .ev .m { min-width: 0; overflow-wrap: anywhere; }
+#aux td:last-child, #aux th.lefthead { text-align: left; white-space: normal; min-width: 220px; color: var(--muted); font-size: 0.82rem; }
+.st { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+.st.good { color: var(--good); background: var(--good-bg); } .st.warn { color: var(--warn); background: var(--warn-bg); } .st.bad { color: var(--bad); background: var(--bad-bg); } .st.mid { color: var(--muted); background: var(--sunken); }
 @media (max-width: 520px) { .ev { grid-template-columns: 84px 1fr; } .ev .m { grid-column: 1 / -1; } }
 details summary { cursor: pointer; font-weight: 600; }
 details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
@@ -125,8 +128,24 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <span id="nowPill" class="pill in">보유</span>
       <p id="nowText">계산 중…</p>
     </div>
-    <div class="chart-head" style="margin:14px 0 4px"><h2>최근 6개월 일별 변동성</h2><span class="hint">데이터 __LASTDATE__ 종가까지 · 페이지 갱신 __BUILT__</span></div>
-    <div class="cv spark" id="cvSpark"><canvas aria-label="최근 6개월 일별 변동성 차트" role="img"></canvas></div>
+    <div class="chart-head" style="margin:14px 0 4px"><h2>최근 6개월 일별 추이</h2><span class="hint">데이터 __LASTDATE__ 종가까지 · 페이지 갱신 __BUILT__</span></div>
+    <div class="chips" id="sparkPick" style="margin-bottom:6px">
+      <button type="button" class="chip" data-k="vol" aria-pressed="true">변동성</button>
+      <button type="button" class="chip" data-k="ma200" aria-pressed="false">200일선 대비</button>
+      <button type="button" class="chip" data-k="rsi" aria-pressed="false">RSI</button>
+      <button type="button" class="chip" data-k="macd" aria-pressed="false">MACD</button>
+      <button type="button" class="chip" data-k="vix" aria-pressed="false">VIX</button>
+      <button type="button" class="chip" data-k="mom" aria-pressed="false">모멘텀</button>
+    </div>
+    <div class="cv spark" id="cvSpark"><canvas aria-label="최근 6개월 일별 지표 차트" role="img"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>보조지표</h2><span class="hint">매매 규칙에는 쓰지 않고, 판단을 돕는 참고용</span></div>
+    <div class="tablewrap"><table id="aux">
+      <thead><tr><th scope="col">지표</th><th scope="col">현재</th><th scope="col">상태</th><th scope="col" class="lefthead">읽는 법 · 단독 규칙으로 썼을 때</th></tr></thead>
+      <tbody></tbody></table></div>
+    <p class="hint" style="margin-top:8px">단독 규칙 성적은 1986년 이후 나스닥100·S&P500의 모든 5·10년 적립 구간에서 그 지표만으로 이탈·복귀했을 때 단순 적립보다 수익률이 높았던 비율입니다(기본 변동성 규칙은 50%). 신호가 자주 바뀌면 이탈할 때마다 양도세가 나가 성적이 떨어집니다.</p>
   </section>
 
   <div class="layout">
@@ -164,10 +183,15 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
             <option value="def">방어형 · 변동성 35% 이탈, 단계 복귀</option>
             <option value="bal">균형형 · 변동성 35% & 50일선 아래 이탈, 50일선 회복 시 복귀</option>
             <option value="reb">반등형 · 변동성 40% & 20일선 아래 이탈, 20일선 회복 시 복귀</option>
+            <option value="or">추세 OR형 · 200일선-4% 또는 변동성 35% 이탈, 200일선+4% & 변동성 25% 미만 복귀</option>
             <option value="custom">직접 설정</option>
           </select></div>
-        <div class="field"><label for="maGate">이평선 조건 (이탈은 아래일 때만, 회복하면 복귀)</label>
+        <div class="field"><label for="maGate">이평선</label>
           <select id="maGate"><option value="0">사용 안 함</option><option value="20">20일선</option><option value="50">50일선</option><option value="100">100일선</option><option value="200">200일선</option></select></div>
+        <div class="field"><label for="maMode">변동성과 이평선의 결합</label>
+          <select id="maMode"><option value="and">그리고: 변동성 초과 & 이평선 아래일 때 이탈, 이평선 회복 시 복귀</option><option value="or">또는: 변동성 초과 또는 이평선 이탈 시 이탈, 이평선 위 & 변동성 안정 시 복귀</option></select></div>
+        <div class="field"><label for="maBand">이평선 여유폭 <b id="lblMaBand"></b></label>
+          <input type="range" id="maBand" min="0" max="8" step="1" value="0"></div>
         <div class="field"><label for="volMeasure">변동성 측정 방식</label>
           <select id="volMeasure">
             <option value="rv20">20일 변동성 (오르내림 모두)</option>
@@ -217,11 +241,11 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       </section>
 
       <section class="panel">
-        <div class="chart-head"><h2>세 전략 한눈에</h2><span class="hint">같은 기간·적립액·비용 기준</span></div>
+        <div class="chart-head"><h2>전략 비교</h2><span class="hint">같은 기간·적립액·비용 기준</span></div>
         <div class="tablewrap"><table id="cmp">
           <thead><tr><th scope="col">전략</th><th scope="col">연환산(IRR)</th><th scope="col">세후 청산</th><th scope="col">MDD</th><th scope="col">원금 대비 최악</th><th scope="col">이탈</th></tr></thead>
           <tbody></tbody></table></div>
-        <p class="hint" style="margin-top:8px">방어형은 길게 끄는 하락장(2000~02, 2008)에 강하고, 반등형은 급락 후 V자 반등(2020, 2025)에 강합니다. 균형형은 그 사이입니다. 1986년 이후 모든 5·10년 적립 구간에서 단순 적립보다 높았던 비율은 각각 50%, 53%, 49%였습니다.</p>
+        <p class="hint" style="margin-top:8px">방어형은 길게 끄는 하락장(2000~02, 2008)에, 반등형은 급락 후 V자 반등(2020, 2025)에 강하고, 균형형은 그 사이입니다. 추세 OR형은 하락을 가장 일찍 잡지만 평범한 조정에서도 자주 빠져나가 강세장 수익을 많이 놓칩니다. 1986년 이후 나스닥100·S&P500의 모든 5·10년 적립 구간에서 단순 적립보다 높았던 비율: 방어형 50%, 균형형 53%, 반등형 49%, 추세 OR형 37%.</p>
       </section>
 
       <section class="panel">
@@ -298,11 +322,11 @@ __ENGINE__
   const rS = $('rStart'), rE = $('rEnd');
   [rS, rE].forEach(r => { r.min = 0; r.max = months.length - 1; r.step = 1; });
   const mIdx = s => { const [y, m] = s.split('-').map(Number); const k = months.findIndex(o => o.y === y && o.m === m); return k < 0 ? 0 : k; };
-  const DEF_UI = { start: '1999-03', weekly: 70, volHi: 35, exitFrac: 100, volHi2: 0, volLo: 25, peak: 67, refrac: 33, park: 0, weeklyCheck: false, volMeasure: 'rv20', maGate: 0, preset: 'def', harvest: true, strategy: true, fee: 0.1, fxs: 0.1, taxRate: 22, deduct: 250 };
+  const DEF_UI = { start: '1999-03', weekly: 70, volHi: 35, exitFrac: 100, volHi2: 0, volLo: 25, peak: 67, refrac: 33, park: 0, weeklyCheck: false, volMeasure: 'rv20', maGate: 0, maMode: 'and', maBand: 0, preset: 'def', harvest: true, strategy: true, fee: 0.1, fxs: 0.1, taxRate: 22, deduct: 250 };
   function setDefaults() {
     rS.value = mIdx(DEF_UI.start); rE.value = months.length - 1;
     for (const k of ['weekly', 'volHi', 'exitFrac', 'volHi2', 'volLo', 'peak', 'refrac', 'park', 'fee', 'fxs', 'taxRate', 'deduct']) $(k === 'taxRate' ? 'taxRate' : k).value = DEF_UI[k];
-    $('volMeasure').value = DEF_UI.volMeasure; $('maGate').value = DEF_UI.maGate; $('preset').value = DEF_UI.preset; $('weeklyCheck').checked = DEF_UI.weeklyCheck; $('harvest').checked = DEF_UI.harvest; $('strategy').checked = DEF_UI.strategy;
+    $('volMeasure').value = DEF_UI.volMeasure; $('maGate').value = DEF_UI.maGate; $('maMode').value = DEF_UI.maMode; $('maBand').value = DEF_UI.maBand; $('preset').value = DEF_UI.preset; $('weeklyCheck').checked = DEF_UI.weeklyCheck; $('harvest').checked = DEF_UI.harvest; $('strategy').checked = DEF_UI.strategy;
   }
   setDefaults();
 
@@ -311,7 +335,7 @@ __ENGINE__
       weeklyKRW: +$('weekly').value * 10000, volHi: +$('volHi').value / 100, volLo: +$('volLo').value / 100,
       exitFrac: +$('exitFrac').value / 100, volHi2: +$('volHi2').value ? +$('volHi2').value / 100 : null,
       peakRatio: +$('peak').value / 100, reentryFrac: +$('refrac').value / 100, parkQQQ: +$('park').value / 100,
-      weeklyCheck: $('weeklyCheck').checked, volMeasure: $('volMeasure').value, maGate: +$('maGate').value, harvest: $('harvest').checked, strategy: $('strategy').checked,
+      weeklyCheck: $('weeklyCheck').checked, volMeasure: $('volMeasure').value, maGate: +$('maGate').value, maMode: $('maMode').value, maBand: +$('maBand').value / 100, harvest: $('harvest').checked, strategy: $('strategy').checked,
       fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100, taxRate: +$('taxRate').value / 100,
       deduct: Math.max(0, +$('deduct').value || 0) * 10000,
     };
@@ -319,6 +343,7 @@ __ENGINE__
   function labels(p) {
     $('lblWeekly').textContent = (p.weeklyKRW / 10000) + '만원 (연 ' + Math.round(p.weeklyKRW * 52 / 10000).toLocaleString('ko-KR') + '만원)';
     $('lblVolHi').textContent = pct(p.volHi, 0); $('lblVolLo').textContent = pct(p.volLo, 0);
+    $('lblMaBand').textContent = '±' + Math.round(p.maBand * 100) + '%'; $('maMode').disabled = $('maBand').disabled = !p.maGate;
     $('lblExitFrac').textContent = p.exitFrac >= 0.999 ? '전량' : pct(p.exitFrac, 0);
     $('volHi2').disabled = p.exitFrac >= 0.999; $('lblVolHi2').textContent = (p.exitFrac >= 0.999 || p.volHi2 == null) ? '사용 안 함' : pct(p.volHi2, 0);
     $('lblPeak').textContent = pct(p.peakRatio, 0) + ' 아래'; $('lblRefrac').textContent = pct(p.reentryFrac, 0);
@@ -438,28 +463,79 @@ __ENGINE__
     months.forEach((o, k) => { if (o.m === 1 && o.y % step === 0) bctx.fillText(String(o.y), X(k), h - 3); });
   }
   new ResizeObserver(drawBrush).observe(brushHost);
-  const chSpark = makeChart($('cvSpark'), { padL: 44 });
+  const chSpark = makeChart($('cvSpark'), { padL: 48 });
+  // ---------- supporting indicators (computed from the index close) ----------
+  const IND = (() => {
+    const n = D.n, px = D.px;
+    const ema = (a, k) => { const o = new Float64Array(a.length), w = 2 / (k + 1); o[0] = a[0]; for (let i = 1; i < a.length; i++) o[i] = a[i] * w + o[i - 1] * (1 - w); return o; };
+    const rsi = (a, k) => { const o = new Float64Array(a.length).fill(NaN); let up = 0, dn = 0;
+      for (let i = 1; i < a.length; i++) { const d = a[i] - a[i - 1], u = Math.max(d, 0), w = Math.max(-d, 0);
+        if (i === 1) { up = u; dn = w; } else { up += (u - up) / k; dn += (w - dn) / k; } if (i >= k) o[i] = dn === 0 ? 100 : 100 - 100 / (1 + up / dn); } return o; };
+    const macd = a => { const f = ema(a, 12), s = ema(a, 26), m = Float64Array.from(f, (v, i) => v - s[i]), g = ema(m, 9); return { m, h: Float64Array.from(m, (v, i) => v - g[i]) }; };
+    const wkEnd = []; for (let i = 0; i < n; i++) if (i === n - 1 || D.week[i + 1] !== D.week[i]) wkEnd.push(i);
+    const toDaily = w => { const o = new Float64Array(n).fill(NaN); let k = -1; for (let i = 0; i < n; i++) { while (k + 1 < wkEnd.length && wkEnd[k + 1] <= i) k++; if (k >= 0) o[i] = w[k]; } return o; };
+    const wpx = Float64Array.from(wkEnd.map(i => px[i]));
+    const dM = macd(Float64Array.from(px)), wM = macd(wpx);
+    const mom = k => Float64Array.from({ length: n }, (_, i) => i >= k ? px[i] / px[i - k] - 1 : NaN);
+    return { rsi: rsi(Float64Array.from(px), 14), rsiw: toDaily(rsi(wpx, 14)), macd: dM.m, macdh: dM.h, macdw: toDaily(wM.m), macdhw: toDaily(wM.h),
+      mom126: mom(126), mom252: mom(252), vix: D.vix ? Float64Array.from(D.vix, v => v == null ? NaN : v) : null,
+      ma200d: Float64Array.from({ length: n }, (_, i) => px[i] / D.ma[200][i] - 1) };
+  })();
+  let sparkKey = 'vol';
+  document.querySelectorAll('#sparkPick .chip').forEach(b => b.addEventListener('click', () => {
+    sparkKey = b.dataset.k; document.querySelectorAll('#sparkPick .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderSpark(params());
+  }));
   function renderSpark(p) {
-    const n0 = Math.max(0, D.n - 126), x = [], v = [];
-    const VS = D.vols[p.volMeasure] || D.rv; for (let i = n0; i < D.n; i++) { x.push(D.day[i]); v.push(VS[i]); }
-    chSpark.set({ x, log: false, yMin: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1),
-      hlines: [{ y: p.volHi, label: `이탈 ${pct(p.volHi, 0)}`, color: '--bad' }, { y: p.volLo, label: `복귀 ${pct(p.volLo, 0)}`, color: '--good', below: true }],
-      series: [{ name: VNAME[p.volMeasure], color: '--fg', v, w: 1.75 }] });
+    const n0 = Math.max(0, D.n - 126), x = []; for (let i = n0; i < D.n; i++) x.push(D.day[i]);
+    const sl = arr => Array.from(arr.slice(n0));
+    const f1 = v => v.toFixed(1), fp = v => pct(v, 1);
+    let cfg;
+    if (sparkKey === 'rsi') cfg = { yMin: 0, yMax: 100, yfmt: v => Math.round(v), tfmt: f1, hlines: [{ y: 70, label: '과열 70', color: '--bad' }, { y: 30, label: '과매도 30', color: '--good', below: true }],
+      series: [{ name: 'RSI 주봉', color: '--s-dca', v: sl(IND.rsiw), w: 1.5 }, { name: 'RSI 일봉', color: '--fg', v: sl(IND.rsi), w: 1.75 }] };
+    else if (sparkKey === 'macd') cfg = { yfmt: v => Math.round(v), tfmt: v => v.toFixed(0), hlines: [],
+      series: [{ name: 'MACD 시그널차 (일봉)', color: '--s-dca', v: sl(IND.macdh), w: 1.5 }, { name: 'MACD (일봉)', color: '--fg', v: sl(IND.macd), w: 1.75 }] };
+    else if (sparkKey === 'vix') cfg = IND.vix ? { yMin: 0, yfmt: v => Math.round(v), tfmt: f1, hlines: [{ y: 30, label: '공포 30', color: '--bad' }, { y: 20, label: '경계 20', color: '--warn', below: true }],
+      series: [{ name: 'VIX', color: '--fg', v: sl(IND.vix), w: 1.75 }] } : null;
+    else if (sparkKey === 'ma200') cfg = { yfmt: v => Math.round(v * 100) + '%', tfmt: fp, hlines: [{ y: -0.04, label: '-4%', color: '--bad', below: true }],
+      series: [{ name: '200일선 대비', color: '--fg', v: sl(IND.ma200d), w: 1.75 }] };
+    else if (sparkKey === 'mom') cfg = { yfmt: v => Math.round(v * 100) + '%', tfmt: fp, hlines: [],
+      series: [{ name: '12개월 수익률', color: '--s-dca', v: sl(IND.mom252), w: 1.5 }, { name: '6개월 수익률', color: '--fg', v: sl(IND.mom126), w: 1.75 }] };
+    if (!cfg || sparkKey === 'vol') { const VS = D.vols[p.volMeasure] || D.rv;
+      cfg = { yMin: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: fp,
+        hlines: [{ y: p.volHi, label: `이탈 ${pct(p.volHi, 0)}`, color: '--bad' }, { y: p.volLo, label: `복귀 ${pct(p.volLo, 0)}`, color: '--good', below: true }],
+        series: [{ name: VNAME[p.volMeasure], color: '--fg', v: sl(VS), w: 1.75 }] }; }
+    chSpark.set(Object.assign({ x, log: false }, cfg));
   }
+  function renderAux() {
+    const i = D.n - 1, S = (cls, txt) => `<span class="st ${cls}">${txt}</span>`;
+    const r = IND.rsi[i], rw = IND.rsiw[i], mh = IND.macdh[i], ml = IND.macd[i], wh = IND.macdhw[i], wl = IND.macdw[i], vx = IND.vix ? IND.vix[i] : NaN, m6 = IND.mom126[i], m12 = IND.mom252[i], d200 = IND.ma200d[i];
+    const rows = [
+      ['200일선 대비', pct(d200), d200 >= 0 ? S('good', '추세 위') : d200 > -0.04 ? S('warn', '살짝 아래') : S('bad', '추세 아래'), '장기 추세의 위치. 200일선 ±4% 단독 규칙 35%, 변동성과 또는(OR)로 묶으면 37%.'],
+      ['RSI 14 (일봉)', r.toFixed(1), r >= 70 ? S('warn', '과열') : r <= 30 ? S('good', '과매도') : S('mid', '중립'), '단기 과열·침체. 30 아래는 투매 구간이지만 더 빠지기도 함. 단독 규칙 20~27%.'],
+      ['RSI 14 (주봉)', rw.toFixed(1), rw >= 70 ? S('warn', '과열') : rw <= 35 ? S('good', '침체') : S('mid', '중립'), '중기 과열·침체. 단독 규칙 27~35%.'],
+      ['MACD (일봉)', `${ml.toFixed(0)} / ${mh >= 0 ? '+' : ''}${mh.toFixed(0)}`, mh >= 0 ? S('good', '상승 탄력') : S('bad', '하락 탄력'), 'MACD선 / 시그널선과의 차. 신호가 매우 자주 바뀜. 단독 규칙 6~22%.'],
+      ['MACD (주봉)', `${wl.toFixed(0)} / ${wh >= 0 ? '+' : ''}${wh.toFixed(0)}`, wl >= 0 ? (wh >= 0 ? S('good', '상승 추세') : S('warn', '상승 둔화')) : (wh >= 0 ? S('warn', '하락 둔화') : S('bad', '하락 추세')), '중기 추세. 0선 기준 단독 규칙 34%, 시그널 교차 20%.'],
+      ['VIX', isNaN(vx) ? '–' : vx.toFixed(1), isNaN(vx) ? S('mid', '자료 없음') : vx >= 30 ? S('bad', '공포') : vx >= 20 ? S('warn', '경계') : S('good', '안정'), 'S&P500 옵션의 예상 변동성. 바닥 뒤에도 높게 남아 반등을 놓치게 함. 단독 규칙은 시험한 지표 중 최하위권.'],
+      ['모멘텀 6·12개월', `${pct(m6, 0)} · ${pct(m12, 0)}`, (m6 >= 0 && m12 >= 0) ? S('good', '둘 다 플러스') : (m6 < 0 && m12 < 0) ? S('bad', '둘 다 마이너스') : S('warn', '엇갈림'), '지난 6·12개월 지수 수익률. 단독 규칙 22~34%.'],
+    ];
+    $('aux').querySelector('tbody').innerHTML = rows.map(([a, b, c, d]) => `<tr><th scope="row">${a}</th><td class="num">${b}</td><td>${c}</td><td>${d}</td></tr>`).join('');
+  }
+  renderAux();
 
   // ---------- presets ----------
   const PRESETS = {
-    def: { name: '방어형', ui: { volHi: 35, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 33, maGate: 0, volMeasure: 'rv20' } },
-    bal: { name: '균형형', ui: { volHi: 35, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 0, maGate: 50, volMeasure: 'rv20' } },
-    reb: { name: '반등형', ui: { volHi: 40, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 0, maGate: 20, volMeasure: 'rv20' } },
+    def: { name: '방어형', ui: { volHi: 35, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 33, maGate: 0, maMode: 'and', maBand: 0, volMeasure: 'rv20' } },
+    bal: { name: '균형형', ui: { volHi: 35, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 0, maGate: 50, maMode: 'and', maBand: 0, volMeasure: 'rv20' } },
+    reb: { name: '반등형', ui: { volHi: 40, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 0, maGate: 20, maMode: 'and', maBand: 0, volMeasure: 'rv20' } },
+    or: { name: '추세 OR형', ui: { volHi: 35, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 0, maGate: 200, maMode: 'or', maBand: 4, volMeasure: 'rv20' } },
   };
-  const presetParams = (base, key) => { const u = PRESETS[key].ui; return Object.assign({}, base, { strategy: true, volHi: u.volHi / 100, volLo: u.volLo / 100, exitFrac: 1, volHi2: null, peakRatio: u.peak / 100, reentryFrac: u.refrac / 100, maGate: u.maGate, volMeasure: u.volMeasure, parkQQQ: 0 }); };
+  const presetParams = (base, key) => { const u = PRESETS[key].ui; return Object.assign({}, base, { strategy: true, volHi: u.volHi / 100, volLo: u.volLo / 100, exitFrac: 1, volHi2: null, peakRatio: u.peak / 100, reentryFrac: u.refrac / 100, maGate: u.maGate, maMode: u.maMode, maBand: u.maBand / 100, volMeasure: u.volMeasure, parkQQQ: 0 }); };
   function applyPreset(key) { if (!PRESETS[key]) return; for (const [k, v] of Object.entries(PRESETS[key].ui)) $(k).value = v; }
   $('preset').addEventListener('change', () => applyPreset($('preset').value));
-  const RULE_IDS = ['volHi', 'volLo', 'exitFrac', 'volHi2', 'peak', 'refrac', 'maGate', 'volMeasure', 'park'];
+  const RULE_IDS = ['volHi', 'volLo', 'exitFrac', 'volHi2', 'peak', 'refrac', 'maGate', 'maMode', 'maBand', 'volMeasure', 'park'];
   RULE_IDS.forEach(id => $(id).addEventListener('input', () => { $('preset').value = 'custom'; }));
   function renderCompare(p, i0, i1) {
-    const rows = [['def'], ['bal'], ['reb']].map(([k]) => [PRESETS[k].name, runBT(D, i0, i1, presetParams(p, k), false)]);
+    const rows = ['def', 'bal', 'reb', 'or'].map(k => [PRESETS[k].name, runBT(D, i0, i1, presetParams(p, k), false)]);
     rows.push(['단순 적립', runBT(D, i0, i1, Object.assign({}, p, { strategy: false }), false)]);
     const best = Math.max(...rows.map(r => r[1].irr));
     $('cmp').querySelector('tbody').innerHTML = rows.map(([n, r]) => `<tr><th scope="row">${n}</th><td class="num${r.irr === best ? ' pos' : ''}">${pct(r.irr)}</td><td class="num">${krw(r.finalAfter)}</td><td class="num">${pct(r.mddTwr, 0)}</td><td class="num">${pct(r.worstVsPaid, 0)}</td><td class="num">${r.exits}회</td></tr>`).join('');
@@ -537,10 +613,13 @@ __ENGINE__
     const exitTxt = p.exitFrac >= 0.999 ? '전량' : pct(p.exitFrac, 0) + '를';
     const MA = p.maGate ? D.ma[p.maGate][iL] : null, px = D.px[iL];
     const maTxt = MA ? ` 나스닥100은 ${p.maGate}일선(${Math.round(MA).toLocaleString('ko-KR')})보다 ${pct(px / MA - 1)} ${px >= MA ? '위' : '아래'}에 있습니다.` : '';
-    const cond = `${VNAME[p.volMeasure]}이 <strong>${pct(p.volHi, 0)}</strong>를 ` + (MA ? `넘고 지수가 ${p.maGate}일선 아래에 있는` : '넘는');
-    const back = (MA ? `지수가 ${p.maGate}일선 위로 올라서거나 ` : '') + `변동성이 <strong>${pct(p.volLo, 0)}</strong> 아래로 내려오면 전부 QLD로 옮깁니다.`;
+    const OR = MA && p.maMode === 'or', bandTxt = p.maBand ? `${Math.round(p.maBand * 100)}% ` : '';
+    const cond = OR ? `${VNAME[p.volMeasure]}이 <strong>${pct(p.volHi, 0)}</strong>를 넘거나 지수가 ${p.maGate}일선보다 ${bandTxt}아래로 내려가는`
+      : `${VNAME[p.volMeasure]}이 <strong>${pct(p.volHi, 0)}</strong>를 ` + (MA ? `넘고 지수가 ${p.maGate}일선 아래에 있는` : '넘는');
+    const back = OR ? `지수가 ${p.maGate}일선보다 ${bandTxt}위에 있고 변동성이 <strong>${pct(p.volLo, 0)}</strong> 아래이면 전부 QLD로 옮깁니다.`
+      : (MA ? `지수가 ${p.maGate}일선 위로 올라서거나 ` : '') + `변동성이 <strong>${pct(p.volLo, 0)}</strong> 아래로 내려오면 전부 QLD로 옮깁니다.`;
     let next = st === 'in'
-      ? `${cond} ${p.weeklyCheck ? '금요일이 오면' : '날이 오면'} 다음 거래일에 QLD ${exitTxt} SGOV로 옮깁니다.` + (rv > p.volHi && (!MA || px < MA) ? ' <strong>오늘 종가가 이미 이 조건에 해당합니다.</strong>' : '')
+      ? `${cond} ${p.weeklyCheck ? '금요일이 오면' : '날이 오면'} 다음 거래일에 QLD ${exitTxt} SGOV로 옮깁니다.` + ((OR ? (rv > p.volHi || px < MA * (1 - p.maBand)) : (rv > p.volHi && (!MA || px < MA))) ? ' <strong>오늘 종가가 이미 이 조건에 해당합니다.</strong>' : '')
       : st === 'out' ? ((p.reentryFrac > 0 ? `변동성이 이탈 후 최고치 ${pct(R.vpk)}의 ${pct(p.peakRatio, 0)}(${pct(R.vpk * p.peakRatio)}) 아래로 내려오면 ${pct(p.reentryFrac, 0)}를 QLD로 옮기고, ` : '') + back)
       : back;
     next += maTxt;

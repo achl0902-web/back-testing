@@ -36,14 +36,14 @@ function prepData(raw, lev, er, spread) {
     year[i] = dt.getUTCFullYear(); month[i] = dt.getUTCMonth() + 1;
     week[i] = Math.floor((day[i] + 5) / 7); // W-FRI weeks (Sat..Fri)
   }
-  return { n, day, px: raw.px, tb: raw.tb, fx: raw.fx, lx, ix, rv, vols: { rv20: rv, down20: rvDown, rv10 }, ma, year, month, week };
+  return { n, day, px: raw.px, tb: raw.tb, fx: raw.fx, vix: raw.vix || null, lx, ix, rv, vols: { rv20: rv, down20: rvDown, rv10 }, ma, year, month, week };
 }
 
 const DEFAULTS = {
   weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, deduct: 2500000, taxRate: 0.22,
   cashHaircut: 0.001, divTax: 0.154, harvest: true,
   strategy: true, volHi: 0.35, volLo: 0.25, peakRatio: 2 / 3, reentryFrac: 1 / 3,
-  parkQQQ: 0, weeklyCheck: false, exitFrac: 1, volHi2: null, volMeasure: 'rv20', maGate: 0,
+  parkQQQ: 0, weeklyCheck: false, exitFrac: 1, volHi2: null, volMeasure: 'rv20', maGate: 0, maMode: 'and', maBand: 0,
 };
 
 function idxOfDay(D, dayNum, after) {
@@ -111,17 +111,27 @@ function runBT(D, i0, i1, p, wantLog) {
     const j = i > i0 ? i - 1 : i0;
     const check = !p.weeklyCheck || (i > i0 && D.week[i] !== D.week[i - 1]);
     const VS = (D.vols && D.vols[p.volMeasure]) || D.rv;
-    if (p.strategy && check && !isNaN(VS[j])) {
+    if (p.strategy && check && p.exitSig) {
+      if (regime === 'in' && p.exitSig[j]) {
+        regime = 'out'; exits++; const r0 = realized; const pr = sell(0, sharesOf(0) * D.lx[i], i); buy(1, pr * p.parkQQQ, i);
+        L(i, 'exit', `${p.sigName || '신호'} 이탈 → QLD 전량 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
+      } else if (regime !== 'in' && p.enterSig[j]) {
+        const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q, i);
+        const amt = buy(0, cash, i); regime = 'in';
+        L(i, 'reentry', `${p.sigName || '신호'} 복귀 → 전량 QLD ${fmt(amt * D.fx[i])}`);
+      }
+    } else if (p.strategy && check && !isNaN(VS[j])) {
       const v = VS[j];
       const MA = p.maGate ? D.ma[p.maGate] : null;
-      const below = MA ? D.px[j] < MA[j] : true, above = MA ? D.px[j] > MA[j] : false;
+      const OR = MA && p.maMode === 'or';
+      const below = MA ? D.px[j] < MA[j] * (1 - p.maBand) : true, above = MA ? D.px[j] > MA[j] * (1 + p.maBand) : false;
       if (regime === 'in') {
-        if (v > p.volHi && below) {
+        if (OR ? (v > p.volHi || below) : (v > p.volHi && below)) {
           regime = 'out'; exits++; vpk = p.vpkIncludeExit === false ? 0 : v;
           const ef = Math.min(1, Math.max(0, p.exitFrac)); partial = ef < 0.999;
           const r0 = realized; const pr = sell(0, sharesOf(0) * D.lx[i] * ef, i);
           buy(1, pr * p.parkQQQ, i);
-          L(i, 'exit', `변동성 ${(v * 100).toFixed(1)}% > ${(p.volHi * 100).toFixed(0)}%` + (MA ? ` & ${p.maGate}일선 아래` : '') + ` → QLD ${partial ? Math.round(ef * 100) + '%' : '전량'} 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})` + (p.parkQQQ > 0 ? `, ${Math.round(p.parkQQQ * 100)}% QQQ 대기` : ''));
+          L(i, 'exit', `변동성 ${(v * 100).toFixed(1)}% > ${(p.volHi * 100).toFixed(0)}%` + (MA ? (OR ? ` 또는 ${p.maGate}일선${p.maBand ? '-' + Math.round(p.maBand * 100) + '%' : ''} 아래` : ` & ${p.maGate}일선 아래`) : '') + ` → QLD ${partial ? Math.round(ef * 100) + '%' : '전량'} 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})` + (p.parkQQQ > 0 ? `, ${Math.round(p.parkQQQ * 100)}% QQQ 대기` : ''));
         }
       } else {
         if (regime === 'out') vpk = Math.max(vpk, v);
@@ -129,11 +139,11 @@ function runBT(D, i0, i1, p, wantLog) {
           partial = false; const r0 = realized; const pr = sell(0, sharesOf(0) * D.lx[i], i); buy(1, pr * p.parkQQQ, i);
           L(i, 'exit', `변동성 ${(v * 100).toFixed(1)}% > ${(p.volHi2 * 100).toFixed(0)}% → 남은 QLD 전량 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
         }
-        if (v < p.volLo || above) {
+        if (OR ? (above && v < p.volLo) : (v < p.volLo || above)) {
           const r0 = realized; const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q, i);
           const amt = buy(0, cash, i); regime = 'in'; partial = false;
-          L(i, 'reentry', (above && !(v < p.volLo) ? `나스닥100이 ${p.maGate}일선 위로 회복` : `변동성 ${(v * 100).toFixed(1)}% < ${(p.volLo * 100).toFixed(0)}%`) + ` → 전량 QLD 복귀 ${fmt(amt * D.fx[i])}` + (q > 0 ? ` (QQQ 실현손익 ${fmt(realized - r0)})` : ''));
-        } else if (regime === 'out' && p.reentryFrac > 0 && v < vpk * p.peakRatio) {
+          L(i, 'reentry', (OR ? `나스닥100 ${p.maGate}일선 위 & 변동성 ${(v * 100).toFixed(1)}% < ${(p.volLo * 100).toFixed(0)}%` : above && !(v < p.volLo) ? `나스닥100이 ${p.maGate}일선 위로 회복` : `변동성 ${(v * 100).toFixed(1)}% < ${(p.volLo * 100).toFixed(0)}%`) + ` → 전량 QLD 복귀 ${fmt(amt * D.fx[i])}` + (q > 0 ? ` (QQQ 실현손익 ${fmt(realized - r0)})` : ''));
+        } else if (!OR && regime === 'out' && p.reentryFrac > 0 && v < vpk * p.peakRatio) {
           const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q * p.reentryFrac, i);
           const nonQ = cash; // cash now includes sold QQQ part
           const qPart = q > 0 ? q * p.reentryFrac * (1 - p.fee) : 0;
