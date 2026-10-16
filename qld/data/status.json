@@ -1,11 +1,11 @@
 {
- "date": "2026-10-15",
- "rv20": 0.1636,
- "rvPrev": 0.1735,
- "down20": 0.147,
- "ndx": 29935.6,
- "ma20": 30547.04,
- "ma50": 29871.71,
+ "date": "2026-10-16",
+ "rv20": 0.1876,
+ "rvPrev": 0.1636,
+ "down20": 0.1967,
+ "ndx": 29156.82,
+ "ma20": 30522.68,
+ "ma50": 29867.38,
  "regime": "in",
  "vpk": 0.6099,
  "presets": {
@@ -22,9 +22,10 @@
    "regime": "in"
   }
  },
- "built": "2026-10-17 03:39 KST",
+ "built": "2026-10-17 03:53 KST",
  "sources": [
-  "github-mirrors"
+  "github-mirrors",
+  "yahoo(4/4)"
  ],
- "added_rows": 0
+ "added_rows": 1
 }
