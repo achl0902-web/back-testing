@@ -14,7 +14,7 @@ UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, 
       'Accept': 'text/csv,text/plain,*/*'}
 
 FRED = ['BAA10Y', 'AAA10Y', 'BAMLH0A0HYM2', 'BAMLC0A0CM', 'T10Y3M', 'T10Y2Y', 'DGS10', 'DGS2', 'DGS3MO', 'DFF',
-        'VIXCLS', 'VXNCLS', 'VXVCLS', 'STLFSI4', 'NFCI', 'ANFCI', 'ICSA', 'CCSA', 'SAHMREALTIME', 'UNRATE',
+        'VIXCLS', 'VXNCLS', 'VXVCLS', 'STLFSI4', 'NFCI', 'ANFCI', 'NFCIRISK', 'ICSA', 'CCSA', 'SAHMREALTIME', 'UNRATE',
         'DTWEXBGS', 'DCOILWTICO', 'TEDRATE']
 URLS = ['https://fred.stlouisfed.org/graph/fredgraph.csv?id={s}',
         'https://fred.stlouisfed.org/series/{s}/downloaddata/{s}.csv']
@@ -24,7 +24,7 @@ def get(url):
     with urllib.request.urlopen(req, timeout=25) as r:
         return r.status, r.read().decode('utf-8', 'replace')
 
-fails = 0
+fails = 0 if not os.environ.get('FRED_API_KEY') else 99
 for s in FRED:
     if fails >= 3:
         log.append(f'FRED {s}: skipped after 3 consecutive failures'); continue
@@ -51,7 +51,6 @@ for s in FRED:
 
 # ---------- direct official sources (not via FRED) ----------
 DIRECT = {
-    'DOL_claims_ar539.csv': 'https://oui.doleta.gov/unemploy/csv/ar539.csv',
     'CHICAGOFED_nfci.csv': 'https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv',
 }
 for fn, url in DIRECT.items():
@@ -80,8 +79,6 @@ except Exception as e:
 if KEY:
     import json as _json
     for s in FRED:
-        if os.path.exists(os.path.join(OUT, f'{s}.csv')):
-            continue
         try:
             u = f'https://api.stlouisfed.org/fred/series/observations?series_id={s}&file_type=json&api_key={KEY}'
             with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60) as r:
@@ -92,10 +89,7 @@ if KEY:
         except Exception as e:
             log.append(f'FRED-API {s}: {type(e).__name__} {str(e)[:120]}')
 
-YAHOO = {'SOX': '^SOX', 'NDX': '^NDX', 'VIX': '^VIX', 'VIX3M': '^VIX3M', 'VXN': '^VXN', 'TNX': '^TNX', 'IRX': '^IRX',
-         'FVX': '^FVX', 'TYX': '^TYX', 'HYG': 'HYG', 'LQD': 'LQD', 'IEF': 'IEF', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F',
-         'GOLD': 'GC=F', 'OIL': 'CL=F', 'RUT': '^RUT', 'SPX': '^GSPC', 'RSP': 'RSP', 'XLY': 'XLY', 'XLP': 'XLP',
-         'SMH': 'SMH', 'KRE': 'KRE', 'XLF': 'XLF', 'TLT': 'TLT'}
+YAHOO = {'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC'}
 try:
     import yfinance as yf
     import pandas as pd
