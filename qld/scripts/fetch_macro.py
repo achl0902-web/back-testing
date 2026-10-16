@@ -21,14 +21,17 @@ URLS = ['https://fred.stlouisfed.org/graph/fredgraph.csv?id={s}',
 
 def get(url):
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=60) as r:
+    with urllib.request.urlopen(req, timeout=25) as r:
         return r.status, r.read().decode('utf-8', 'replace')
 
+fails = 0
 for s in FRED:
+    if fails >= 3:
+        log.append(f'FRED {s}: skipped after 3 consecutive failures'); continue
     done = False
     for u in URLS:
         url = u.format(s=s)
-        for attempt in range(2):
+        for attempt in range(1):
             try:
                 code, body = get(url)
                 rows = [r for r in csv.reader(io.StringIO(body)) if r]
@@ -44,6 +47,7 @@ for s in FRED:
             time.sleep(2)
         if done:
             break
+    fails = 0 if done else fails + 1
 
 YAHOO = {'SOX': '^SOX', 'NDX': '^NDX', 'VIX': '^VIX', 'VIX3M': '^VIX3M', 'VXN': '^VXN', 'TNX': '^TNX', 'IRX': '^IRX',
          'FVX': '^FVX', 'TYX': '^TYX', 'HYG': 'HYG', 'LQD': 'LQD', 'IEF': 'IEF', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F',
