@@ -36,6 +36,11 @@ jobs:
       - name: Install data library
         run: pip install --quiet yfinance pandas
 
+      - name: Download macro series (FRED API + Yahoo)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python3 qld/scripts/fetch_macro.py || echo "macro fetch failed, using stored series"
+
       - name: Build QLD page with latest closes
         working-directory: qld
         run: python3 scripts/build.py
@@ -44,8 +49,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add qld/data/status.json
+          git add qld/data/status.json qld/data/macro
           git diff --cached --quiet || git commit -m "qld status: $(python3 -c 'import json;print(json.load(open("qld/data/status.json"))["date"])')"
+          git pull --rebase -q origin main || true
           git push || echo "push skipped"
 
       - name: Open alert issue
@@ -53,7 +59,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TITLE="[QLD 신호] $(python3 -c 'import json;s=json.load(open("qld/data/status.json"));print(s["date"], "20일 변동성", round(s["rv20"]*100,1), "%")')"
+          TITLE="[QLD 신호] $(python3 -c 'import json;s=json.load(open("qld/data/status.json"));n={"in":"QLD 보유","out":"이탈(SGOV)","staged":"단계 복귀"};print(s["date"], n.get(s["regime"],s["regime"]), "· 기술", str(s["votes"])+"/4축 · 매크로", (str(round(s["macro"]*100))+"%") if s.get("macro") is not None else "-")')"
           gh issue create --title "$TITLE" --body-file qld/alert.md || echo "issue skipped"
 
       - name: Assemble site (existing pages at root, QLD page under /qld/)

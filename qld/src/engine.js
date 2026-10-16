@@ -27,6 +27,24 @@ function prepData(raw, lev, er, spread) {
     if (i < 20) { rvDown[i] = NaN; } else { let s = 0; for (let k = i - 19; k <= i; k++) if (ret[k] < 0) s += ret[k] * ret[k]; rvDown[i] = Math.sqrt(s / 20 * 252) * Math.SQRT2; }
     if (i < 10) { rv10[i] = NaN; } else { let s = 0, s2 = 0; for (let k = i - 9; k <= i; k++) s += ret[k]; const m = s / 10; for (let k = i - 9; k <= i; k++) s2 += (ret[k] - m) ** 2; rv10[i] = Math.sqrt(s2 / 9) * Math.sqrt(252); }
   }
+  // final-strategy inputs: upside semivol, 60d vol, 10d return, weekly RSI(14)
+  const up20 = new Float64Array(n).fill(NaN), v60 = new Float64Array(n).fill(NaN), r10 = new Float64Array(n).fill(NaN);
+  for (let i = 61; i < n; i++) {
+    let s = 0; for (let k = i - 19; k <= i; k++) if (ret[k] > 0) s += ret[k] * ret[k];
+    up20[i] = Math.sqrt(s / 20 * 252) * Math.SQRT2;
+    let m = 0; for (let k = i - 59; k <= i; k++) m += ret[k]; m /= 60; let s2 = 0; for (let k = i - 59; k <= i; k++) s2 += (ret[k] - m) ** 2;
+    v60[i] = Math.sqrt(s2 / 59) * Math.sqrt(252);
+    r10[i] = raw.px[i] / raw.px[i - 10] - 1;
+  }
+  const wkEnd = [];
+  { const wk = new Int32Array(n); for (let i = 0; i < n; i++) wk[i] = Math.floor((day[i] + 5) / 7);
+    for (let i = 0; i < n; i++) if (i === n - 1 || wk[i + 1] !== wk[i]) wkEnd.push(i); }
+  const wpx = wkEnd.map(i => raw.px[i]), wr = new Float64Array(wpx.length).fill(NaN);
+  { let u = 0, d = 0; for (let k = 1; k < wpx.length; k++) { const c = wpx[k] - wpx[k - 1], a = Math.max(c, 0), b = Math.max(-c, 0);
+      if (k === 1) { u = a; d = b; } else { u += (a - u) / 14; d += (b - d) / 14; } if (k >= 14) wr[k] = d === 0 ? 100 : 100 - 100 / (1 + u / d); } }
+  const rsiw = new Float64Array(n).fill(NaN);
+  { let k = -1; for (let i = 0; i < n; i++) { while (k + 1 < wkEnd.length && wkEnd[k + 1] <= i) k++; if (k >= 0) rsiw[i] = wr[k]; } }
+  const ms = new Float64Array(n).fill(NaN); if (raw.ms) for (let i = 0; i < n; i++) if (raw.ms[i] != null) ms[i] = raw.ms[i];
   const ma = {};
   for (const m of [20, 50, 100, 200]) { const o = new Float64Array(n).fill(NaN); let s = 0;
     for (let i = 0; i < n; i++) { s += raw.px[i]; if (i >= m) s -= raw.px[i - m]; if (i >= m - 1) o[i] = s / m; } ma[m] = o; }
@@ -36,15 +54,31 @@ function prepData(raw, lev, er, spread) {
     year[i] = dt.getUTCFullYear(); month[i] = dt.getUTCMonth() + 1;
     week[i] = Math.floor((day[i] + 5) / 7); // W-FRI weeks (Sat..Fri)
   }
-  return { n, day, px: raw.px, tb: raw.tb, fx: raw.fx, vix: raw.vix || null, lx, ix, rv, vols: { rv20: rv, down20: rvDown, rv10 }, ma, year, month, week };
+  return { n, day, px: raw.px, tb: raw.tb, fx: raw.fx, vix: raw.vix || null, lx, ix, rv, vols: { rv20: rv, down20: rvDown, rv10, up20 }, v60, r10, rsiw, ms, ma, year, month, week };
 }
 
 const DEFAULTS = {
   weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, deduct: 2500000, taxRate: 0.22,
   cashHaircut: 0.001, divTax: 0.154, harvest: true,
   strategy: true, volHi: 0.35, volLo: 0.25, peakRatio: 2 / 3, reentryFrac: 1 / 3,
+  rule: 'final', dnHi: 0.30, upHi: 0.35, crash: -0.08, rsiW: 45, expand: 1.6, votes: 2, strongVotes: 3, hold: 40,
+  reMaxVotes: 1, useMacro: true, macroTh: 0.5,
   parkQQQ: 0, weeklyCheck: false, exitFrac: 1, volHi2: null, volMeasure: 'rv20', maGate: 0, maMode: 'and', maBand: 0,
 };
+
+function axesAt(D, p, j) {
+  p = Object.assign({}, DEFAULTS, p);
+  if (j < 61) return [0, 0, 0, 0];
+  const v = (D.vols.down20[j] > p.dnHi || D.vols.up20[j] > p.upHi) ? 1 : 0;
+  const c = D.r10[j] < p.crash ? 1 : 0;
+  const t = D.rsiw[j] < p.rsiW ? 1 : 0;
+  const x = D.vols.rv10[j] / D.v60[j] > p.expand ? 1 : 0;
+  return [v, c, t, x];
+}
+function macroOnset(D, p, j) {
+  return !!p.useMacro && j > 0 && !isNaN(D.ms[j]) && D.ms[j] >= p.macroTh && !(D.ms[j - 1] >= p.macroTh);
+}
+function reentryOK(D, p, cnt, j) { return cnt <= p.reMaxVotes && D.px[j] > D.ma[20][j] && D.vols.rv10[j] < D.v60[j]; }
 
 function idxOfDay(D, dayNum, after) {
   let lo = 0, hi = D.n - 1;
@@ -58,7 +92,7 @@ function runBT(D, i0, i1, p, wantLog) {
   const lots = [[], []]; // 0: leveraged (QLD), 1: QQQ ; each lot [shares, costKRWperShare]
   const px = [D.lx, D.ix];
   let cash = 0, realized = 0, pending = 0, contributed = 0, taxesPaid = 0, fees = 0;
-  let regime = 'in', vpk = 0, exits = 0, partial = false;
+  let regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9;
   const log = [];
   const L = (i, type, msg) => { if (wantLog) log.push({ d: D.day[i], type, msg }); };
   const n1 = i1 - i0 + 1;
@@ -111,7 +145,21 @@ function runBT(D, i0, i1, p, wantLog) {
     const j = i > i0 ? i - 1 : i0;
     const check = !p.weeklyCheck || (i > i0 && D.week[i] !== D.week[i - 1]);
     const VS = (D.vols && D.vols[p.volMeasure]) || D.rv;
-    if (p.strategy && check && p.exitSig) {
+    if (p.strategy && check && p.rule === 'final' && !p.exitSig) {
+      const ax = axesAt(D, p, j), c = ax[0] + ax[1] + ax[2] + ax[3], mOn = macroOnset(D, p, j);
+      if (regime === 'in') {
+        if ((c >= p.votes || mOn) && (i - lastEntry >= p.hold || c >= p.strongVotes)) {
+          regime = 'out'; exits++; const r0 = realized; const pr = sell(0, sharesOf(0) * D.lx[i], i); buy(1, pr * p.parkQQQ, i);
+          const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]);
+          const why = (c >= p.votes ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}매크로 경보 ${Math.round(D.ms[j] * 100)}%` : '');
+          L(i, 'exit', `${why} → QLD 전량 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
+        }
+      } else if (reentryOK(D, p, c, j)) {
+        const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q, i);
+        const amt = buy(0, cash, i); regime = 'in'; lastEntry = i;
+        L(i, 'reentry', `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정 → 전량 QLD ${fmt(amt * D.fx[i])}`);
+      }
+    } else if (p.strategy && check && p.exitSig) {
       if (regime === 'in' && p.exitSig[j]) {
         regime = 'out'; exits++; const r0 = realized; const pr = sell(0, sharesOf(0) * D.lx[i], i); buy(1, pr * p.parkQQQ, i);
         L(i, 'exit', `${p.sigName || '신호'} 이탈 → QLD 전량 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
@@ -212,4 +260,4 @@ function xirr(flows) {
   return (lo + hi) / 2;
 }
 
-if (typeof module !== 'undefined') module.exports = { prepData, runBT, idxOfDay, DEFAULTS };
+if (typeof module !== 'undefined') module.exports = { prepData, runBT, idxOfDay, DEFAULTS, axesAt, macroOnset };

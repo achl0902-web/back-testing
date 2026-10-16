@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the QLD volatility DCA backtester with the latest daily closes.
+"""Rebuild the QLD risk-signal DCA backtester with the latest daily closes.
 
 Run from the repository root:
     python3 scripts/build.py            # writes site/index.html, site/status.json, data/status.json
@@ -14,7 +14,6 @@ import csv, datetime as dt, json, os, subprocess, sys, tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P = lambda *a: os.path.join(ROOT, *a)
 KST = dt.timezone(dt.timedelta(hours=9))
-ALERT_VOL = 0.30  # warn when 20d vol reaches this level
 
 base = json.load(open(P('data', 'base.json')))
 days = [base['d0']]
@@ -121,7 +120,24 @@ for d in sorted(k for k in ndx if k > base_last):
     vv = ffill(vix, d, vxl[-1]); vxl.append(round(vv, 2) if vv is not None else None)
     prev_date, prev_px = d, p; added += 1
 
-data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl)
+# ---------- macro alarm share (see scripts/macro.py) ----------
+ms_l, macro_now, macro_ok = [None] * len(px), [], False
+try:
+    sys.path.insert(0, P('scripts'))
+    import macro, math
+    import pandas as pd
+    idx = pd.to_datetime([iso(n) for n in days])
+    mraw, mz, mshare = macro.compute(P('data', 'macro'), idx)
+    ms_l = [None if (v is None or math.isnan(v)) else round(float(v), 3) for v in mshare.values]
+    zl = mz.iloc[-1]
+    for k, label, how, lag in macro.SPEC:
+        z = zl.get(k)
+        macro_now.append(dict(k=k, l=label, h=how, z=None if z is None or math.isnan(z) else round(float(z), 2)))
+    macro_ok = True
+except Exception as e:
+    print('macro share unavailable:', type(e).__name__, e, file=sys.stderr)
+
+data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, macroNow=macro_now)
 data_js = json.dumps(data, separators=(',', ':'))
 last = iso(days[-1])
 y, m, d_ = last.split('-')
@@ -139,30 +155,36 @@ html = ('<!doctype html><html lang="ko"><head><meta charset="utf-8">'
 os.makedirs(P('site'), exist_ok=True)
 open(P('site', 'index.html'), 'w').write(html)
 
-# ---------- daily signal for the three presets ----------
-PRESETS = {
-    'def': ('방어형', "{peakRatio:0.67}"),
-    'bal': ('균형형', "{maGate:50,reentryFrac:0}"),
-    'reb': ('반등형', "{maGate:20,volHi:0.40,reentryFrac:0}"),
-    'or': ('추세 OR형', "{maGate:200,maMode:'or',maBand:0.04,reentryFrac:0}"),
+# ---------- daily signal: final strategy (and the two references) ----------
+RULES = {
+    'final': ('최종 (기술 + 매크로 이탈)', "{}"),
+    'tech': ('기술 4축만', "{useMacro:false}"),
+    'vol': ('이전 방어형', "{rule:'vol',peakRatio:0.67}"),
 }
 js = os.path.join(tempfile.mkdtemp(), 'status.js')
 open(js, 'w').write(f"""
 const E=require({json.dumps(P('src','engine.js'))});
 const D=E.prepData({data_js});
-let i0=0; while(isNaN(D.rv[i0])) i0++;
-const out={{rv20:D.rv[D.n-1],rvPrev:D.rv[D.n-2],down20:D.vols.down20[D.n-1],px:D.px[D.n-1],ma20:D.ma[20][D.n-1],ma50:D.ma[50][D.n-1],presets:{{}}}};
-""" + ''.join(f"{{const R=E.runBT(D,i0,D.n-1,{cfg},false);out.presets[{json.dumps(k)}]={{regime:R.regime,vpk:R.vpk}};}}\n" for k, (_, cfg) in PRESETS.items())
+const j=D.n-1; let i0=0; while(isNaN(D.rv[i0])) i0++;
+const P=Object.assign({{}},E.DEFAULTS,{{strategy:true}});
+const ax=E.axesAt(D,P,j), axp=E.axesAt(D,P,j-1);
+const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j],rsiw:D.rsiw[j],expand:D.vols.rv10[j]/D.v60[j],
+  axes:ax,votes:ax.reduce((a,b)=>a+b,0),votesPrev:axp.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],msPrev:isNaN(D.ms[j-1])?null:D.ms[j-1],
+  macroOnset:E.macroOnset(D,P,j),reentry:ax.reduce((a,b)=>a+b,0)<=P.reMaxVotes&&D.px[j]>D.ma[20][j]&&D.vols.rv10[j]<D.v60[j],
+  px:D.px[j],ma20:D.ma[20][j],rules:{{}}}};
+""" + ''.join(f"{{const R=E.runBT(D,i0,j,Object.assign({{strategy:true}},{cfg}),false);out.rules[{json.dumps(k)}]={{regime:R.regime}};}}\n" for k, (_, cfg) in RULES.items())
  + "console.log(JSON.stringify(out));\n")
 st = subprocess.run(['node', js], capture_output=True, text=True, timeout=600)
 if st.returncode != 0:
     print(st.stderr, file=sys.stderr); sys.exit(1)
 s = json.loads(st.stdout.strip().splitlines()[-1])
-r4 = lambda x: round(x, 4)
-status = dict(date=last, rv20=r4(s['rv20']), rvPrev=r4(s['rvPrev']), down20=r4(s['down20']),
-              ndx=round(s['px'], 2), ma20=round(s['ma20'], 2), ma50=round(s['ma50'], 2),
-              regime=s['presets']['def']['regime'], vpk=r4(s['presets']['def']['vpk']),
-              presets={k: dict(name=PRESETS[k][0], regime=v['regime']) for k, v in s['presets'].items()},
+r4 = lambda x: None if x is None else round(x, 4)
+status = dict(date=last, regime=s['rules']['final']['regime'], votes=s['votes'], axes=s['axes'],
+              down20=r4(s['down20']), up20=r4(s['up20']), r10=r4(s['r10']), rsiw=round(s['rsiw'], 1), expand=round(s['expand'], 2),
+              macro=r4(s['ms']), macroOnset=s['macroOnset'], reentryOK=s['reentry'], rv20=r4(s['rv20']),
+              ndx=round(s['px'], 2), ma20=round(s['ma20'], 2),
+              rules={k: dict(name=RULES[k][0], regime=v['regime']) for k, v in s['rules'].items()},
+              macroNow={m['k']: m['z'] for m in macro_now}, macro_ok=macro_ok,
               built=built, sources=used, added_rows=added)
 
 prev = {}
@@ -172,24 +194,26 @@ json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, inden
 json.dump(status, open(P('site', 'status.json'), 'w'), ensure_ascii=False, indent=1)
 
 # ---------- alert ----------
-NAME = {'in': 'QLD 보유', 'out': '이탈 중 (SGOV)', 'staged': '단계 복귀 중 (1/3 QLD)'}
-pv = lambda x: f'{x*100:.1f}%'
+NAME = {'in': 'QLD 보유', 'out': '이탈 중 (SGOV)', 'staged': '단계 복귀 중'}
+AX = ['변동성', '급락', '추세', '급팽창']
+pv = lambda x: '–' if x is None else f'{x*100:.1f}%'
 msgs = []
 if prev.get('date') != last:
-    pp = prev.get('presets', {})
-    for k, v in status['presets'].items():
-        old = pp.get(k, {}).get('regime')
-        if old and old != v['regime']:
-            msgs.append(f"{v['name']}: {NAME.get(old)} → **{NAME[v['regime']]}**")
-    if prev.get('rv20') is not None and status['rv20'] >= ALERT_VOL > prev['rv20']:
-        msgs.append(f"20일 변동성이 {pv(status['rv20'])}로 30%를 넘었습니다 (방어형·균형형·추세 OR형 이탈 기준 35%, 반등형 40%).")
-    if status['regime'] == 'in' and status['rv20'] > 0.35 and not (prev.get('rv20', 0) > 0.35):
-        msgs.append(f"20일 변동성 {pv(status['rv20'])}이 35%를 넘었습니다. 방어형은 다음 거래일 종가에 QLD를 SGOV로 옮깁니다.")
+    old = (prev.get('rules') or {}).get('final', {}).get('regime') or prev.get('regime')
+    if old and old != status['regime']:
+        msgs.append(f"최종 전략 상태 변경: {NAME.get(old, old)} → **{NAME[status['regime']]}**")
+    if status['votes'] >= 2 and (prev.get('votes') is None or prev['votes'] < 2):
+        msgs.append(f"기술 축 {status['votes']}개가 켜졌습니다 ({'·'.join(a for a, v in zip(AX, status['axes']) if v)}). 이탈 조건입니다.")
+    if status['macroOnset']:
+        msgs.append(f"매크로 경보 비율이 {pv(status['macro'])}로 50%를 새로 넘었습니다. 이탈 조건입니다.")
+    if status['regime'] == 'out' and status['reentryOK'] and not prev.get('reentryOK'):
+        msgs.append("복귀 조건(켜진 축 1개 이하 · 20일선 위 · 단기 변동성 진정)이 충족되었습니다.")
 if msgs:
     lines = [f"- {m}" for m in msgs]
-    lines.append(f"\n현재: 20일 변동성 {pv(status['rv20'])} · 하방 변동성 {pv(status['down20'])} · 나스닥100 {status['ndx']:,.0f} "
-                 f"(20일선 {status['ma20']:,.0f}, 50일선 {status['ma50']:,.0f})")
-    lines.append('상태: ' + ' · '.join(f"{v['name']} {NAME[v['regime']]}" for v in status['presets'].values()))
+    lines.append(f"\n현재: 기술 {status['votes']}/4축 · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · "
+                 f"주봉 RSI {status['rsiw']} · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}")
+    lines.append('상태: ' + ' · '.join(f"{v['name']} {NAME[v['regime']]}" for v in status['rules'].values()))
+    lines.append('실행: 신호가 켜진 다음 거래일 종가에 매매합니다 (복귀 후 40거래일 안에는 3축 이상일 때만 이탈).')
     lines.append(f"데이터 출처: {', '.join(used)}")
     open(P('alert.md'), 'w').write(f"**{last} 종가 기준**\n\n" + '\n'.join(lines) + '\n')
 print(json.dumps(status, ensure_ascii=False))
