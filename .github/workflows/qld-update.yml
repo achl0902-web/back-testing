@@ -1,0 +1,78 @@
+name: qld-daily-update
+
+on:
+  schedule:
+    # 22:30 UTC Mon-Fri = 07:30 KST Tue-Sat, after the US close
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ["qld/src/**", "qld/scripts/**", "qld/data/base.json", "*.html", ".github/workflows/**"]
+
+permissions:
+  contents: write
+  issues: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: qld-daily-update
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install data library
+        run: pip install --quiet yfinance pandas
+
+      - name: Build QLD page with latest closes
+        working-directory: qld
+        run: python3 scripts/build.py
+
+      - name: Save daily status
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qld/data/status.json
+          git diff --cached --quiet || git commit -m "qld status: $(python3 -c 'import json;print(json.load(open("qld/data/status.json"))["date"])')"
+          git push || echo "push skipped"
+
+      - name: Open alert issue
+        if: hashFiles('qld/alert.md') != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="[QLD 신호] $(python3 -c 'import json;s=json.load(open("qld/data/status.json"));print(s["date"], "20일 변동성", round(s["rv20"]*100,1), "%")')"
+          gh issue create --title "$TITLE" --body-file qld/alert.md || echo "issue skipped"
+
+      - name: Assemble site (existing pages at root, QLD page under /qld/)
+        run: |
+          mkdir -p _site/qld
+          find . -maxdepth 1 -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.png' -o -name '*.svg' \) -exec cp {} _site/ \;
+          cp -r qld/site/. _site/qld/
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

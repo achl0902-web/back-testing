@@ -1,0 +1,565 @@
+<title>QLD 변동성 적립 백테스터</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a trading-desk rulebook. Status strip, control sheet, result ledger, three stacked charts, event log. */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --sunken: #eef1f5; --fg: #121820; --muted: #59616f; --faint: #8a919d; --line: #dfe3e9;
+  --accent: #1f5fc4; --accent-ink: #ffffff;
+  --s-strat: #2a78d6; --s-dca: #eb6834; --s-paid: #8a919d;
+  --good: #16794a; --good-bg: #e3f3ea; --warn: #9a6400; --warn-bg: #fbf0d9; --bad: #c2312f; --bad-bg: #fbe6e5;
+  --band-out: rgba(194, 49, 47, 0.10); --band-staged: rgba(201, 133, 0, 0.12); --sel-fill: rgba(31, 95, 196, 0.12);
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1116; --surface: #161b22; --sunken: #1c222b; --fg: #e7eaef; --muted: #a3abb8; --faint: #747d8b; --line: #2a313b;
+  --accent: #5b93ea; --accent-ink: #0e1116;
+  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695;
+  --good: #4cc48a; --good-bg: #13291f; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #ef6b68; --bad-bg: #2d1717;
+  --band-out: rgba(239, 107, 104, 0.13); --band-staged: rgba(226, 166, 59, 0.14); --sel-fill: rgba(91, 147, 234, 0.16);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1116; --surface: #161b22; --sunken: #1c222b; --fg: #e7eaef; --muted: #a3abb8; --faint: #747d8b; --line: #2a313b;
+  --accent: #5b93ea; --accent-ink: #0e1116;
+  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695;
+  --good: #4cc48a; --good-bg: #13291f; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #ef6b68; --bad-bg: #2d1717;
+  --band-out: rgba(239, 107, 104, 0.13); --band-staged: rgba(226, 166, 59, 0.14); --sel-fill: rgba(91, 147, 234, 0.16);
+  color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+h1 { font-size: 1.55rem; font-weight: 700; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 1.02rem; font-weight: 600; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 68ch; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.status { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill.in { color: var(--good); background: var(--good-bg); }
+.pill.out { color: var(--bad); background: var(--bad-bg); }
+.pill.staged { color: var(--warn); background: var(--warn-bg); }
+.status p { margin: 0; color: var(--muted); }
+.status strong { color: var(--fg); }
+.layout { display: grid; grid-template-columns: 330px 1fr; gap: 18px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+.controls { display: grid; gap: 16px; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
+legend { padding: 0; margin-bottom: 4px; }
+.field { display: grid; gap: 4px; }
+.field label, .rowlab { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.field label b, .rowlab b { color: var(--fg); font-weight: 500; font-family: var(--f-num); }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+select { width: 100%; font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); color: var(--fg); }
+input[type=number] { width: 100%; font: inherit; font-family: var(--f-num); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); color: var(--fg); }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.brush { position: relative; height: 88px; border-radius: 8px; background: var(--sunken); overflow: hidden; }
+.brush canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.brush input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none; }
+.brush input::-webkit-slider-runnable-track { background: transparent; height: 88px; }
+.brush input::-moz-range-track { background: transparent; }
+.brush input::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 20px; height: 88px; cursor: ew-resize; border: 0; background: linear-gradient(90deg, transparent 7px, var(--accent) 7px 13px, transparent 13px); }
+.brush input::-moz-range-thumb { pointer-events: auto; width: 20px; height: 88px; cursor: ew-resize; border: 0; border-radius: 0; background: linear-gradient(90deg, transparent 7px, var(--accent) 7px 13px, transparent 13px); }
+.brush input:focus-visible { outline: none; }
+.brush input:focus-visible::-webkit-slider-thumb { box-shadow: inset 0 0 0 2px var(--fg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.chip:hover { border-color: var(--accent); color: var(--fg); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.btn { font: inherit; font-weight: 600; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--sunken); color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.hint { font-size: 0.78rem; color: var(--faint); margin: 0; }
+.results { display: grid; gap: 18px; min-width: 0; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; color: var(--muted); font-weight: 400; }
+thead th { font-size: 0.75rem; letter-spacing: 0.04em; color: var(--faint); font-weight: 600; }
+td.num { font-family: var(--f-num); }
+@media (max-width: 520px) { th, td { padding: 7px 6px; } table { font-size: 0.82rem; } }
+.pos { color: var(--good); } .neg { color: var(--bad); }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 2px; display: inline-block; }
+.legend i.box { height: 10px; width: 12px; border-radius: 2px; }
+.cv { position: relative; width: 100%; height: 260px; }
+.cv.short { height: 180px; }
+.cv.spark { height: 150px; }
+.cv canvas { width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 0.78rem; box-shadow: 0 4px 14px rgba(0,0,0,0.12); white-space: nowrap; z-index: 3; }
+.tip .d { color: var(--faint); font-family: var(--f-num); margin-bottom: 2px; }
+.tip .r { display: flex; justify-content: space-between; gap: 12px; }
+.tip .r b { font-family: var(--f-num); font-weight: 500; }
+.log { max-height: 420px; overflow-y: auto; border-top: 1px solid var(--line); }
+.ev { display: grid; grid-template-columns: 92px 78px 1fr; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: 0.85rem; align-items: baseline; }
+.ev .d { font-family: var(--f-num); color: var(--muted); }
+.ev .t { font-size: 0.72rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; justify-self: start; }
+.t.exit { color: var(--bad); background: var(--bad-bg); }
+.t.reentry { color: var(--good); background: var(--good-bg); }
+.t.staged { color: var(--warn); background: var(--warn-bg); }
+.t.tax, .t.year, .t.harvest { color: var(--muted); background: var(--sunken); }
+.ev .m { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .ev { grid-template-columns: 84px 1fr; } .ev .m { grid-column: 1 / -1; } }
+details summary { cursor: pointer; font-weight: 600; }
+details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">나스닥100 2배 · 주간 적립 · 세후 원화 기준</div>
+    <h1>QLD 변동성 적립 백테스터</h1>
+    <p class="sub">매주 QLD를 사되, 나스닥100의 20일 실현변동성이 높아지면 SGOV로 피했다가 단계적으로 돌아오는 규칙을 단순 적립과 비교합니다. 해외주식 양도세(선입선출, 연 250만원 공제, 22%), 원/달러 환율, 수수료, 연말 하베스팅을 모두 반영합니다.</p>
+  </header>
+
+  <section class="panel nowpanel" aria-live="polite">
+    <div class="status">
+      <span id="nowPill" class="pill in">보유</span>
+      <p id="nowText">계산 중…</p>
+    </div>
+    <div class="chart-head" style="margin:14px 0 4px"><h2>최근 6개월 일별 변동성</h2><span class="hint">데이터 __LASTDATE__ 종가까지 · 페이지 갱신 __BUILT__</span></div>
+    <div class="cv spark" id="cvSpark"><canvas aria-label="최근 6개월 일별 변동성 차트" role="img"></canvas></div>
+  </section>
+
+  <div class="layout">
+    <form class="panel controls" id="ctl" autocomplete="off">
+      <fieldset>
+        <legend><h2>기간</h2></legend>
+        <div class="rowlab"><span>시작 <b id="lblStart"></b></span><span>종료 <b id="lblEnd"></b></span></div>
+        <div class="brush" id="brush">
+          <canvas aria-hidden="true"></canvas>
+          <input type="range" id="rStart" aria-label="시작 월">
+          <input type="range" id="rEnd" aria-label="종료 월">
+        </div>
+        <p class="hint">뒤 배경은 나스닥100(로그). 양끝 손잡이를 끌어 기간을 고르세요.</p>
+        <div class="chips" id="presets">
+          <button type="button" class="chip" data-p="1986-01">1986~</button>
+          <button type="button" class="chip" data-p="1995-01">1995~</button>
+          <button type="button" class="chip" data-p="1999-03">1999~</button>
+          <button type="button" class="chip" data-p="2009-01">2009~</button>
+          <button type="button" class="chip" data-p="-10">최근 10년</button>
+          <button type="button" class="chip" data-p="-5">최근 5년</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><h2>적립</h2></legend>
+        <div class="field"><label for="weekly">주간 적립액 <b id="lblWeekly"></b></label>
+          <input type="range" id="weekly" min="10" max="300" step="5" value="70"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend><h2>변동성 규칙</h2></legend>
+        <label class="toggle" for="strategy">규칙 사용 (끄면 단순 적립과 동일) <input type="checkbox" id="strategy" checked></label>
+        <div class="field"><label for="preset">전략 프리셋</label>
+          <select id="preset">
+            <option value="def">방어형 · 변동성 35% 이탈, 단계 복귀</option>
+            <option value="bal">균형형 · 변동성 35% & 50일선 아래 이탈, 50일선 회복 시 복귀</option>
+            <option value="reb">반등형 · 변동성 40% & 20일선 아래 이탈, 20일선 회복 시 복귀</option>
+            <option value="custom">직접 설정</option>
+          </select></div>
+        <div class="field"><label for="maGate">이평선 조건 (이탈은 아래일 때만, 회복하면 복귀)</label>
+          <select id="maGate"><option value="0">사용 안 함</option><option value="20">20일선</option><option value="50">50일선</option><option value="100">100일선</option><option value="200">200일선</option></select></div>
+        <div class="field"><label for="volMeasure">변동성 측정 방식</label>
+          <select id="volMeasure">
+            <option value="rv20">20일 변동성 (오르내림 모두)</option>
+            <option value="down20">20일 하방 변동성 (하락일만)</option>
+            <option value="rv10">10일 변동성 (더 빠름)</option>
+          </select></div>
+        <div class="field"><label for="volHi">이탈: 20일 변동성 초과 <b id="lblVolHi"></b></label>
+          <input type="range" id="volHi" min="20" max="60" step="1" value="35"></div>
+        <div class="field"><label for="exitFrac">이탈 시 매도 비율 <b id="lblExitFrac"></b></label>
+          <input type="range" id="exitFrac" min="10" max="100" step="5" value="100"></div>
+        <div class="field"><label for="volHi2">나머지 매도: 변동성 초과 <b id="lblVolHi2"></b></label>
+          <input type="range" id="volHi2" min="0" max="70" step="1" value="0"></div>
+        <div class="field"><label for="volLo">전량 복귀: 20일 변동성 미만 <b id="lblVolLo"></b></label>
+          <input type="range" id="volLo" min="10" max="45" step="1" value="25"></div>
+        <div class="field"><label for="peak">단계 복귀: 이탈 후 최고치의 <b id="lblPeak"></b></label>
+          <input type="range" id="peak" min="50" max="95" step="1" value="67"></div>
+        <div class="field"><label for="refrac">단계 복귀 비율 <b id="lblRefrac"></b></label>
+          <input type="range" id="refrac" min="0" max="100" step="1" value="33"></div>
+        <div class="field"><label for="park">이탈 중 QQQ 대기 비율 (나머지 SGOV) <b id="lblPark"></b></label>
+          <input type="range" id="park" min="0" max="100" step="5" value="0"></div>
+        <label class="toggle" for="weeklyCheck">주 1회만 확인 (끄면 매일 종가 확인) <input type="checkbox" id="weeklyCheck"></label>
+        <label class="toggle" for="harvest">연말 비과세 한도 하베스팅 <input type="checkbox" id="harvest" checked></label>
+      </fieldset>
+
+      <fieldset>
+        <legend><h2>비용·세금</h2></legend>
+        <div class="field"><label for="fee">매매 수수료 (편도) <b id="lblFee"></b></label>
+          <input type="range" id="fee" min="0" max="0.5" step="0.01" value="0.1"></div>
+        <div class="field"><label for="fxs">환전 스프레드 <b id="lblFxs"></b></label>
+          <input type="range" id="fxs" min="0" max="1" step="0.05" value="0.1"></div>
+        <div class="field"><label for="taxRate">양도세율 (지방세 포함) <b id="lblTax"></b></label>
+          <input type="range" id="taxRate" min="0" max="33" step="0.5" value="22"></div>
+        <div class="field"><label for="deduct">연 기본공제 (만원)</label>
+          <input type="number" id="deduct" min="0" step="50" value="250"></div>
+      </fieldset>
+      <button type="button" class="btn" id="reset">추천 설정으로 되돌리기</button>
+      <p class="hint">되돌리기는 방어형 프리셋(20일 변동성 · 매일 종가 확인 · 35% 이탈 · 25% 복귀 · 최고치의 67%에서 1/3 복귀 · 하베스팅)으로 맞춥니다.</p>
+    </form>
+
+    <div class="results">
+      <section class="panel">
+        <div class="chart-head"><h2>결과 비교</h2><span class="hint" id="periodNote"></span></div>
+        <div class="tablewrap"><table id="kpi">
+          <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span>변동성 규칙</th><th scope="col"><span class="key" style="background:var(--s-dca)"></span>단순 적립</th><th scope="col">차이</th></tr></thead>
+          <tbody></tbody></table></div>
+        <p class="hint" style="margin-top:8px">연환산 수익률은 적립 시점과 금액을 반영한 내부수익률(IRR)입니다. CAGR과 MDD는 입출금 영향을 뺀 시간가중 수익률 지수 기준이고, 평가액 낙폭은 원화 평가금액 기준입니다. 세후 청산가치는 마지막 날 전량 매도 후 세금까지 뺀 금액입니다.</p>
+      </section>
+
+      <section class="panel">
+        <div class="chart-head"><h2>세 전략 한눈에</h2><span class="hint">같은 기간·적립액·비용 기준</span></div>
+        <div class="tablewrap"><table id="cmp">
+          <thead><tr><th scope="col">전략</th><th scope="col">연환산(IRR)</th><th scope="col">세후 청산</th><th scope="col">MDD</th><th scope="col">원금 대비 최악</th><th scope="col">이탈</th></tr></thead>
+          <tbody></tbody></table></div>
+        <p class="hint" style="margin-top:8px">방어형은 길게 끄는 하락장(2000~02, 2008)에 강하고, 반등형은 급락 후 V자 반등(2020, 2025)에 강합니다. 균형형은 그 사이입니다. 1986년 이후 모든 5·10년 적립 구간에서 단순 적립보다 높았던 비율은 각각 50%, 53%, 49%였습니다.</p>
+      </section>
+
+      <section class="panel">
+        <div class="chart-head"><h2>평가액</h2>
+          <div class="chips"><button type="button" class="chip" id="logBtn" aria-pressed="true">로그 축</button></div></div>
+        <div class="legend"><span><i style="background:var(--s-strat)"></i>변동성 규칙</span><span><i style="background:var(--s-dca)"></i>단순 적립</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span></div>
+        <div class="cv" id="cvValue"><canvas aria-label="평가액 추이 차트" role="img"></canvas></div>
+      </section>
+
+      <section class="panel">
+        <div class="chart-head"><h2>낙폭 (시간가중)</h2></div>
+        <div class="legend"><span><i style="background:var(--s-strat)"></i>변동성 규칙</span><span><i style="background:var(--s-dca)"></i>단순 적립</span></div>
+        <div class="cv short" id="cvDD"><canvas aria-label="낙폭 차트" role="img"></canvas></div>
+      </section>
+
+      <section class="panel">
+        <div class="chart-head"><h2>나스닥100 변동성과 이탈 구간</h2></div>
+        <div class="legend"><span><i style="background:var(--fg)"></i>선택한 변동성 (연환산)</span><span><i class="box" style="background:var(--band-out);outline:1px solid var(--bad)"></i>이탈 (SGOV)</span><span><i class="box" style="background:var(--band-staged);outline:1px solid var(--warn)"></i>단계 복귀</span></div>
+        <div class="cv short" id="cvVol"><canvas aria-label="변동성과 이탈 구간 차트" role="img"></canvas></div>
+      </section>
+
+      <section class="panel">
+        <div class="chart-head"><h2>이벤트 로그</h2><span class="hint" id="logCount"></span></div>
+        <div class="chips" id="logFilter" style="margin-bottom:10px">
+          <button type="button" class="chip" data-t="exit" aria-pressed="true">이탈</button>
+          <button type="button" class="chip" data-t="staged" aria-pressed="true">단계 복귀</button>
+          <button type="button" class="chip" data-t="reentry" aria-pressed="true">전량 복귀</button>
+          <button type="button" class="chip" data-t="tax" aria-pressed="true">세금 납부</button>
+          <button type="button" class="chip" data-t="harvest" aria-pressed="false">하베스팅</button>
+          <button type="button" class="chip" data-t="year" aria-pressed="false">연간 정산</button>
+        </div>
+        <div class="log" id="log"></div>
+      </section>
+
+      <details class="panel">
+        <summary>데이터와 가정</summary>
+        <ul>
+          <li>데이터: 1985년 10월 ~ __LASTDATE__ 나스닥100 일간 종가, QQQ 배당 포함 수익률(1999년 3월 이전은 지수 + 연 0.3%로 근사), 미국 3개월 국채금리, 원/달러 일간 환율(FRED H.10).</li>
+          <li>QLD 수익률: QQQ 일간 수익률의 2배 − (3개월 금리 + 0.5%)의 차입비용 − 연 0.95% 보수. 같은 방식의 3배 버전은 2010~2026년 실제 TQQQ와 연복리 42.4% 대 42.5%로 맞습니다. QLD 상장(2006년) 이전 구간은 이 합성값입니다.</li>
+          <li>SGOV: 3개월 국채금리 − 0.1%, 분배금에 배당소득세 15.4%를 뗀 뒤 재투자.</li>
+          <li>매매: 신호는 종가 기준, 체결은 다음 거래일 종가. 적립은 매주 첫 거래일, 원화를 환전 스프레드를 내고 달러로 바꿔 매수합니다.</li>
+          <li>세금: 종목별 선입선출로 원화 취득가 대비 양도차익 계산, QLD와 QQQ 손익 통산, 연 기본공제 차감 후 세율 적용, 다음 해 6월 계좌의 SGOV(부족하면 QQQ, QLD 순서로 매도)에서 납부.</li>
+          <li>하베스팅: 12월 마지막 거래일에 남은 공제 한도만큼 차익이 나도록 오래된 물량부터 팔고 즉시 재매수. 손실만 실현돼 공제가 낭비되는 경우는 건너뜁니다.</li>
+          <li>자동 갱신: GitHub Actions가 평일 아침(한국시간 07:30 무렵) 전날 미국 종가를 Yahoo Finance에서 받아(실패하면 공개 GitHub 데이터 저장소) 이 페이지를 다시 만듭니다. 변동성이 30%를 넘거나 상태가 바뀌면 저장소에 알림 이슈를 엽니다.</li>
+          <li>과거 수익률은 미래를 보장하지 않습니다. 결과는 큰 하락장이 기간 안에 있는지에 따라 크게 달라집니다.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+const RAW = __DATA__;
+__ENGINE__
+</script>
+<script>
+(function () {
+  const D = prepData(RAW);
+  const $ = id => document.getElementById(id);
+  const toDate = d => new Date(d * 86400000);
+  const ymd = d => { const t = toDate(d); return `${t.getUTCFullYear()}.${String(t.getUTCMonth() + 1).padStart(2, '0')}.${String(t.getUTCDate()).padStart(2, '0')}`; };
+  const ym = d => { const t = toDate(d); return `${t.getUTCFullYear()}.${String(t.getUTCMonth() + 1).padStart(2, '0')}`; };
+  const krw = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; if (a >= 1e8) return s + (a / 1e8).toFixed(a >= 1e10 ? 0 : 2) + '억원'; return s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
+  const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
+  const VNAME = { rv20: '20일 변동성', down20: '20일 하방 변동성', rv10: '10일 변동성' };
+  const axisKrw = v => { const t = v >= 1e8 ? v / 1e8 : v / 1e4; const s = Number.isInteger(Math.round(t * 100) / 100) ? Math.round(t).toLocaleString('ko-KR') : (Math.round(t * 10) / 10).toLocaleString('ko-KR'); return s + (v >= 1e8 ? '억' : '만'); };
+
+  // month list
+  const months = []; // {y,m, i0, i1}
+  { let cur = null;
+    for (let i = 0; i < D.n; i++) { const t = toDate(D.day[i]); const key = t.getUTCFullYear() * 12 + t.getUTCMonth();
+      if (!cur || cur.key !== key) { cur = { key, y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, i0: i, i1: i }; months.push(cur); } else cur.i1 = i; } }
+  while (months.length && isNaN(D.rv[months[0].i0])) months.shift();
+  const rS = $('rStart'), rE = $('rEnd');
+  [rS, rE].forEach(r => { r.min = 0; r.max = months.length - 1; r.step = 1; });
+  const mIdx = s => { const [y, m] = s.split('-').map(Number); const k = months.findIndex(o => o.y === y && o.m === m); return k < 0 ? 0 : k; };
+  const DEF_UI = { start: '1999-03', weekly: 70, volHi: 35, exitFrac: 100, volHi2: 0, volLo: 25, peak: 67, refrac: 33, park: 0, weeklyCheck: false, volMeasure: 'rv20', maGate: 0, preset: 'def', harvest: true, strategy: true, fee: 0.1, fxs: 0.1, taxRate: 22, deduct: 250 };
+  function setDefaults() {
+    rS.value = mIdx(DEF_UI.start); rE.value = months.length - 1;
+    for (const k of ['weekly', 'volHi', 'exitFrac', 'volHi2', 'volLo', 'peak', 'refrac', 'park', 'fee', 'fxs', 'taxRate', 'deduct']) $(k === 'taxRate' ? 'taxRate' : k).value = DEF_UI[k];
+    $('volMeasure').value = DEF_UI.volMeasure; $('maGate').value = DEF_UI.maGate; $('preset').value = DEF_UI.preset; $('weeklyCheck').checked = DEF_UI.weeklyCheck; $('harvest').checked = DEF_UI.harvest; $('strategy').checked = DEF_UI.strategy;
+  }
+  setDefaults();
+
+  function params() {
+    return {
+      weeklyKRW: +$('weekly').value * 10000, volHi: +$('volHi').value / 100, volLo: +$('volLo').value / 100,
+      exitFrac: +$('exitFrac').value / 100, volHi2: +$('volHi2').value ? +$('volHi2').value / 100 : null,
+      peakRatio: +$('peak').value / 100, reentryFrac: +$('refrac').value / 100, parkQQQ: +$('park').value / 100,
+      weeklyCheck: $('weeklyCheck').checked, volMeasure: $('volMeasure').value, maGate: +$('maGate').value, harvest: $('harvest').checked, strategy: $('strategy').checked,
+      fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100, taxRate: +$('taxRate').value / 100,
+      deduct: Math.max(0, +$('deduct').value || 0) * 10000,
+    };
+  }
+  function labels(p) {
+    $('lblWeekly').textContent = (p.weeklyKRW / 10000) + '만원 (연 ' + Math.round(p.weeklyKRW * 52 / 10000).toLocaleString('ko-KR') + '만원)';
+    $('lblVolHi').textContent = pct(p.volHi, 0); $('lblVolLo').textContent = pct(p.volLo, 0);
+    $('lblExitFrac').textContent = p.exitFrac >= 0.999 ? '전량' : pct(p.exitFrac, 0);
+    $('volHi2').disabled = p.exitFrac >= 0.999; $('lblVolHi2').textContent = (p.exitFrac >= 0.999 || p.volHi2 == null) ? '사용 안 함' : pct(p.volHi2, 0);
+    $('lblPeak').textContent = pct(p.peakRatio, 0) + ' 아래'; $('lblRefrac').textContent = pct(p.reentryFrac, 0);
+    $('lblPark').textContent = pct(p.parkQQQ, 0); $('lblFee').textContent = (p.fee * 100).toFixed(2) + '%';
+    $('lblFxs').textContent = (p.fxSpread * 100).toFixed(2) + '%'; $('lblTax').textContent = (p.taxRate * 100).toFixed(1) + '%';
+    const a = +rS.value, b = +rE.value, M = months.length - 1;
+    $('lblStart').textContent = `${months[a].y}.${String(months[a].m).padStart(2, '0')}`;
+    $('lblEnd').textContent = `${months[b].y}.${String(months[b].m).padStart(2, '0')}`;
+    drawBrush();
+  }
+
+  // ---------- canvas chart ----------
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function makeChart(host, opts) {
+    const cv = host.querySelector('canvas'); const ctx = cv.getContext('2d');
+    const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; host.appendChild(tip);
+    const st = { data: null, hover: -1 };
+    function geom() {
+      const w = host.clientWidth, h = host.clientHeight;
+      return { w, h, l: opts.padL || 58, r: 10, t: 10, b: 24 };
+    }
+    function draw() {
+      const g = geom(); const dpr = window.devicePixelRatio || 1;
+      cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, g.w, g.h);
+      const d = st.data; if (!d || d.x.length < 2) return;
+      const pw = g.w - g.l - g.r, ph = g.h - g.t - g.b;
+      const x0 = d.x[0], x1 = d.x[d.x.length - 1];
+      const X = v => g.l + (v - x0) / (x1 - x0) * pw;
+      let lo = Infinity, hi = -Infinity;
+      for (const s of d.series) for (const v of s.v) if (isFinite(v) && (!d.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      if (d.yMin != null) lo = d.yMin; if (d.yMax != null) hi = Math.max(hi, d.yMax);
+      for (const hl of d.hlines || []) hi = Math.max(hi, hl.y * 1.08);
+      if (!(hi > lo)) { hi = lo + 1; }
+      const tf = d.log ? Math.log10 : (v => v);
+      const L0 = tf(lo), L1 = tf(hi) + (d.log ? 0.04 : (hi - lo) * 0.04);
+      const Y = v => g.t + ph - (tf(v) - L0) / (L1 - L0) * ph;
+      const cFaint = css('--faint'), cLine = css('--line'), cMuted = css('--muted');
+      // bands
+      for (const b of d.bands || []) { ctx.fillStyle = css(b.color); ctx.fillRect(X(b.from), g.t, Math.max(1, X(b.to) - X(b.from)), ph); }
+      // y grid
+      ctx.font = '11px ' + css('--f-num'); ctx.fillStyle = cFaint; ctx.strokeStyle = cLine; ctx.lineWidth = 1; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      let ticks = [];
+      if (d.log) { const e0 = Math.floor(L0), e1 = Math.ceil(L1); for (let e = e0; e <= e1; e++) for (const m of [1, 2, 5]) { const v = m * Math.pow(10, e); if (tf(v) >= L0 && tf(v) <= L1) ticks.push(v); }
+        if (ticks.length > 7) ticks = ticks.filter(v => Math.abs(Math.log10(v) % 1) < 1e-9 || Math.abs(Math.log10(v) % 1 - Math.log10(3)) < 0.0); if (ticks.length < 2) ticks = [lo, hi]; }
+      else { const span = hi - lo, raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(k => k * mag).find(s => span / s <= 5);
+        for (let v = Math.ceil(lo / step) * step; v <= L1 + 1e-12; v += step) ticks.push(v); }
+      for (const v of ticks) { const y = Y(v); ctx.beginPath(); ctx.moveTo(g.l, y + 0.5); ctx.lineTo(g.w - g.r, y + 0.5); ctx.stroke(); ctx.fillText(d.yfmt(v), g.l - 6, y); }
+      // x ticks: years
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      const ys = toDate(x0).getUTCFullYear(), ye = toDate(x1).getUTCFullYear(); const span = ye - ys;
+      const maxLab = Math.max(2, Math.floor(pw / 44));
+      const ticksX = [];
+      if ((x1 - x0) < 600) { const nm = Math.round((x1 - x0) / 30.4); const stepM = [1, 2, 3, 6].find(s => nm / s <= maxLab) || 6;
+        const t0 = toDate(x0); for (let k = 1; k <= nm + 1; k++) { const y = t0.getUTCFullYear(), mo = t0.getUTCMonth() + k; const dd = Date.UTC(y, mo, 1) / 86400000; const tm = toDate(dd).getUTCMonth(); if (tm % stepM) continue; if (dd < x0 || dd > x1) continue; ticksX.push([dd, tm === 0 ? String(toDate(dd).getUTCFullYear()) : (tm + 1) + '월']); } }
+      else { const stepY = [1, 2, 5, 10].find(s => span / s <= maxLab) || 10;
+        for (let y = Math.ceil(ys / stepY) * stepY; y <= ye; y += stepY) { const dd = Date.UTC(y, 0, 1) / 86400000; if (dd < x0 || dd > x1) continue; ticksX.push([dd, String(y)]); } }
+      for (const [dd, lab] of ticksX) { const x = X(dd); ctx.fillStyle = cFaint; ctx.fillText(lab, x, g.t + ph + 6); ctx.strokeStyle = cLine; ctx.beginPath(); ctx.moveTo(x + 0.5, g.t + ph); ctx.lineTo(x + 0.5, g.t + ph + 4); ctx.stroke(); }
+      // hlines
+      for (const hl of d.hlines || []) { const y = Y(hl.y); ctx.strokeStyle = css(hl.color); ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(g.l, y); ctx.lineTo(g.w - g.r, y); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = css(hl.color); ctx.textAlign = 'right'; ctx.textBaseline = hl.below ? 'top' : 'bottom'; ctx.fillText(hl.label, g.w - g.r - 2, hl.below ? y + 2 : y - 2); }
+      // zero/baseline
+      if (!d.log && lo <= 0 && hi >= 0) { ctx.strokeStyle = cMuted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(g.l, Y(0) + 0.5); ctx.lineTo(g.w - g.r, Y(0) + 0.5); ctx.stroke(); }
+      // series
+      ctx.save(); ctx.beginPath(); ctx.rect(g.l, g.t, pw, ph); ctx.clip();
+      for (const s of d.series) {
+        ctx.strokeStyle = css(s.color); ctx.lineWidth = s.w || 2; ctx.lineJoin = 'round'; ctx.setLineDash(s.dash || []);
+        ctx.beginPath(); let started = false;
+        for (let k = 0; k < d.x.length; k++) { const v = s.v[k]; if (!isFinite(v) || (d.log && v <= 0)) { started = false; continue; } const px = X(d.x[k]), py = Y(v); if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py); }
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.restore();
+      // hover
+      if (st.hover >= 0) { const k = st.hover, px = X(d.x[k]);
+        ctx.strokeStyle = cMuted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px + 0.5, g.t); ctx.lineTo(px + 0.5, g.t + ph); ctx.stroke();
+        for (const s of d.series) { const v = s.v[k]; if (!isFinite(v) || (d.log && v <= 0)) continue; ctx.fillStyle = css(s.color); ctx.strokeStyle = css('--surface'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, Y(v), 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+        tip.innerHTML = `<div class="d">${ymd(d.x[k])}</div>` + d.series.filter(s => s.name).map(s => `<div class="r"><span><span class="key" style="background:${css(s.color)}"></span>${s.name}</span><b>${d.tfmt(s.v[k])}</b></div>`).join('') + (d.extra ? d.extra(k) : '');
+        tip.hidden = false; const tw = tip.offsetWidth; let left = px + 12; if (left + tw > g.w) left = px - tw - 12; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = (g.t + 4) + 'px';
+      } else tip.hidden = true;
+      st.geom = { g, X, x0, x1, pw };
+    }
+    function pick(ev) {
+      const d = st.data, gm = st.geom; if (!d || !gm) return;
+      const rect = cv.getBoundingClientRect(); const mx = ev.clientX - rect.left;
+      if (mx < gm.g.l || mx > gm.g.w - gm.g.r) { st.hover = -1; draw(); return; }
+      const xv = gm.x0 + (mx - gm.g.l) / gm.pw * (gm.x1 - gm.x0);
+      let lo = 0, hi = d.x.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (d.x[m] < xv) lo = m + 1; else hi = m; }
+      if (lo > 0 && Math.abs(d.x[lo - 1] - xv) < Math.abs(d.x[lo] - xv)) lo--;
+      st.hover = lo; draw();
+    }
+    cv.addEventListener('pointermove', pick); cv.addEventListener('pointerdown', pick);
+    cv.addEventListener('pointerleave', () => { st.hover = -1; draw(); });
+    new ResizeObserver(() => draw()).observe(host);
+    return { set(data) { st.data = data; st.hover = -1; draw(); }, draw };
+  }
+  const chV = makeChart($('cvValue'), { padL: 64 }), chD = makeChart($('cvDD'), { padL: 52 }), chVol = makeChart($('cvVol'), { padL: 52 });
+  let logScale = true;
+  $('logBtn').addEventListener('click', e => { logScale = !logScale; e.currentTarget.setAttribute('aria-pressed', String(logScale)); render(); });
+
+  // ---------- period brush ----------
+  const brushHost = $('brush'), bcv = brushHost.querySelector('canvas'), bctx = bcv.getContext('2d');
+  const mPx = months.map(o => D.px[o.i1]);
+  function drawBrush() {
+    const w = brushHost.clientWidth, h = brushHost.clientHeight, dpr = window.devicePixelRatio || 1; if (!w) return;
+    bcv.width = Math.round(w * dpr); bcv.height = Math.round(h * dpr); bctx.setTransform(dpr, 0, 0, dpr, 0, 0); bctx.clearRect(0, 0, w, h);
+    const M = months.length - 1, tw = 20, X = k => tw / 2 + k / M * (w - tw);
+    const lo = Math.log10(Math.min(...mPx)), hi = Math.log10(Math.max(...mPx)), Y = v => 8 + (1 - (Math.log10(v) - lo) / (hi - lo)) * (h - 26);
+    const a = +rS.value, b = +rE.value;
+    const path = (k0, k1) => { bctx.beginPath(); for (let k = k0; k <= k1; k++) { const x = X(k), y = Y(mPx[k]); k === k0 ? bctx.moveTo(x, y) : bctx.lineTo(x, y); } };
+    // full series faint
+    path(0, M); bctx.strokeStyle = css('--faint'); bctx.lineWidth = 1.25; bctx.stroke();
+    // selected area + line
+    path(a, b); bctx.lineTo(X(b), h - 18); bctx.lineTo(X(a), h - 18); bctx.closePath(); bctx.fillStyle = css('--sel-fill'); bctx.fill();
+    path(a, b); bctx.strokeStyle = css('--accent'); bctx.lineWidth = 2; bctx.stroke();
+    // year labels
+    bctx.font = '10px ' + css('--f-num'); bctx.fillStyle = css('--faint'); bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
+    const step = w < 360 ? 10 : 5;
+    months.forEach((o, k) => { if (o.m === 1 && o.y % step === 0) bctx.fillText(String(o.y), X(k), h - 3); });
+  }
+  new ResizeObserver(drawBrush).observe(brushHost);
+  const chSpark = makeChart($('cvSpark'), { padL: 44 });
+  function renderSpark(p) {
+    const n0 = Math.max(0, D.n - 126), x = [], v = [];
+    const VS = D.vols[p.volMeasure] || D.rv; for (let i = n0; i < D.n; i++) { x.push(D.day[i]); v.push(VS[i]); }
+    chSpark.set({ x, log: false, yMin: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1),
+      hlines: [{ y: p.volHi, label: `이탈 ${pct(p.volHi, 0)}`, color: '--bad' }, { y: p.volLo, label: `복귀 ${pct(p.volLo, 0)}`, color: '--good', below: true }],
+      series: [{ name: VNAME[p.volMeasure], color: '--fg', v, w: 1.75 }] });
+  }
+
+  // ---------- presets ----------
+  const PRESETS = {
+    def: { name: '방어형', ui: { volHi: 35, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 33, maGate: 0, volMeasure: 'rv20' } },
+    bal: { name: '균형형', ui: { volHi: 35, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 0, maGate: 50, volMeasure: 'rv20' } },
+    reb: { name: '반등형', ui: { volHi: 40, volLo: 25, exitFrac: 100, volHi2: 0, peak: 67, refrac: 0, maGate: 20, volMeasure: 'rv20' } },
+  };
+  const presetParams = (base, key) => { const u = PRESETS[key].ui; return Object.assign({}, base, { strategy: true, volHi: u.volHi / 100, volLo: u.volLo / 100, exitFrac: 1, volHi2: null, peakRatio: u.peak / 100, reentryFrac: u.refrac / 100, maGate: u.maGate, volMeasure: u.volMeasure, parkQQQ: 0 }); };
+  function applyPreset(key) { if (!PRESETS[key]) return; for (const [k, v] of Object.entries(PRESETS[key].ui)) $(k).value = v; }
+  $('preset').addEventListener('change', () => applyPreset($('preset').value));
+  const RULE_IDS = ['volHi', 'volLo', 'exitFrac', 'volHi2', 'peak', 'refrac', 'maGate', 'volMeasure', 'park'];
+  RULE_IDS.forEach(id => $(id).addEventListener('input', () => { $('preset').value = 'custom'; }));
+  function renderCompare(p, i0, i1) {
+    const rows = [['def'], ['bal'], ['reb']].map(([k]) => [PRESETS[k].name, runBT(D, i0, i1, presetParams(p, k), false)]);
+    rows.push(['단순 적립', runBT(D, i0, i1, Object.assign({}, p, { strategy: false }), false)]);
+    const best = Math.max(...rows.map(r => r[1].irr));
+    $('cmp').querySelector('tbody').innerHTML = rows.map(([n, r]) => `<tr><th scope="row">${n}</th><td class="num${r.irr === best ? ' pos' : ''}">${pct(r.irr)}</td><td class="num">${krw(r.finalAfter)}</td><td class="num">${pct(r.mddTwr, 0)}</td><td class="num">${pct(r.worstVsPaid, 0)}</td><td class="num">${r.exits}회</td></tr>`).join('');
+  }
+
+  // ---------- render ----------
+  let last = null;
+  const logOn = { exit: true, staged: true, reentry: true, tax: true, harvest: false, year: false };
+  const TYPE = { exit: '이탈', staged: '단계 복귀', reentry: '전량 복귀', tax: '세금 납부', harvest: '하베스팅', year: '연간 정산' };
+  function renderLog() {
+    if (!last) return; const evs = last.S.log.filter(e => logOn[e.type]).slice().reverse();
+    $('logCount').textContent = `${evs.length}건 표시`;
+    $('log').innerHTML = evs.length ? evs.map(e => `<div class="ev"><span class="d">${ymd(e.d)}</span><span class="t ${e.type}">${TYPE[e.type]}</span><span class="m">${e.msg}</span></div>`).join('')
+      : '<p class="hint" style="padding:12px 2px">선택한 종류의 이벤트가 이 기간에 없어요.</p>';
+  }
+  document.querySelectorAll('#logFilter .chip').forEach(b => b.addEventListener('click', () => { const t = b.dataset.t; logOn[t] = !logOn[t]; b.setAttribute('aria-pressed', String(logOn[t])); renderLog(); }));
+
+  function row(name, a, b, fmt, diff, better) {
+    let dtxt = '', cls = '';
+    if (diff != null) { const dv = diff(a, b); dtxt = dv.txt; if (better) cls = dv.v === 0 ? '' : ((dv.v > 0) === (better === 'up') ? 'pos' : 'neg'); }
+    return `<tr><th scope="row">${name}</th><td class="num">${fmt(a)}</td><td class="num">${fmt(b)}</td><td class="num ${cls}">${dtxt}</td></tr>`;
+  }
+  const dPct = (a, b) => ({ v: a - b, txt: ((a - b) >= 0 ? '+' : '−') + Math.abs((a - b) * 100).toFixed(1) + '%p' });
+  const dKrw = (a, b) => ({ v: a - b, txt: ((a - b) >= 0 ? '+' : '') + krw(a - b) });
+  const dInt = (a, b) => ({ v: a - b, txt: ((a - b) >= 0 ? '+' : '−') + Math.abs(a - b) });
+
+  function render() {
+    const p = params(); labels(p);
+    let a = +rS.value, b = +rE.value; if (b - a < 12) { if (document.activeElement === rS) { a = Math.max(0, b - 12); rS.value = a; } else { b = Math.min(months.length - 1, a + 12); rE.value = b; } labels(p); }
+    const i0 = months[a].i0, i1 = months[b].i1;
+    const S = runBT(D, i0, i1, p, true), B = runBT(D, i0, i1, Object.assign({}, p, { strategy: false }), false);
+    last = { S, B, i0, i1, p };
+    const yrs = (D.day[i1] - D.day[i0]) / 365.25;
+    $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])} · ${yrs.toFixed(1)}년 · 납입 ${krw(S.contributed)}`;
+    const rows = [
+      row('세후 청산가치', S.finalAfter, B.finalAfter, krw, dKrw, 'up'),
+      row('수익 배수 (세후 ÷ 납입)', S.finalAfter / S.contributed, B.finalAfter / B.contributed, v => v.toFixed(2) + '배', (x, y) => ({ v: x - y, txt: ((x - y) >= 0 ? '+' : '−') + Math.abs(x - y).toFixed(2) }), 'up'),
+      row('연환산 수익률 (IRR)', S.irr, B.irr, v => pct(v), dPct, 'up'),
+      row('CAGR (시간가중)', S.twrCagr, B.twrCagr, v => pct(v), dPct, 'up'),
+      row('MDD (시간가중)', S.mddTwr, B.mddTwr, v => pct(v, 0), dPct, 'up'),
+      row('평가액 최대 낙폭', S.mddValue, B.mddValue, v => pct(v, 0), dPct, 'up'),
+      row('원금 대비 최악', S.worstVsPaid, B.worstVsPaid, v => pct(v, 0), dPct, 'up'),
+      row('기간 중 낸 양도세', S.taxesPaid, B.taxesPaid, krw, dKrw, 'down'),
+      row('청산 시 세금', S.liqTax, B.liqTax, krw, dKrw, 'down'),
+      row('이탈 횟수', S.exits, B.exits, v => v + '회', dInt, null),
+    ];
+    $('kpi').querySelector('tbody').innerHTML = rows.join('');
+    // weekly sample points
+    const idx = []; for (let i = i0; i <= i1; i++) if (i === i1 || D.week[i + 1] !== D.week[i]) idx.push(i);
+    const x = idx.map(i => D.day[i]);
+    const pickA = arr => idx.map(i => arr[i - i0]);
+    chV.set({ x, log: logScale, yfmt: axisKrw, tfmt: krw,
+      series: [{ name: '납입 원금', color: '--s-paid', v: pickA(S.contr), dash: [5, 4], w: 1.5 }, { name: '단순 적립', color: '--s-dca', v: pickA(B.vals) }, { name: '변동성 규칙', color: '--s-strat', v: pickA(S.vals) }] });
+    const ddOf = tw => { let pk = 0; return Array.from(tw, v => { pk = Math.max(pk, v); return v / pk - 1; }); };
+    const ddS = ddOf(S.twr), ddB = ddOf(B.twr);
+    chD.set({ x, log: false, yMax: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1),
+      series: [{ name: '단순 적립', color: '--s-dca', v: pickA(ddB) }, { name: '변동성 규칙', color: '--s-strat', v: pickA(ddS) }] });
+    // bands from exposure
+    const bands = []; let cur = null;
+    for (const i of idx) { const e = S.expo[i - i0]; const kind = !p.strategy ? null : e < 0.02 ? '--band-out' : e < 0.98 ? '--band-staged' : null;
+      if (kind && cur && cur.color === kind) cur.to = D.day[i]; else { if (cur) bands.push(cur); cur = kind ? { from: D.day[i], to: D.day[i], color: kind } : null; } }
+    if (cur) bands.push(cur);
+    chVol.set({ x, log: false, yMin: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1), bands,
+      hlines: [{ y: p.volHi, label: `이탈 ${pct(p.volHi, 0)}`, color: '--bad' }, { y: p.volLo, label: `복귀 ${pct(p.volLo, 0)}`, color: '--good', below: true }],
+      series: [{ name: VNAME[p.volMeasure], color: '--fg', v: idx.map(i => (D.vols[p.volMeasure] || D.rv)[i]), w: 1.5 }],
+      extra: k => { const e = S.expo[idx[k] - i0]; return `<div class="r"><span>QLD 비중</span><b>${pct(e, 0)}</b></div>`; } });
+    renderLog();
+    renderNow(p); renderSpark(p); renderCompare(p, i0, i1);
+  }
+  function renderNow(p) {
+    const iL = D.n - 1, rv = (D.vols[p.volMeasure] || D.rv)[iL];
+    const R = runBT(D, months[0].i0, iL, Object.assign({}, p, { strategy: true }), false);
+    const pill = $('nowPill'); const st = R.regime;
+    pill.className = 'pill ' + st; pill.textContent = st === 'in' ? 'QLD 보유' : st === 'out' ? '이탈 중' : '단계 복귀 중';
+    const exitTxt = p.exitFrac >= 0.999 ? '전량' : pct(p.exitFrac, 0) + '를';
+    const MA = p.maGate ? D.ma[p.maGate][iL] : null, px = D.px[iL];
+    const maTxt = MA ? ` 나스닥100은 ${p.maGate}일선(${Math.round(MA).toLocaleString('ko-KR')})보다 ${pct(px / MA - 1)} ${px >= MA ? '위' : '아래'}에 있습니다.` : '';
+    const cond = `${VNAME[p.volMeasure]}이 <strong>${pct(p.volHi, 0)}</strong>를 ` + (MA ? `넘고 지수가 ${p.maGate}일선 아래에 있는` : '넘는');
+    const back = (MA ? `지수가 ${p.maGate}일선 위로 올라서거나 ` : '') + `변동성이 <strong>${pct(p.volLo, 0)}</strong> 아래로 내려오면 전부 QLD로 옮깁니다.`;
+    let next = st === 'in'
+      ? `${cond} ${p.weeklyCheck ? '금요일이 오면' : '날이 오면'} 다음 거래일에 QLD ${exitTxt} SGOV로 옮깁니다.` + (rv > p.volHi && (!MA || px < MA) ? ' <strong>오늘 종가가 이미 이 조건에 해당합니다.</strong>' : '')
+      : st === 'out' ? ((p.reentryFrac > 0 ? `변동성이 이탈 후 최고치 ${pct(R.vpk)}의 ${pct(p.peakRatio, 0)}(${pct(R.vpk * p.peakRatio)}) 아래로 내려오면 ${pct(p.reentryFrac, 0)}를 QLD로 옮기고, ` : '') + back)
+      : back;
+    next += maTxt;
+    $('nowText').innerHTML = `<strong>${ymd(D.day[iL])} 종가 기준</strong> 나스닥100 ${VNAME[p.volMeasure]}은 <strong class="num">${pct(rv)}</strong>입니다. ${next} <span class="hint">(현재 설정으로 1985년부터 규칙을 적용했을 때의 상태)</span>`;
+  }
+
+  let timer = 0; const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 60); };
+  $('ctl').addEventListener('input', schedule); $('ctl').addEventListener('change', schedule);
+  $('ctl').addEventListener('submit', e => e.preventDefault());
+  document.querySelectorAll('#presets .chip').forEach(btn => btn.addEventListener('click', () => {
+    const v = btn.dataset.p; const M = months.length - 1;
+    if (v.startsWith('-')) { rS.value = Math.max(0, M - (+v.slice(1)) * 12 + 1); rE.value = M; } else { rS.value = mIdx(v); rE.value = M; }
+    render();
+  }));
+  $('reset').addEventListener('click', () => { setDefaults(); render(); });
+  const redraw = () => { chV.draw(); chD.draw(); chVol.draw(); chSpark.draw(); drawBrush(); };
+  try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
+  new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
+  render();
+})();
+</script>
