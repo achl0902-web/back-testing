@@ -108,10 +108,21 @@ td.num { font-family: var(--f-num); }
 .t.tax, .t.year, .t.harvest { color: var(--muted); background: var(--sunken); }
 .ev .m { min-width: 0; overflow-wrap: anywhere; }
 #aux td:last-child, #aux th.lefthead { text-align: left; white-space: normal; min-width: 220px; color: var(--muted); font-size: 0.82rem; }
+.fn { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--sunken); }
+.fn summary { cursor: pointer; font-weight: 600; }
+.fn h3 { font-size: 0.9rem; margin: 14px 0 6px; }
+.fn ol { margin: 0; padding-left: 1.6em; }
+.fn li { margin: 0 0 10px; line-height: 1.55; scroll-margin-top: 16px; }
+.fn li.on, .fn li:target { background: var(--warn-bg); border-radius: 4px; }
+.fn li b { display: block; }
+.fn li span { display: block; color: var(--muted); font-size: 0.86rem; }
+.fn li span em { font-style: normal; font-weight: 600; color: var(--fg); }
+.sigs sup a { text-decoration: none; font-size: 0.7rem; margin-left: 2px; color: var(--accent, var(--fg)); }
 .sigs th[scope=row] { text-align: left; white-space: normal; font-weight: 500; } .sigs td:nth-child(3) { color: var(--muted); } #axTable th[scope=row] { white-space: nowrap; }
 .sigs th { text-align: left; }
 .sigs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 @media (max-width: 860px) { .sigs { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { #axTable th:nth-child(3), #axTable td:nth-child(3) { display: none; } }
 .st { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
 .st.good { color: var(--good); background: var(--good-bg); } .st.warn { color: var(--warn); background: var(--warn-bg); } .st.bad { color: var(--bad); background: var(--bad-bg); } .st.mid { color: var(--muted); background: var(--sunken); }
 @media (max-width: 520px) { .ev { grid-template-columns: 84px 1fr; } .ev .m { grid-column: 1 / -1; } }
@@ -156,7 +167,11 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
         <thead><tr><th scope="col">매크로 지표</th><th scope="col">z점수</th><th scope="col">상태</th></tr></thead>
         <tbody></tbody></table></div>
     </div>
-    <p class="hint" style="margin-top:8px">기술 축은 4개 중 2개 이상이면 이탈 신호입니다. 매크로는 지표마다 자기 3년 평균 대비 표준편차(z점수)가 1을 넘으면 경보이고, 경보 비율이 기준을 새로 넘는 날 이탈 신호가 됩니다. 매크로는 이탈에만 쓰고 복귀는 기술 조건으로만 판단합니다. 각 지표는 발표 시차(시장 지표 1일, 주간 5~6일, 월간 36일)만큼 늦춰 반영합니다.</p>
+    <details class="fn" id="fnBox">
+      <summary>각 신호의 뜻과 의미 (번호를 누르면 해당 설명으로 이동)</summary>
+      <div class="fn-body" id="fnBody"></div>
+    </details>
+    <p class="hint" style="margin-top:8px">기술 축은 4개 중 2개 이상이면 이탈 신호입니다. 매크로는 지표마다 자기 3년 평균 대비 표준편차(z점수)가 1을 넘으면 경보이고, 경보 비율이 기준을 새로 넘는 날 이탈 신호가 됩니다. 매크로는 이탈에만 쓰고 복귀는 기술 조건으로만 판단합니다<sup><a href="#fn-ax4" data-fn="fn-ax4">ⓘ</a></sup>. 각 지표는 발표 시차(시장 지표 1일, 주간 5~6일, 월간 36일)만큼 늦춰 반영합니다.</p>
   </section>
 
   <section class="panel">
@@ -558,6 +573,50 @@ __ENGINE__
     const best = Math.max(...rows.map(r => r[1].irr));
     $('cmp').querySelector('tbody').innerHTML = rows.map(([n, r]) => `<tr><th scope="row">${n}</th><td class="num${r.irr === best ? ' pos' : ''}">${pct(r.irr)}</td><td class="num">${krw(r.finalAfter)}</td><td class="num">${pct(r.mddTwr, 0)}</td><td class="num">${pct(r.worstVsPaid, 0)}</td><td class="num">${r.exits}회</td></tr>`).join('');
   }
+  // ---------- signal footnotes ----------
+  const AX_NOTE = [
+    ['① 변동성 (하방·상방)', '최근 20거래일 중 떨어진 날의 움직임만으로 잰 변동성(하방)과 오른 날만으로 잰 변동성(상방)을 연 단위로 환산한 값입니다. 평소 나스닥100은 둘 다 15~20% 안팎입니다.',
+      '하방 변동성이 커지면 매도가 거세지고 있다는 뜻입니다. 상방 변동성 급등도 위험 신호인데, 큰 상승일은 하락장 속 급반등(2000·2008·2022)에 몰리기 때문입니다. 안정된 상승장은 상방 변동성이 낮습니다.',
+      '하방 30% 초과 또는 상방 35% 초과'],
+    ['② 급락', '나스닥100의 최근 10거래일 수익률입니다. QLD는 약 2배로 움직이므로 -8%면 QLD로 약 -16%입니다.',
+      '변동성 지표는 20일 평균이라 늦게 반응합니다. 짧고 깊은 급락(2020년 2월, 2025년 4월)을 그날 바로 잡는 역할입니다.',
+      '-8% 이하'],
+    ['③ 추세 (주봉 RSI)', '매주 금요일 종가로 최근 14주 상승폭과 하락폭의 비율을 0~100으로 나타낸 값입니다. 50 아래면 하락이 우세합니다.',
+      '느리지만 몇 달씩 이어지는 하락장(2000~02, 2008, 2022)을 잡는 축입니다. 변동성이 크지 않게 천천히 빠지는 장을 놓치지 않게 해 줍니다.',
+      '45 미만'],
+    ['④ 급팽창', '최근 10일 변동성이 지난 60일 변동성의 몇 배인지입니다. 1배 근처가 평소 상태입니다.',
+      '변동성 절대 수준이 아직 낮아도, 조용하던 시장이 갑자기 요동치기 시작하는 국면 전환을 일찍 잡습니다.',
+      '1.6배 초과'],
+    ['복귀 조건', '켜진 기술 축이 1개 이하이고, 나스닥100이 20일 이동평균 위에 있고, 10일 변동성이 60일 변동성보다 낮을 때 전량 QLD로 돌아갑니다.',
+      '가격이 단기 추세를 되찾고 흔들림이 가라앉았는지를 함께 봅니다. 매크로 지표는 바닥에서 늦게 풀려(2020년엔 저점 대비 +53%에서야 해제) 복귀에는 쓰지 않습니다.',
+      '세 조건 모두 충족'],
+  ];
+  const MC_NOTE = {
+    baa: ['무디스 BAA 등급(투자등급 최하단) 회사채 금리에서 10년 국채 금리를 뺀 값입니다. 기업이 돈을 빌릴 때 붙는 위험 프리미엄입니다.', '채권시장이 기업 부도 위험을 더 크게 볼수록 올라갑니다. 신용 경색은 주가 하락과 같이 오거나 먼저 옵니다.'],
+    baa3m: ['위 BAA 스프레드가 최근 3개월(63거래일) 동안 얼마나 벌어졌는지입니다.', '수준보다 변화가 빠릅니다. 스프레드가 짧은 기간에 급히 벌어지면 신용 경색이 시작되고 있다는 뜻입니다.'],
+    dflt: ['BAA 회사채 금리에서 AAA(최고 등급) 회사채 금리를 뺀 값입니다.', '금리 수준의 영향을 빼고 순수한 부도 위험만 봅니다. 침체 때 크게 오릅니다.'],
+    curve: ['10년 국채와 3개월 국채의 금리 차가 최근 3개월 동안 얼마나 커졌는지입니다.', '장단기 금리 역전 자체는 1~2년 너무 일찍 나옵니다. 역전 뒤 차이가 빠르게 다시 벌어지는 시점(재가팽창)이 연준의 급한 인하와 함께 침체 직전에 자주 나타났습니다(2001, 2007, 2020).'],
+    cut: ['연방기금금리가 최근 6개월 동안 얼마나 내려갔는지입니다.', '연준이 급하게 금리를 내린다는 것은 경기나 금융시장에 문제가 생겼다는 뜻입니다. 2001년과 2007~08년 인하 국면에 주가가 크게 빠졌습니다.'],
+    stl: ['세인트루이스 연준이 금리·스프레드·변동성 등 18개 주간 지표를 묶어 만든 금융스트레스 지수입니다. 0이 평균입니다. 매주 발표되어 약 6일 늦게 반영합니다.', '금융시장 전반의 긴장도를 한 숫자로 보여 줍니다.'],
+    nfcir: ['시카고 연준 금융여건지수(NFCI) 중 위험 하위지수입니다. 신용 위험과 변동성 관련 지표를 모은 것으로 0보다 크면 평균보다 빡빡합니다. 주간, 약 5일 늦게 반영합니다.', '자금 조달 여건이 나빠지는지를 넓게 봅니다.'],
+    ted: ['3개월 은행 간 금리(LIBOR)에서 3개월 국채 금리를 뺀 값입니다.', '은행끼리 서로를 얼마나 못 믿는지를 보여 주며 2008년에 폭등했습니다. LIBOR 폐지로 2022년에 끝나 지금은 자료가 없고, 나머지 지표만으로 경보 비율을 계산합니다.'],
+    vterm: ['S&P500의 30일 예상 변동성(VIX)을 3개월 예상 변동성(VIX3M)으로 나눈 값입니다.', '평소에는 1보다 작습니다(먼 미래를 더 불확실하게 봄). 1을 넘으면 지금 당장의 공포가 더 크다는 뜻, 즉 급성 패닉입니다.'],
+    claims: ['신규 실업수당 청구 건수 4주 평균이 1년 전보다 얼마나 늘었는지입니다. 주간, 약 5일 늦게 반영합니다.', '해고가 늘기 시작하는 것을 가장 빨리 보여 주는 고용 지표입니다.'],
+    sahm: ['실업률 3개월 평균이 지난 12개월 최저치보다 몇 %p 높은지입니다(실시간 삼의 법칙).', '0.5 이상이면 경기침체 시작과 거의 일치해 왔습니다. 월간 지표라 발표·반영이 약 36일 늦습니다.'],
+    dxy: ['달러지수(주요 6개 통화 대비 달러)의 6개월 상승률입니다.', '달러 급등은 세계적인 자금 경색과 위험 회피(달러 사재기)를 뜻합니다. 2008년과 2022년에 크게 올랐습니다.'],
+    small: ['러셀2000(소형주)을 S&P500(대형주)으로 나눈 비율이 6개월 동안 얼마나 떨어졌는지입니다.', '소형주는 경기와 대출 여건에 민감합니다. 소형주가 먼저 뒤처지면 시장의 위험 선호가 약해지고 있다는 뜻입니다.'],
+    cugold: ['구리 가격을 금 가격으로 나눈 비율이 6개월 동안 얼마나 떨어졌는지입니다.', '구리는 경기 금속, 금은 안전자산입니다. 비율이 떨어지면 시장이 경기 둔화를 반영하고 있다는 뜻입니다.'],
+  };
+  function renderFootnotes() {
+    const ax = AX_NOTE.map(([n, what, why, th], k) => `<li id="fn-ax${k}"><b>${n}</b><span><em>뜻</em> ${what}</span><span><em>의미</em> ${why}</span><span><em>기준</em> ${th}</span></li>`).join('');
+    const mc = MNOW.map((m, k) => { const N = MC_NOTE[m.k] || ['', '']; return `<li id="fn-mc${k}"><b>${m.l}</b><span><em>뜻</em> ${N[0]}</span><span><em>의미</em> ${N[1]}</span><span><em>읽는 법</em> ${m.h}</span></li>`; }).join('');
+    $('fnBody').innerHTML = `<h3>기술 축</h3><ol>${ax}</ol><h3>매크로 지표</h3><ol>${mc}</ol>
+      <p class="hint">z점수 = (오늘 값 − 지난 3년 평균) ÷ 지난 3년 표준편차. 지표마다 단위가 달라 이렇게 맞춥니다. +1을 넘으면 평소보다 확연히 위험한 쪽이라 경보, 0.5~1은 주의입니다. 위험 방향(높을수록 위험인지 낮을수록 위험인지)은 수익률에 맞추지 않고 경제적 의미로 미리 정했습니다.</p>`;
+  }
+  const fnLink = id => `<sup><a href="#${id}" data-fn="${id}">ⓘ</a></sup>`;
+  document.addEventListener('click', e => { const a = e.target.closest('a[data-fn]'); if (!a) return; e.preventDefault(); $('fnBox').open = true;
+    const el = $(a.dataset.fn); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); history.replaceState(null, '', '#' + a.dataset.fn);
+      document.querySelectorAll('.fn li.on').forEach(x => x.classList.remove('on')); el.classList.add('on'); } });
   // ---------- today's signals ----------
   function renderSignals() {
     const tp = paramsFor('final', baseParams()), j = D.n - 1, ax = axesAt(D, tp, j), S = (c, t) => `<span class="st ${c}">${t}</span>`;
@@ -567,9 +626,9 @@ __ENGINE__
       ['③ 추세', `RSI ${D.rsiw[j].toFixed(1)}`, `주봉 ${tp.rsiW} 미만`, ax[2]],
       ['④ 급팽창', `${(D.vols.rv10[j] / D.v60[j]).toFixed(2)}배`, `${tp.expand.toFixed(1)}배 초과`, ax[3]],
     ];
-    $('axTable').querySelector('tbody').innerHTML = rows.map(([a, b, c, on]) => `<tr><th scope="row">${a}</th><td class="num">${b}</td><td>${c}</td><td>${on ? S('bad', '켜짐') : S('good', '꺼짐')}</td></tr>`).join('');
+    $('axTable').querySelector('tbody').innerHTML = rows.map(([a, b, c, on], k) => `<tr><th scope="row">${a}${fnLink('fn-ax' + k)}</th><td class="num">${b}</td><td>${c}</td><td>${on ? S('bad', '켜짐') : S('good', '꺼짐')}</td></tr>`).join('');
     const ms = D.ms[j], on = MNOW.filter(m => m.z != null && m.z > 1).length, avail = MNOW.filter(m => m.z != null).length;
-    $('mcTable').querySelector('tbody').innerHTML = MNOW.map(m => `<tr><th scope="row" title="${m.h}">${m.l}</th><td class="num">${m.z == null ? '–' : (m.z >= 0 ? '+' : '') + m.z.toFixed(2)}</td><td>${m.z == null ? S('mid', '자료 없음') : m.z > 1 ? S('bad', '경보') : m.z > 0.5 ? S('warn', '주의') : S('good', '평온')}</td></tr>`).join('');
+    $('mcTable').querySelector('tbody').innerHTML = MNOW.map((m, k) => `<tr><th scope="row" title="${m.h}">${m.l}${fnLink('fn-mc' + k)}</th><td class="num">${m.z == null ? '–' : (m.z >= 0 ? '+' : '') + m.z.toFixed(2)}</td><td>${m.z == null ? S('mid', '자료 없음') : m.z > 1 ? S('bad', '경보') : m.z > 0.5 ? S('warn', '주의') : S('good', '평온')}</td></tr>`).join('');
     $('sigNote').textContent = `${ymd(D.day[j])} 종가 · 기술 ${ax.reduce((s, v) => s + v, 0)}/4축 · 매크로 경보 ${isNaN(ms) ? '–' : Math.round(ms * 100) + '%'} (${on}/${avail})`;
   }
 
@@ -672,6 +731,7 @@ __ENGINE__
   try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
   new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
+  renderFootnotes();
   render();
 })();
 </script>
