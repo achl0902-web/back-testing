@@ -24,6 +24,8 @@ jobs:
       - name: Install data library
         run: pip install --quiet yfinance pandas
       - name: Download macro series (FRED + Yahoo)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python3 qld/scripts/fetch_macro.py
       - name: Commit
         run: |

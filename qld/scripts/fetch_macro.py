@@ -5,7 +5,7 @@ FRED (public CSV, no key) for credit, rates, stress and labour series;
 Yahoo Finance (yfinance) for market-based series such as the semiconductor index.
 Run from the repository root: python3 qld/scripts/fetch_macro.py
 """
-import csv, datetime as dt, io, os, sys, time, urllib.request
+import csv, datetime as dt, io, os, sys, time, urllib.request, urllib.error
 
 OUT = os.path.join('qld', 'data', 'macro')
 os.makedirs(OUT, exist_ok=True)
@@ -48,6 +48,49 @@ for s in FRED:
         if done:
             break
     fails = 0 if done else fails + 1
+
+# ---------- direct official sources (not via FRED) ----------
+DIRECT = {
+    'DOL_claims_ar539.csv': 'https://oui.doleta.gov/unemploy/csv/ar539.csv',
+    'CHICAGOFED_nfci.csv': 'https://www.chicagofed.org/-/media/publications/nfci/nfci-data-series-csv.csv',
+}
+for fn, url in DIRECT.items():
+    try:
+        code, body = get(url)
+        if code == 200 and len(body) > 1000:
+            open(os.path.join(OUT, fn), 'w').write(body)
+            log.append(f'DIRECT {fn}: ok {len(body)} bytes head={body[:100]!r}')
+        else:
+            log.append(f'DIRECT {fn}: bad {code} {len(body)} bytes')
+    except Exception as e:
+        log.append(f'DIRECT {fn}: {type(e).__name__} {str(e)[:120]}')
+
+# ---------- FRED API (needs a free key in the FRED_API_KEY secret) ----------
+KEY = os.environ.get('FRED_API_KEY', '').strip()
+try:
+    probe = 'https://api.stlouisfed.org/fred/series?series_id=GNPCA&file_type=json&api_key=' + (KEY or 'x' * 32)
+    req = urllib.request.Request(probe, headers=UA)
+    try:
+        with urllib.request.urlopen(req, timeout=25) as r:
+            log.append(f'FRED API probe: reachable {r.status}')
+    except urllib.error.HTTPError as e:
+        log.append(f'FRED API probe: reachable (HTTP {e.code}, key {"set" if KEY else "missing"})')
+except Exception as e:
+    log.append(f'FRED API probe: {type(e).__name__} {str(e)[:120]}')
+if KEY:
+    import json as _json
+    for s in FRED:
+        if os.path.exists(os.path.join(OUT, f'{s}.csv')):
+            continue
+        try:
+            u = f'https://api.stlouisfed.org/fred/series/observations?series_id={s}&file_type=json&api_key={KEY}'
+            with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60) as r:
+                obs = _json.loads(r.read())['observations']
+            with open(os.path.join(OUT, f'{s}.csv'), 'w') as f:
+                f.write('observation_date,' + s + '\n' + ''.join(f"{o['date']},{o['value'] if o['value'] != '.' else ''}\n" for o in obs))
+            log.append(f'FRED-API {s}: ok {len(obs)} rows {obs[0]["date"]}..{obs[-1]["date"]}')
+        except Exception as e:
+            log.append(f'FRED-API {s}: {type(e).__name__} {str(e)[:120]}')
 
 YAHOO = {'SOX': '^SOX', 'NDX': '^NDX', 'VIX': '^VIX', 'VIX3M': '^VIX3M', 'VXN': '^VXN', 'TNX': '^TNX', 'IRX': '^IRX',
          'FVX': '^FVX', 'TYX': '^TYX', 'HYG': 'HYG', 'LQD': 'LQD', 'IEF': 'IEF', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F',
