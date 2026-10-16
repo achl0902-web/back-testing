@@ -1,0 +1,44 @@
+name: macro-fetch
+
+# Downloads macro history from FRED into qld/data/macro/ (public data, no API key).
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: [".github/workflows/macro-fetch.yml"]
+  schedule:
+    # weekly refresh, Sunday 00:00 UTC
+    - cron: "0 0 * * 0"
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download FRED series
+        run: |
+          mkdir -p qld/data/macro
+          for s in BAA10Y AAA10Y BAMLH0A0HYM2 BAMLC0A0CM T10Y3M T10Y2Y DGS10 DGS2 DFF VIXCLS VXNCLS VXVCLS STLFSI4 NFCI ANFCI ICSA CCSA SAHMREALTIME DTWEXBGS DCOILWTICO UNRATE; do
+            ok=0
+            for try in 1 2 3; do
+              if curl -fsSL --retry 2 -A "Mozilla/5.0" "https://fred.stlouisfed.org/graph/fredgraph.csv?id=$s" -o "qld/data/macro/$s.csv.tmp"; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" = 1 ] && [ -s "qld/data/macro/$s.csv.tmp" ]; then
+              mv "qld/data/macro/$s.csv.tmp" "qld/data/macro/$s.csv"
+              echo "$s: $(wc -l < qld/data/macro/$s.csv) lines, $(sed -n 2p qld/data/macro/$s.csv) .. $(tail -1 qld/data/macro/$s.csv)"
+            else
+              rm -f "qld/data/macro/$s.csv.tmp"; echo "$s: FAILED"
+            fi
+          done
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qld/data/macro
+          git diff --cached --quiet || git commit -m "macro data: $(date -u +%Y-%m-%d)"
+          git pull --rebase -q origin main || true
+          git push || echo "push skipped"
