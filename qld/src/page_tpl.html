@@ -133,7 +133,7 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">나스닥100 2배 · 주간 적립 · 세후 원화 기준</div>
+    <div class="eyebrow">나스닥100 2배 · 적립식·거치식 · 세후 원화 기준</div>
     <h1>QLD 위험신호 적립 백테스터</h1>
     <p class="sub">매주 QLD를 사되, 기술적 위험 신호 4축 중 2개가 켜지거나 매크로 경보가 한꺼번에 번지면 SGOV로 피하고, 가격이 추세를 되찾고 변동성이 진정되면 돌아오는 규칙을 단순 적립과 비교합니다. 해외주식 양도세(선입선출, 연 250만원 공제, 22%), 원/달러 환율, 수수료, 연말 하베스팅을 모두 반영합니다.</p>
   </header>
@@ -204,14 +204,21 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       </fieldset>
 
       <fieldset>
-        <legend><h2>적립</h2></legend>
+        <legend><h2>투자금</h2></legend>
+        <div class="field"><label for="initial">처음 한 번에 넣는 거치금 (만원) <b id="lblInitial"></b></label>
+          <input type="number" id="initial" min="0" step="100" value="0" inputmode="numeric"></div>
+        <div class="chips" id="initChips">
+          <button type="button" class="chip" data-v="0">없음</button><button type="button" class="chip" data-v="1000">1천만</button><button type="button" class="chip" data-v="5000">5천만</button><button type="button" class="chip" data-v="10000">1억</button><button type="button" class="chip" data-v="50000">5억</button>
+        </div>
         <div class="field"><label for="weekly">주간 적립액 <b id="lblWeekly"></b></label>
-          <input type="range" id="weekly" min="10" max="300" step="5" value="70"></div>
+          <input type="range" id="weekly" min="0" max="300" step="5" value="70"></div>
+        <p class="hint" id="zeroNote" hidden style="color:var(--bad)">거치금이나 주간 적립액 중 하나는 0보다 커야 계산합니다.</p>
+        <p class="hint">적립액을 0으로 두면 거치금만 넣고 그대로 두는 거치식이 됩니다. 비교 기준도 적립이 없으면 ‘단순 보유’(처음 산 QLD를 끝까지 보유)로 바뀝니다.</p>
       </fieldset>
 
       <fieldset>
         <legend><h2>위험 신호 규칙</h2></legend>
-        <label class="toggle" for="strategy">규칙 사용 (끄면 단순 적립과 동일) <input type="checkbox" id="strategy" checked></label>
+        <label class="toggle" for="strategy">규칙 사용 (끄면 비교 기준과 동일) <input type="checkbox" id="strategy" checked></label>
         <div class="field"><label for="rule">전략</label>
           <select id="rule">
             <option value="final">최종 · 기술 4축 + 매크로 이탈 경보</option>
@@ -258,7 +265,7 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <section class="panel">
         <div class="chart-head"><h2>결과 비교</h2><span class="hint" id="periodNote"></span></div>
         <div class="tablewrap"><table id="kpi">
-          <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span>선택 전략</th><th scope="col"><span class="key" style="background:var(--s-dca)"></span>단순 적립</th><th scope="col">차이</th></tr></thead>
+          <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span>선택 전략</th><th scope="col"><span class="key" style="background:var(--s-dca)"></span><span class="bname">단순 적립</span></th><th scope="col">차이</th></tr></thead>
           <tbody></tbody></table></div>
         <p class="hint" style="margin-top:8px">연환산 수익률은 적립 시점과 금액을 반영한 내부수익률(IRR)입니다. CAGR과 MDD는 입출금 영향을 뺀 시간가중 수익률 지수 기준이고, 평가액 낙폭은 원화 평가금액 기준입니다. 세후 청산가치는 마지막 날 전량 매도 후 세금까지 뺀 금액입니다.</p>
       </section>
@@ -274,13 +281,13 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <section class="panel">
         <div class="chart-head"><h2>평가액</h2>
           <div class="chips"><button type="button" class="chip" id="logBtn" aria-pressed="true">로그 축</button></div></div>
-        <div class="legend"><span><i style="background:var(--s-strat)"></i>선택 전략</span><span><i style="background:var(--s-dca)"></i>단순 적립</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span></div>
+        <div class="legend"><span><i style="background:var(--s-strat)"></i>선택 전략</span><span><i style="background:var(--s-dca)"></i><span class="bname">단순 적립</span></span><span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span></div>
         <div class="cv" id="cvValue"><canvas aria-label="평가액 추이 차트" role="img"></canvas></div>
       </section>
 
       <section class="panel">
         <div class="chart-head"><h2>낙폭 (시간가중)</h2></div>
-        <div class="legend"><span><i style="background:var(--s-strat)"></i>선택 전략</span><span><i style="background:var(--s-dca)"></i>단순 적립</span></div>
+        <div class="legend"><span><i style="background:var(--s-strat)"></i>선택 전략</span><span><i style="background:var(--s-dca)"></i><span class="bname">단순 적립</span></span></div>
         <div class="cv short" id="cvDD"><canvas aria-label="낙폭 차트" role="img"></canvas></div>
       </section>
 
@@ -350,8 +357,8 @@ __ENGINE__
   const rS = $('rStart'), rE = $('rEnd');
   [rS, rE].forEach(r => { r.min = 0; r.max = months.length - 1; r.step = 1; });
   const mIdx = s => { const [y, m] = s.split('-').map(Number); const k = months.findIndex(o => o.y === y && o.m === m); return k < 0 ? 0 : k; };
-  const DEF_UI = { start: '1999-03', weekly: 70, rule: 'final', votes: 2, dnHi: 30, upHi: 35, crash: 8, rsiW: 45, expand: 1.6, hold: 40, useMacro: true, macroTh: 50, harvest: true, strategy: true, fee: 0.1, fxs: 0.1, taxRate: 22, deduct: 250 };
-  const RANGES = ['weekly', 'votes', 'dnHi', 'upHi', 'crash', 'rsiW', 'expand', 'hold', 'macroTh', 'fee', 'fxs', 'taxRate', 'deduct'];
+  const DEF_UI = { start: '1999-03', initial: 0, weekly: 70, rule: 'final', votes: 2, dnHi: 30, upHi: 35, crash: 8, rsiW: 45, expand: 1.6, hold: 40, useMacro: true, macroTh: 50, harvest: true, strategy: true, fee: 0.1, fxs: 0.1, taxRate: 22, deduct: 250 };
+  const RANGES = ['initial', 'weekly', 'votes', 'dnHi', 'upHi', 'crash', 'rsiW', 'expand', 'hold', 'macroTh', 'fee', 'fxs', 'taxRate', 'deduct'];
   function setDefaults() {
     rS.value = mIdx(DEF_UI.start); rE.value = months.length - 1;
     for (const k of RANGES) $(k).value = DEF_UI[k];
@@ -364,9 +371,10 @@ __ENGINE__
       rsiW: +$('rsiW').value, expand: +$('expand').value, hold: +$('hold').value, useMacro: $('useMacro').checked, macroTh: +$('macroTh').value / 100 };
   }
   function baseParams() {
-    return { weeklyKRW: +$('weekly').value * 10000, harvest: $('harvest').checked, fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100,
+    return { initialKRW: Math.max(0, +$('initial').value || 0) * 10000, weeklyKRW: +$('weekly').value * 10000, harvest: $('harvest').checked, fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100,
       taxRate: +$('taxRate').value / 100, deduct: Math.max(0, +$('deduct').value || 0) * 10000, weeklyCheck: false };
   }
+  const baseName = p => p.weeklyKRW > 0 ? (p.initialKRW > 0 ? '거치 + 단순 적립' : '단순 적립') : '단순 보유';
   function paramsFor(rule, base) {
     if (rule === 'vol') return Object.assign({}, DEFAULTS, base, VOL_RULE, { strategy: true });
     const t = techParams(); if (rule === 'tech') t.useMacro = false;
@@ -377,7 +385,10 @@ __ENGINE__
     return Object.assign(paramsFor(rule, base), { strategy: $('strategy').checked, _rule: rule });
   }
   function labels(p) {
-    $('lblWeekly').textContent = (p.weeklyKRW / 10000) + '만원 (연 ' + Math.round(p.weeklyKRW * 52 / 10000).toLocaleString('ko-KR') + '만원)';
+    $('lblWeekly').textContent = p.weeklyKRW > 0 ? (p.weeklyKRW / 10000) + '만원 (연 ' + Math.round(p.weeklyKRW * 52 / 10000).toLocaleString('ko-KR') + '만원)' : '적립 안 함 (거치식)';
+    $('lblInitial').textContent = p.initialKRW > 0 ? krw(p.initialKRW) : '없음';
+    document.querySelectorAll('.bname').forEach(el => { el.textContent = baseName(p); });
+    document.querySelectorAll('#initChips .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v * 10000 === p.initialKRW)));
     $('lblVotes').textContent = $('votes').value + '개 이상'; $('lblDnHi').textContent = $('dnHi').value + '% 초과'; $('lblUpHi').textContent = $('upHi').value + '% 초과';
     $('lblCrash').textContent = '-' + (+$('crash').value).toFixed(1) + '% 이상'; $('lblRsiW').textContent = $('rsiW').value; $('lblExpand').textContent = (+$('expand').value).toFixed(1) + '배 초과';
     $('lblHold').textContent = $('hold').value + '거래일'; $('lblMacroTh').textContent = $('macroTh').value + '%';
@@ -569,7 +580,7 @@ __ENGINE__
   function renderCompare(p, i0, i1) {
     const base = baseParams();
     const rows = [['최종 (기술 + 매크로 이탈)', 'final'], ['기술 4축만', 'tech'], ['이전 방어형 (변동성 35%)', 'vol']].map(([n, k]) => [n, runBT(D, i0, i1, paramsFor(k, base), false)]);
-    rows.push(['단순 적립', runBT(D, i0, i1, Object.assign({}, base, { strategy: false }), false)]);
+    rows.push([baseName(base), runBT(D, i0, i1, Object.assign({}, base, { strategy: false }), false)]);
     const best = Math.max(...rows.map(r => r[1].irr));
     $('cmp').querySelector('tbody').innerHTML = rows.map(([n, r]) => `<tr><th scope="row">${n}</th><td class="num${r.irr === best ? ' pos' : ''}">${pct(r.irr)}</td><td class="num">${krw(r.finalAfter)}</td><td class="num">${pct(r.mddTwr, 0)}</td><td class="num">${pct(r.worstVsPaid, 0)}</td><td class="num">${r.exits}회</td></tr>`).join('');
   }
@@ -657,6 +668,8 @@ __ENGINE__
     const p = params(); labels(p);
     let a = +rS.value, b = +rE.value; if (b - a < 12) { if (document.activeElement === rS) { a = Math.max(0, b - 12); rS.value = a; } else { b = Math.min(months.length - 1, a + 12); rE.value = b; } labels(p); }
     const i0 = months[a].i0, i1 = months[b].i1;
+    $('zeroNote').hidden = p.initialKRW > 0 || p.weeklyKRW > 0;
+    if (!(p.initialKRW > 0 || p.weeklyKRW > 0)) return;
     const S = runBT(D, i0, i1, p, true), B = runBT(D, i0, i1, Object.assign({}, p, { strategy: false }), false);
     last = { S, B, i0, i1, p };
     const yrs = (D.day[i1] - D.day[i0]) / 365.25;
@@ -679,11 +692,11 @@ __ENGINE__
     const x = idx.map(i => D.day[i]);
     const pickA = arr => idx.map(i => arr[i - i0]);
     chV.set({ x, log: logScale, yfmt: axisKrw, tfmt: krw,
-      series: [{ name: '납입 원금', color: '--s-paid', v: pickA(S.contr), dash: [5, 4], w: 1.5 }, { name: '단순 적립', color: '--s-dca', v: pickA(B.vals) }, { name: '선택 전략', color: '--s-strat', v: pickA(S.vals) }] });
+      series: [{ name: '납입 원금', color: '--s-paid', v: pickA(S.contr), dash: [5, 4], w: 1.5 }, { name: baseName(p), color: '--s-dca', v: pickA(B.vals) }, { name: '선택 전략', color: '--s-strat', v: pickA(S.vals) }] });
     const ddOf = tw => { let pk = 0; return Array.from(tw, v => { pk = Math.max(pk, v); return v / pk - 1; }); };
     const ddS = ddOf(S.twr), ddB = ddOf(B.twr);
     chD.set({ x, log: false, yMax: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1),
-      series: [{ name: '단순 적립', color: '--s-dca', v: pickA(ddB) }, { name: '선택 전략', color: '--s-strat', v: pickA(ddS) }] });
+      series: [{ name: baseName(p), color: '--s-dca', v: pickA(ddB) }, { name: '선택 전략', color: '--s-strat', v: pickA(ddS) }] });
     // bands from exposure
     const bands = []; let cur = null;
     for (const i of idx) { const e = S.expo[i - i0]; const kind = !p.strategy ? null : e < 0.02 ? '--band-out' : e < 0.98 ? '--band-staged' : null;
@@ -727,6 +740,7 @@ __ENGINE__
     render();
   }));
   $('reset').addEventListener('click', () => { setDefaults(); render(); });
+  document.querySelectorAll('#initChips .chip').forEach(btn => btn.addEventListener('click', () => { $('initial').value = btn.dataset.v; render(); }));
   const redraw = () => { chV.draw(); chD.draw(); chVol.draw(); chMac.draw(); chSpark.draw(); drawBrush(); };
   try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
   new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });

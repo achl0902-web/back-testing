@@ -203,10 +203,11 @@ function runBT(D, i0, i1, p, wantLog) {
     }
     // weekly contribution
     let flowToday = 0;
-    if (i === i0 || D.week[i] !== D.week[i - 1]) {
-      const usd = p.weeklyKRW / (D.fx[i] * (1 + p.fxSpread));
-      cash += usd; contributed += p.weeklyKRW; flowToday = p.weeklyKRW;
-      flows.push([D.day[i], -p.weeklyKRW]);
+    const inKRW = (i === i0 ? (p.initialKRW || 0) : 0) + ((i === i0 || D.week[i] !== D.week[i - 1]) ? p.weeklyKRW : 0);
+    if (inKRW > 0) {
+      const usd = inKRW / (D.fx[i] * (1 + p.fxSpread));
+      cash += usd; contributed += inKRW; flowToday = inKRW;
+      flows.push([D.day[i], -inKRW]);
       let toQ = 1, toP = 0;
       if (p.strategy && p.contribAlways) { toQ = 1; toP = 0; }
       else if (p.strategy && regime === 'out') { toQ = partial ? 1 - p.exitFrac : 0; toP = (1 - toQ) * p.parkQQQ; }
