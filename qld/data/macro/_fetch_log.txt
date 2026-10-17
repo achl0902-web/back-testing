@@ -1,4 +1,4 @@
-fetched 2026-10-17 02:30 UTC
+fetched 2026-10-17 02:39 UTC
 FRED BAA10Y: skipped after 3 consecutive failures
 FRED AAA10Y: skipped after 3 consecutive failures
 FRED BAMLH0A0HYM2: skipped after 3 consecutive failures
@@ -56,3 +56,9 @@ YAHOO COPPER HG=F: ok 6562 rows 2000-08-30..2026-10-16 (Adj Close)
 YAHOO GOLD GC=F: ok 6558 rows 2000-08-30..2026-10-16 (Adj Close)
 YAHOO RUT ^RUT: ok 9850 rows 1987-09-10..2026-10-16 (Adj Close)
 YAHOO SPX ^GSPC: ok 11794 rows 1980-01-02..2026-10-16 (Adj Close)
+YAHOO XLK XLK: ok 6997 rows 1998-12-22..2026-10-16 (Adj Close)
+YAHOO ROM ROM: ok 4959 rows 2007-02-01..2026-10-16 (Adj Close)
+YAHOO TECL TECL: ok 4477 rows 2008-12-30..2026-10-16 (Adj Close)
+YAHOO QQQ QQQ: ok 6945 rows 1999-03-10..2026-10-16 (Adj Close)
+YAHOO QLD QLD: ok 5113 rows 2006-06-21..2026-10-16 (Adj Close)
+YAHOO TQQQ TQQQ: ok 4196 rows 2010-02-11..2026-10-16 (Adj Close)
