@@ -92,6 +92,7 @@ if KEY:
 YAHOO = {'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC',
          # ETFs for the buy-and-hold comparison page (adjusted closes = total return before withholding)
          'XLK': 'XLK', 'ROM': 'ROM', 'TECL': 'TECL', 'QQQ': 'QQQ', 'QLD': 'QLD', 'TQQQ': 'TQQQ'}
+ETF_CLOSE = {'XLK', 'ROM', 'TECL', 'QQQ', 'QLD', 'TQQQ'}
 try:
     import yfinance as yf
     import pandas as pd
@@ -106,6 +107,9 @@ try:
             s = df[col].dropna()
             s.index = s.index.strftime('%Y-%m-%d')
             s.rename('value').to_csv(os.path.join(OUT, f'Y_{name}.csv'), index_label='date')
+            if name in ETF_CLOSE and 'Close' in df.columns:  # unadjusted close too, to recover dividends (adj/close ratio)
+                c = df['Close'].dropna(); c.index = c.index.strftime('%Y-%m-%d')
+                c.rename('value').to_csv(os.path.join(OUT, f'Y_{name}_C.csv'), index_label='date')
             log.append(f'YAHOO {name} {t}: ok {len(s)} rows {s.index[0]}..{s.index[-1]} ({col})')
         except Exception as e:
             log.append(f'YAHOO {name} {t}: {type(e).__name__} {str(e)[:120]}')
