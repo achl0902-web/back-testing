@@ -358,11 +358,11 @@ function holdBT(D, i0, i1, p) {
 // px: { hi: 3x prices, lo: 1x prices } in USD; average-cost basis in KRW; yearly tax on realized gains (deduction, rate),
 // paid at year end by selling both funds pro rata; final liquidation taxed once more.
 function mixBT(D, i0, i1, px, p) {
-  p = Object.assign({ initialKRW: 0, weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, taxRate: 0.22, deduct: 2500000, w: 0.5, reb: 'none', band: 0.5, check: 'd', levHi: 3, levLo: 1, target: 2, up: 2.3, lo: 1.7, relever: 'sgov', cashHaircut: 0.001, cashWht: 0.15 }, p);
+  p = Object.assign({ initialKRW: 0, weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, taxRate: 0.22, deduct: 2500000, w: 0.5, reb: 'none', band: 0.5, check: 'd', levHi: 3, levLo: 1, target: 2, up: 2.3, lo: 1.7, relever: 'sgov', expoBase: 'invested', cashHaircut: 0.001, cashWht: 0.15 }, p);
   const P = [px.hi, px.lo], LV = [p.levHi, p.levLo];
   const sh = [0, 0], basis = [0, 0]; // basis = total KRW cost of current shares
   const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1);
-  const flows = []; let cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
+  const flows = []; let nTrim = 0, nUp = 0, cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
   const log = [];
   const valUSD = i => sh[0] * P[0][i] + sh[1] * P[1][i] + cash;
   const expoAt = i => { const v = valUSD(i); return v > 0 ? (LV[0] * sh[0] * P[0][i] + LV[1] * sh[1] * P[1][i]) / v : p.target; };
@@ -398,16 +398,26 @@ function mixBT(D, i0, i1, px, p) {
     if (i > i0 && p.reb === 'sgov') {
       const chk = p.check === 'd' || (p.check === 'w' ? D.week[i] !== D.week[i - 1] : D.month[i] !== D.month[i - 1]);
       if (chk) {
-        const e = expoAt(i), v = valUSD(i);
-        if (e > p.up) { // trim the 3x fund back to the target, park the proceeds in SGOV
-          const x = (e - p.target) * v / LV[0]; const pr = sell(0, x, i); cash += pr; nReb++;
-          log.push({ d: D.day[i], type: 'down', msg: `노출 ${e.toFixed(2)}배 → ${p.target}배, SGOV로 ${pr.toFixed(0)}달러` });
-        } else if (e < p.lo) { // re-lever with SGOV first, then (optionally) by swapping the 1x fund into the 3x fund
-          const need = (p.target - e) * v / LV[0]; const fromCash = Math.min(cash, need);
-          if (fromCash > 0) buyCash(0, fromCash, i);
-          let rest = need - fromCash;
-          if (rest > 1e-9 && p.relever === 'full') { const pr = sell(1, rest * LV[0] / (LV[0] - LV[1]), i); buy(0, pr, i); }
-          if (fromCash > 0 || (rest > 1e-9 && p.relever === 'full')) { nReb++; log.push({ d: D.day[i], type: 'up', msg: `노출 ${e.toFixed(2)}배 → 다시 올림 (SGOV ${fromCash.toFixed(0)}달러 사용)` }); }
+        const T = sh[0] * P[0][i], Q = sh[1] * P[1][i], inv = T + Q, tau = p.target, kk = (tau - LV[1]) / (LV[0] - tau);
+        // 'invested': exposure of the TQQQ+QQQ part only (parked SGOV left out); 'total': whole account incl. SGOV
+        const e = p.expoBase === 'invested' ? (inv > 0 ? (LV[0] * T + LV[1] * Q) / inv : tau) : expoAt(i);
+        if (e > p.up) {
+          const x = p.expoBase === 'invested' ? T - kk * Q : (e - tau) * valUSD(i) / LV[0];
+          const pr = sell(0, x, i); cash += pr; nReb++; nTrim++;
+          log.push({ d: D.day[i], type: 'down', msg: `노출 ${e.toFixed(2)}배 → ${tau}배, TQQQ ${pr.toFixed(0)}달러를 SGOV로` });
+        } else if (e < p.lo) {
+          const need = p.expoBase === 'invested' ? kk * Q - T : (tau - e) * valUSD(i) / LV[0];
+          let fromCash = Math.min(cash, Math.max(0, need));
+          if (p.relever === 'all' && cash > 0) { // put every parked dollar back, split so the invested part sits at the target
+            const tt = kk / (1 + kk) * (inv + cash), yT = Math.min(cash, Math.max(0, tt - T)); fromCash = cash;
+            buyCash(0, yT, i); buyCash(1, cash, i);
+          } else if (fromCash > 0) buyCash(0, fromCash, i);
+          let swapped = 0;
+          if (p.relever === 'full' && need - fromCash > 1e-9) {
+            const z = p.expoBase === 'invested' ? (kk * Q - (T + fromCash)) / (1 + kk) : (need - fromCash) * LV[0] / (LV[0] - LV[1]);
+            if (z > 0) { const pr = sell(1, z, i); buy(0, pr, i); swapped = pr; }
+          }
+          if (fromCash > 0 || swapped > 0) { nReb++; nUp++; log.push({ d: D.day[i], type: 'up', msg: `노출 ${e.toFixed(2)}배 → ${tau}배로 다시 올림 (SGOV ${fromCash.toFixed(0)}달러${swapped > 0 ? `, QQQ→TQQQ ${swapped.toFixed(0)}달러` : ''})` }); }
         }
       }
     }
@@ -439,7 +449,7 @@ function mixBT(D, i0, i1, px, p) {
   }
   const yrs = (D.day[i1] - D.day[i0]) / 365.25;
   return { finalPre: vals[n1 - 1], finalAfter, liqTax, taxesPaid, contributed, irr: xirr(flows), twrCagr: Math.pow(twr[n1 - 1], 1 / yrs) - 1,
-    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, log, cashMax, cashEnd: cash, vals, contr, twr, expo, wT };
+    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, nTrim, nUp, log, cashMax, cashEnd: cash, vals, contr, twr, expo, wT };
 }
 
 function xirr(flows) {

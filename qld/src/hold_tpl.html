@@ -184,8 +184,10 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
         </select></div>
       <div class="field sgovBox"><label for="up">위 기준: 노출이 이보다 크면 2배로 줄이고 SGOV 보관 <b id="lblUp"></b></label><input type="range" id="up" min="2.1" max="2.9" step="0.05" value="2.5"></div>
       <div class="field sgovBox"><label for="lo">아래 기준: 노출이 이보다 작으면 2배로 다시 올림 <b id="lblLo"></b></label><input type="range" id="lo" min="1.3" max="1.9" step="0.05" value="1.65"></div>
+      <div class="field sgovBox"><label for="expoBase">노출 계산</label>
+        <select id="expoBase"><option value="total">계좌 전체 기준 (SGOV 포함, 기본)</option><option value="invested">투자분 기준 (SGOV 제외)</option></select></div>
       <div class="field sgovBox"><label for="relever">다시 올릴 돈</label>
-        <select id="relever"><option value="sgov">SGOV에 있는 만큼만 (기본)</option><option value="full">SGOV가 모자라면 1배를 팔아 3배로</option></select></div>
+        <select id="relever"><option value="sgov">2배까지 필요한 만큼 SGOV에서 (기본)</option><option value="all">SGOV 전부 다시 투입</option><option value="full">SGOV가 모자라면 1배를 팔아 3배로</option></select></div>
       <div class="field" id="monthBox"><label for="month">되돌리는 달</label>
         <select id="month"><option value="1">1월 첫 거래일</option><option value="2">2월 첫 거래일</option><option value="3">3월 첫 거래일</option><option value="4">4월 첫 거래일</option><option value="5">5월 첫 거래일</option><option value="6">6월 첫 거래일</option><option value="7">7월 첫 거래일</option><option value="8">8월 첫 거래일</option><option value="9">9월 첫 거래일</option><option value="10">10월 첫 거래일</option><option value="11">11월 첫 거래일</option><option value="12">12월 첫 거래일</option></select></div>
       <div class="field" id="bandBox"><label for="band">허용 폭: 2배 ± <b id="lblBand"></b></label><input type="range" id="band" min="0.1" max="0.8" step="0.05" value="0.5"></div>
@@ -252,7 +254,8 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <li>분배금: 수정주가와 원주가의 비율로 실제 분배일·분배율을 찾아 15% 원천징수를 뺍니다. 하루 3%가 넘는 값은 분할·자본이득 분배로 보고 뺐습니다.</li>
       <li>매수: 매주 첫 거래일 종가, 원화를 환전 스프레드를 내고 달러로 바꿔 삽니다. 소수점 매수를 가정합니다(QQQ·XLK는 1주가 비쌉니다).</li>
       <li>재조정 매도는 평균단가로 차익을 계산하고, 연말에 그해 차익의 양도세를 냅니다. 마지막 날 전량 매도 세금까지 뺀 값이 세후 청산가치입니다.</li>
-      <li>'넘치면 SGOV로' 규칙(1999~2026년 검증): 위 기준 2.2~2.3배는 QLD와 거의 같았고, 2.5~2.6배에서 QQQ 계열 적립 10년 구간의 72~89%에서 QLD를 이겼습니다(IRR 중앙 +1.1~+1.8%p). 최대 낙폭은 2010년 이전 구간에선 QLD보다 2%p 얕고 2010년 이후 구간에선 2~4%p 깊었습니다. 평균 노출이 2.0~2.2배로 QLD보다 조금 높아, 우위의 일부는 노출 차이입니다. 아래 기준(1.5~1.8배)과 매일·매주 확인은 결과를 거의 바꾸지 않았습니다. SGOV 분배금엔 15% 원천징수를 뺍니다.</li>
+      <li>'넘치면 SGOV로' 규칙(QQQ 계열, 주 적립 10년 구간): 계좌 전체 기준(SGOV 포함)으로 위 기준 2.45~2.5배면 QLD를 1987~ 75~81%, 1999~ 71~73%, 2010~ 84~89% 구간에서 이겼습니다(IRR 중앙 +0.7~+1.5%p). 2.4배는 60~75%, 2.3배 이하는 QLD와 비슷했습니다. 2010년 이후엔 그냥 섞기보다 낙폭이 6~10%p 얕았고, QLD보다는 2~4%p 깊었습니다. 평균 노출은 2.1~2.2배로 QLD보다 조금 높습니다.</li>
+      <li>투자분 기준(SGOV 제외)으로 재면, 줄인 직후 투자분이 정확히 2배라 다시 아래 기준까지 내려가려면 나스닥이 20~25% 이상 빠져야 합니다. 그래서 다시 사는 일이 2006년 이후 0~2번뿐이고 SGOV가 계좌의 50~68%까지 쌓여, 평균 노출이 1.6~1.9배로 내려갑니다. 낙폭은 크게 얕아지지만(2010년~ -42% 대 QLD -61%) 수익은 QLD와 그냥 섞기보다 대부분 낮았습니다.</li>
       <li>'1년에 한 번' 재조정은 몇 월에 하느냐에 따라 결과가 크게 달라졌습니다(QQQ 계열 2010년~ 10년 적립 구간에서 1월이면 QLD를 66% 이겼지만 7월이면 0%). 날짜 운이 섞인 결과라 특정 달이 좋다고 보기 어렵습니다.</li>
       <li>과거 수익률은 미래를 보장하지 않습니다.</li>
     </ul>
@@ -416,7 +419,7 @@ function buildAssets(RAW, D) {
   function params() {
     return { initialKRW: Math.max(0, +$('initial').value || 0) * 1e4, weeklyKRW: Math.max(0, +$('weekly').value || 0) * 1e4, fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100,
       taxRate: +$('taxRate').value / 100, deduct: 2500000, w: wtNow(), reb: $('reb').value, month: +$('month').value, band: +$('band').value, check: 'd',
-      up: +$('up').value, lo: +$('lo').value, relever: $('relever').value };
+      up: +$('up').value, lo: +$('lo').value, relever: $('relever').value, expoBase: $('expoBase').value };
   }
   const run = (acc, i0, i1, p) => {
     if (i0 < acc.f0 + 1) return null;
@@ -447,7 +450,7 @@ function buildAssets(RAW, D) {
       ['세후 청산가치', r => krw(r.finalAfter)], ['세전 평가액', r => krw(r.finalPre)], ['연환산 수익률 (IRR)', r => pct(r.irr)], ['CAGR (시간가중)', r => pct(r.twrCagr)],
       ['MDD (시간가중)', r => pct(r.mddTwr, 0)], ['평가액 최대 낙폭', r => pct(r.mddValue, 0)], ['원금 대비 최악', r => pct(r.worstVsPaid, 0)],
       ['마지막 날 노출', (r, k) => ACC[k].two ? '2.00배' : r.expo[r.expo.length - 1].toFixed(2) + '배'], ['평균 노출', (r, k) => ACC[k].two ? '2.00배' : (r.expo.reduce((s, v) => s + v, 0) / r.expo.length).toFixed(2) + '배'],
-      ['되돌린 횟수', (r, k) => ACC[k].two ? '–' : r.nReb + '회'], ['SGOV 최대 비중', (r, k) => ACC[k].two ? '–' : pct(r.cashMax, 0)],
+      ['되돌린 횟수 (줄임·올림)', (r, k) => ACC[k].two ? '–' : (p.reb === 'sgov' ? `${r.nTrim} · ${r.nUp}회` : r.nReb + '회')], ['SGOV 최대 비중', (r, k) => ACC[k].two ? '–' : pct(r.cashMax, 0)],
       ['기간 중 낸 양도세', r => krw(r.taxesPaid)], ['청산 시 양도세', r => krw(r.liqTax)],
     ];
     const best = k => { const v = R.map(r => r ? r.finalAfter : -Infinity); return Math.max(...v) === v[k]; };
