@@ -91,8 +91,8 @@ if KEY:
 
 YAHOO = {'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC',
          # ETFs for the buy-and-hold comparison page (adjusted closes = total return before withholding)
-         'XLK': 'XLK', 'ROM': 'ROM', 'TECL': 'TECL', 'QQQ': 'QQQ', 'QLD': 'QLD', 'TQQQ': 'TQQQ'}
-ETF_CLOSE = {'XLK', 'ROM', 'TECL', 'QQQ', 'QLD', 'TQQQ'}
+         'QQQ': 'QQQ', 'QLD': 'QLD', 'TQQQ': 'TQQQ', 'SPY': 'SPY', 'SSO': 'SSO', 'UPRO': 'UPRO'}
+ETF_CLOSE = {'QQQ', 'QLD', 'TQQQ', 'SPY', 'SSO', 'UPRO'}
 try:
     import yfinance as yf
     import pandas as pd
