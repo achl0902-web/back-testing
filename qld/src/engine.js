@@ -394,6 +394,10 @@ function mixBT(D, i0, i1, px, p) {
       if (p.flowBuf && p.reb === 'sgov2' && i > i0) { // route new money instead of selling: above the trim line it waits in SGOV, below the buy line it all goes to the 3x fund
         const e = expoAt(i);
         if (e > p.up) { cash += usd; f = -1; } else if (e < p.lo) f = 1;
+        else if (p.tilt && (e < p.target || p.tilt === 'both')) { // lean the new money toward the target exposure (no selling)
+          const V = valUSD(i), T = sh[0] * P[0][i], Q = sh[1] * P[1][i], C = usd * (1 - p.fee);
+          f = Math.min(1, Math.max(0, (p.target * (V + C) - LV[0] * T - LV[1] * Q - LV[1] * C) / ((LV[0] - LV[1]) * C)));
+        }
       }
       if (f >= 0) { buy(0, usd * f, i); buy(1, usd * (1 - f), i); }
       contributed += inKRW; flows.push([D.day[i], -inKRW]);
@@ -425,7 +429,7 @@ function mixBT(D, i0, i1, px, p) {
             const z = p.expoBase === 'invested' ? (kk * Q - (T + fromCash)) / (1 + kk) : (need - fromCash) * LV[0] / (LV[0] - LV[1]);
             if (z > 0) { const pr = sell(1, z, i); buy(0, pr, i); swapped = pr; }
           }
-          if (fromCash > 0 || swapped > 0) { nReb++; nUp++; log.push({ d: D.day[i], type: 'up', msg: `${p.expoBase === 'invested' ? '투자분' : '전체'} ${e.toFixed(2)}배 < ${p.lo}배: SGOV ${fmtK(fromCash * D.fx[i])}${swapped > 0 ? ` + 1배→3배 ${fmtK(swapped * D.fx[i])}` : ''}로 다시 올림${need - fromCash > 1e-6 && p.relever !== 'full' && p.relever !== 'all' ? ' (SGOV 부족)' : ''} ${state(i)}` }); }
+          if (fromCash > 0 || swapped > 0) { nReb++; nUp++; log.push({ d: D.day[i], type: 'up', msg: `${p.expoBase === 'invested' ? '투자분' : '전체'} ${e.toFixed(2)}배 < ${p.lo}배: SGOV ${fmtK(fromCash * D.fx[i])}${swapped > 0 ? ` + 1배→3배 ${fmtK(swapped * D.fx[i])}` : ''}으로 다시 올림${need - fromCash > 1e-6 && p.relever !== 'full' && p.relever !== 'all' ? ' (SGOV 부족)' : ''} ${state(i)}` }); }
           else if (cash <= 1e-6 && !lowNoted) { lowNoted = true; log.push({ d: D.day[i], type: 'empty', msg: `${p.expoBase === 'invested' ? '투자분' : '전체'} ${e.toFixed(2)}배 < ${p.lo}배인데 SGOV가 없어 그대로 둠` }); }
         }
       }
@@ -449,7 +453,7 @@ function mixBT(D, i0, i1, px, p) {
           const frac = p.tranches ? 1 / (levels.length - stage) : 1;
           const amt = Math.min(cash * frac, needT);
           if (amt > 0) { buyCash(0, amt, i); nReb++; nUp++;
-            log.push({ d: D.day[i], type: 'up', msg: `전체 ${eT.toFixed(2)}배 < ${levels[stage]}배${p.tranches ? ` (${stage + 1}/${levels.length}차)` : ''}: SGOV ${fmtK(amt * D.fx[i])}로 3배 매수 ${state(i)}` }); }
+            log.push({ d: D.day[i], type: 'up', msg: `전체 ${eT.toFixed(2)}배 < ${levels[stage]}배${p.tranches ? ` (${stage + 1}/${levels.length}차)` : ''}: SGOV ${fmtK(amt * D.fx[i])}으로 3배 매수 ${state(i)}` }); }
           if (p.tranches) stage++;
         }
         if (p.cap && cash > p.cap * valUSD(i)) { const ex = cash - p.cap * valUSD(i); const f = (tau - LV[1]) / (LV[0] - LV[1]); buyCash(0, ex * f, i); buyCash(1, ex * (1 - f), i);

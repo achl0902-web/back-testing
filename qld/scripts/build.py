@@ -144,7 +144,7 @@ etf = {}
 try:
     import pandas as pd
     idx_days = pd.to_datetime([iso(n) for n in days])
-    for nm in ['QQQ', 'QLD', 'TQQQ', 'XLK', 'ROM', 'TECL']:
+    for nm in ['QQQ', 'QLD', 'TQQQ', 'SPY', 'SSO', 'UPRO', 'SPX']:  # SPX = S&P 500 price index, used before SPY existed
         fa, fc = P('data', 'macro', f'Y_{nm}.csv'), P('data', 'macro', f'Y_{nm}_C.csv')
         if not os.path.exists(fa):
             continue

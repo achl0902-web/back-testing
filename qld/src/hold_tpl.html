@@ -148,7 +148,7 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
     <a class="back" href="./">← QLD 노출 조절 백테스터</a>
     <div class="eyebrow" style="margin-top:8px">매수 위주 · 실제 ETF 가격 · 세후 원화 기준</div>
     <h1>3배+1배 섞기 vs 2배 하나</h1>
-    <p class="sub">같은 날 같은 돈을 넣는 네 계좌를 비교합니다: <b style="color:var(--s-strat)">TQQQ+QQQ</b> 대 <b style="color:var(--s-dca)">QLD</b>, <b style="color:var(--s-x1)">TECL+XLK</b> 대 <b style="color:var(--s-x2)">ROM</b>. 섞는 계좌는 처음 산 날 2배이고, 그 뒤엔 3배와 1배가 따로 움직여 노출이 표류합니다. 다시 2배로 되돌리는 방법(재조정)도 고를 수 있습니다. 각 ETF가 상장한 뒤로는 실제 가격을, 그 전은 실제 가격에 맞춘 합성값을 씁니다.</p>
+    <p class="sub">같은 날 같은 돈을 넣는 네 계좌를 비교합니다: <b style="color:var(--s-strat)">TQQQ+QQQ</b> 대 <b style="color:var(--s-dca)">QLD</b>, <b style="color:var(--s-x1)">UPRO+SPY</b> 대 <b style="color:var(--s-x2)">SSO</b>(S&amp;P 500: 같은 규칙이 나스닥 밖에서도 통하는지 보는 확인용). 섞는 계좌는 처음 산 날 2배이고, 그 뒤엔 3배와 1배가 따로 움직여 노출이 표류합니다. 다시 2배로 되돌리는 방법(재조정)도 고를 수 있습니다. 각 ETF가 상장한 뒤로는 실제 가격을, 그 전은 실제 가격에 맞춘 합성값을 씁니다.</p>
   </header>
 
   <section class="panel">
@@ -161,11 +161,11 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <div class="field span2">
         <div class="rowlab"><span>시작 <b id="lblStart"></b></span><span>종료 <b id="lblEnd"></b></span></div>
         <div class="brush" id="brush"><canvas aria-hidden="true"></canvas><input type="range" id="rStart" aria-label="시작 월"><input type="range" id="rEnd" aria-label="종료 월"></div>
-        <p class="hint" style="margin-top:4px">뒤 배경은 QQQ(배당 포함, 로그). 양끝 손잡이를 끌어 기간을 고르세요. XLK 계열은 1998년 12월부터 있습니다.</p>
+        <p class="hint" style="margin-top:4px">뒤 배경은 QQQ(배당 포함, 로그). 양끝 손잡이를 끌어 기간을 고르세요.</p>
         <div class="chips" id="presets" style="margin-top:6px">
           <button type="button" class="chip" data-p="1986-01">1986~</button>
           <button type="button" class="chip" data-p="1999-01">1999~</button>
-          <button type="button" class="chip" data-p="2007-02">2007~ (ROM 상장)</button>
+          <button type="button" class="chip" data-p="2006-07">2006~ (QLD·SSO 상장)</button>
           <button type="button" class="chip" data-p="2010-02">2010~ (TQQQ 상장)</button>
           <button type="button" class="chip" data-p="-10">최근 10년</button>
           <button type="button" class="chip" data-p="-5">최근 5년</button>
@@ -189,6 +189,7 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <div class="field sgovBox"><label for="expoBase">노출 계산</label>
         <select id="expoBase"><option value="total">계좌 전체 기준 (SGOV 포함, 기본)</option><option value="invested">투자분 기준 (SGOV 제외)</option></select></div>
       <label class="toggle sgovBox totBox" for="flowBuf">위 기준을 넘으면 적립금을 SGOV로 (매도 없이 버퍼 쌓기) <input type="checkbox" id="flowBuf" checked></label>
+      <label class="toggle sgovBox totBox" for="tilt">2배 밑이면 적립금을 3배 쪽에 더 (팔지 않고 2배로 다가감) <input type="checkbox" id="tilt" checked></label>
       <div class="field sgovBox invBox"><label for="relever">다시 올릴 돈</label>
         <select id="relever"><option value="sgov">2배까지 필요한 만큼 SGOV에서 (기본)</option><option value="all">SGOV 전부 다시 투입</option><option value="full">SGOV가 모자라면 1배를 팔아 3배로</option></select></div>
       <div class="field" id="monthBox"><label for="month">되돌리는 달</label>
@@ -205,9 +206,9 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
   <section class="panel">
     <div class="chart-head"><h2>결과</h2><span class="hint">같은 날 같은 금액</span></div>
     <div class="tablewrap"><table id="kpi">
-      <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span><span class="nmA">TQQQ+QQQ</span></th><th scope="col"><span class="key" style="background:var(--s-dca)"></span>QLD</th><th scope="col"><span class="key" style="background:var(--s-x1)"></span><span class="nmC">TECL+XLK</span></th><th scope="col"><span class="key" style="background:var(--s-x2)"></span>ROM</th></tr></thead>
+      <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span><span class="nmA">TQQQ+QQQ</span></th><th scope="col"><span class="key" style="background:var(--s-dca)"></span>QLD</th><th scope="col"><span class="key" style="background:var(--s-x1)"></span><span class="nmC">UPRO+SPY</span></th><th scope="col"><span class="key" style="background:var(--s-x2)"></span>SSO</th></tr></thead>
       <tbody></tbody></table></div>
-    <p class="hint" style="margin-top:8px">IRR은 넣은 시점과 금액을 반영한 연환산 수익률, MDD는 입출금 영향을 뺀 시간가중 기준입니다. 기간이 1998년 12월 이전에서 시작하면 XLK 계열은 비워 둡니다.</p>
+    <p class="hint" style="margin-top:8px">IRR은 넣은 시점과 금액을 반영한 연환산 수익률, MDD는 입출금 영향을 뺀 시간가중 기준입니다.</p>
   </section>
 
   <section class="panel">
@@ -224,14 +225,14 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
 
   <section class="panel">
     <div class="chart-head"><h2>섞은 계좌의 노출 표류</h2><span class="hint" id="rebNote"></span></div>
-    <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="nmA">TQQQ+QQQ</span> 계좌 전체</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-strat) 0 4px,transparent 4px 7px)"></i>투자분 (SGOV 제외)</span><span><i style="background:var(--s-x1)"></i><span class="nmC">TECL+XLK</span> 계좌 전체</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-x1) 0 4px,transparent 4px 7px)"></i>투자분</span><span><i style="background:var(--warn)"></i>2배</span></div>
+    <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="nmA">TQQQ+QQQ</span> 계좌 전체</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-strat) 0 4px,transparent 4px 7px)"></i>투자분 (SGOV 제외)</span><span><i style="background:var(--s-x1)"></i><span class="nmC">UPRO+SPY</span> 계좌 전체</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-x1) 0 4px,transparent 4px 7px)"></i>투자분</span><span><i style="background:var(--warn)"></i>2배</span></div>
     <div class="cv short" id="cvExpo"><canvas aria-label="노출 표류" role="img"></canvas></div>
-    <p class="hint" style="margin-top:8px">실선은 SGOV까지 포함한 계좌 전체 노출, 점선은 TQQQ+QQQ(또는 TECL+XLK)만 본 투자분 노출입니다. SGOV가 없으면 두 선이 같습니다. 차트는 주 마지막 거래일 값이라, 다시 올린 날 2배로 돌아갔다가 그 주 안에 다시 빠진 경우는 보이지 않을 수 있습니다(아래 이벤트 로그 참고). 오르는 장에선 3배 쪽이 빨리 커져 노출이 3배로, 크게 빠지면 3배 쪽이 쪼그라들어 1배로 갑니다. 이 '빠질 때 저절로 줄고 오를 때 저절로 느는' 성질이 섞기의 장점이자, 오래 오른 뒤 낙폭이 깊어지는 이유입니다.</p>
+    <p class="hint" style="margin-top:8px">실선은 SGOV까지 포함한 계좌 전체 노출, 점선은 TQQQ+QQQ(또는 UPRO+SPY)만 본 투자분 노출입니다. SGOV가 없으면 두 선이 같습니다. 차트는 주 마지막 거래일 값이라, 다시 올린 날 2배로 돌아갔다가 그 주 안에 다시 빠진 경우는 보이지 않을 수 있습니다(아래 이벤트 로그 참고). 오르는 장에선 3배 쪽이 빨리 커져 노출이 3배로, 크게 빠지면 3배 쪽이 쪼그라들어 1배로 갑니다. 이 '빠질 때 저절로 줄고 오를 때 저절로 느는' 성질이 섞기의 장점이자, 오래 오른 뒤 낙폭이 깊어지는 이유입니다.</p>
   </section>
 
   <section class="panel">
     <div class="chart-head"><h2>이벤트 로그</h2><span class="hint" id="logCount"></span></div>
-    <div class="chips" id="logAcc" style="margin-bottom:8px"><button type="button" class="chip" data-a="0" aria-pressed="true"><span class="nmA">TQQQ+QQQ</span></button><button type="button" class="chip" data-a="2" aria-pressed="false"><span class="nmC">TECL+XLK</span></button></div>
+    <div class="chips" id="logAcc" style="margin-bottom:8px"><button type="button" class="chip" data-a="0" aria-pressed="true"><span class="nmA">TQQQ+QQQ</span></button><button type="button" class="chip" data-a="2" aria-pressed="false"><span class="nmC">UPRO+SPY</span></button></div>
     <div class="chips" id="logFilter" style="margin-bottom:10px">
       <button type="button" class="chip" data-t="down" aria-pressed="true">줄여서 SGOV로</button>
       <button type="button" class="chip" data-t="up" aria-pressed="true">다시 올림</button>
@@ -245,34 +246,35 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
   <section class="panel">
     <div class="chart-head"><h2>시작 시점을 바꿔 가며 (같은 설정)</h2><span class="hint" id="rollNote">계산 중…</span></div>
     <div class="tablewrap"><table id="roll">
-      <thead><tr><th scope="col">구간</th><th scope="col">구간 수</th><th scope="col"><span class="nmA">TQQQ+QQQ</span> > QLD</th><th scope="col"><span class="nmC">TECL+XLK</span> > ROM</th><th scope="col">XLK 섞기 > QQQ 섞기</th><th scope="col">ROM > QLD</th></tr></thead>
+      <thead><tr><th scope="col">구간</th><th scope="col">구간 수</th><th scope="col"><span class="nmA">TQQQ+QQQ</span> > QLD</th><th scope="col"><span class="nmC">UPRO+SPY</span> > SSO</th></tr></thead>
       <tbody></tbody></table></div>
-    <p class="hint" style="margin-top:8px">매달 1일에 시작해 정한 기간 동안 같은 방식으로 넣었을 때 세후 청산가치로 이긴 비율, 괄호는 IRR 차의 중앙값(앞 − 뒤)입니다. 1999~는 XLK가 있는 시기 전체, 2010~은 네 ETF가 모두 실제로 있던 시기입니다.</p>
+    <p class="hint" style="margin-top:8px">매달 1일에 시작해 정한 기간 동안 같은 방식으로 넣었을 때 세후 청산가치로 이긴 비율, 괄호는 IRR 차의 중앙값(앞 − 뒤)입니다. 1987~은 합성값이 섞인 전체, 1999~는 닷컴 붕괴부터, 2010~은 네 ETF가 모두 실제로 있던 시기입니다.</p>
   </section>
 
   <section class="panel">
     <div class="chart-head"><h2>연도별 실제 수익과 비용</h2>
-      <div class="chips" id="yrPick"><button type="button" class="chip" data-g="Q" aria-pressed="true">QQQ 계열</button><button type="button" class="chip" data-g="X" aria-pressed="false">XLK 계열</button></div></div>
+      <div class="chips" id="yrPick"><button type="button" class="chip" data-g="Q" aria-pressed="true">QQQ 계열</button><button type="button" class="chip" data-g="S" aria-pressed="false">S&amp;P 계열</button></div></div>
     <div class="tablewrap"><table id="yr">
       <thead><tr><th scope="col">연도</th><th scope="col">변동성</th><th scope="col" class="h1">QQQ</th><th scope="col" class="h2">QLD</th><th scope="col" class="h3">TQQQ</th><th scope="col">섞기(연초 반반) vs 2배</th><th scope="col">끌림 2배·3배</th></tr></thead>
       <tbody></tbody></table></div>
     <ul class="how" style="margin-top:12px">
       <li><b>끌림</b>: 매일 배수를 맞추는 상품은 1년에 대략 2배가 σ², 3배가 3σ²만큼 깎입니다(σ = 그해 변동성). 반반은 처음부터 2배보다 0.5σ² 더 깎이는 대신, 3배와 1배가 따로 굴러가 크게 오르는 해엔 3배 쪽이 더 크게 자랍니다.</li>
-      <li><b>보수·차입</b>: 실제 가격으로 잰 연 비용(3배·2배를 기초자산의 배수와 비교한 차이 − 금리분, 2011~2025): QLD 1.34%, TQQQ 2.36%, ROM 2.30%, TECL 3.84%. 1배는 QQQ 0.20%, XLK 0.08% 보수뿐입니다. 빌리는 돈은 반반과 2배가 같아(1배분) 금리 부담은 같습니다.</li>
-      <li><b>배당 원천징수</b>: 미국 ETF 분배금엔 15%가 떼입니다. 2010년대 XLK 분배율은 연 1.3~1.9%로 QQQ(0.8~1.5%)보다 높아, 그만큼 원천징수 손실(연 0.1~0.3%)도 큽니다. 배당이 많은 건 세후로는 장점이 아닙니다. XLK는 보수가 낮아(0.08%) 일부 상쇄됩니다.</li>
-      <li><b>ROM은 XLK와 지수가 다릅니다</b>: ROM은 다우존스 미국 기술 지수를 2배로 따라가서 XLK 2배와의 일별 추적 차이가 연 7~10%입니다. TECL은 XLK와 같은 지수를 3배로 따라갑니다.</li>
+      <li><b>보수·차입</b>: 실제 가격으로 잰 연 비용(3배·2배를 기초자산의 배수와 비교한 차이 − 금리분, 2011~2025): QLD 1.34%, TQQQ 2.36%, SSO 1.39%, UPRO 2.07%. 1배는 QQQ 0.20%, SPY 0.09% 보수뿐입니다. 빌리는 돈은 반반과 2배가 같아(1배분) 금리 부담은 같습니다.</li>
+      <li><b>배당 원천징수</b>: 미국 ETF 분배금엔 15%가 떼입니다. SPY 분배율은 연 1.2~2.6%로 QQQ(0.5~1.5%)보다 높아, 섞는 계좌의 1배 쪽이 원천징수로 연 0.2~0.4%를 더 잃습니다. 2배·3배 상품은 분배가 거의 없어 이 손실이 작습니다.</li>
+      <li><b>S&amp;P에서 이점이 작은 이유</b>: S&amp;P 500은 나스닥100보다 변동성이 낮고 긴 상승 추세가 덜 가팔라, 3배 쪽이 커지며 노출이 늘어나는 표류(섞기의 수익원)가 작습니다. 반대로 1배 쪽 배당 원천징수는 더 큽니다. 그래서 같은 규칙이라도 SSO 대비 우위는 QQQ 계열보다 훨씬 작고, 2010년 이후 10년 적립에선 SSO에 졌습니다.</li>
     </ul>
   </section>
 
   <details class="panel">
     <summary>데이터와 가정</summary>
     <ul>
-      <li>실제 가격(배당 재투자 수정주가, Yahoo Finance): QQQ 1999.03~, XLK 1998.12~, QLD 2006.06~, ROM 2007.02~, TECL 2008.12~, TQQQ 2010.02~. 그 이전은 기초자산 일간 수익률 × 배수 − (배수−1) × 3개월 금리 − 위의 연 비용으로 만든 합성값이고, QQQ 이전은 나스닥100 + 연 0.3%입니다.</li>
+      <li>실제 가격(배당 재투자 수정주가, Yahoo Finance): QQQ 1999.03~, SPY 1993.01~, QLD·SSO 2006.06~, UPRO 2009.06~, TQQQ 2010.02~. 그 이전은 기초자산 일간 수익률 × 배수 − (배수−1) × 3개월 금리 − 위의 연 비용으로 만든 합성값입니다. QQQ 이전은 나스닥100 + 연 0.3%, SPY 이전은 S&amp;P 500 가격지수 + 연 3% 배당(원천징수 반영)입니다.</li>
       <li>분배금: 수정주가와 원주가의 비율로 실제 분배일·분배율을 찾아 15% 원천징수를 뺍니다. 하루 3%가 넘는 값은 분할·자본이득 분배로 보고 뺐습니다.</li>
-      <li>매수: 매주 첫 거래일 종가, 원화를 환전 스프레드를 내고 달러로 바꿔 삽니다. 소수점 매수를 가정합니다(QQQ·XLK는 1주가 비쌉니다).</li>
+      <li>매수: 매주 첫 거래일 종가, 원화를 환전 스프레드를 내고 달러로 바꿔 삽니다. 소수점 매수를 가정합니다(QQQ·SPY는 1주가 비쌉니다).</li>
       <li>재조정 매도는 평균단가로 차익을 계산하고, 연말에 그해 차익의 양도세를 냅니다. 마지막 날 전량 매도 세금까지 뺀 값이 세후 청산가치입니다.</li>
-      <li>기본 규칙(계좌 전체 기준): 노출이 2.45배를 넘으면 새 적립금은 SGOV로 보내고(매도 없음), 2.55배를 넘으면 3배를 팔아 2배로 낮추고 판 돈은 SGOV에 둡니다. 1.65배 밑으로 내려가면 SGOV로 3배를 사서 2배로 올립니다. 2.45배에서 바로 팔던 이전 규칙보다 QQQ 계열 적립 10년 구간 IRR이 1987~·1999~ 시작에서 중앙 +0.7~1.1%p 높았고, 2010~ 시작은 같았으며 최대 낙폭은 비슷했습니다. 매도 기준을 2.6배 이상으로 올리면 2010년 이후 성적이 크게 흔들려(2.6배 56%, 2.65배 45% 구간 승) 2.55배로 두었습니다.</li>
-      <li>시험했지만 채택하지 않은 것: 줄일 땐 투자분·올릴 땐 전체로 재는 혼합 기준(SGOV가 50% 넘게 쌓여 수익 하락), SGOV 상한 15~25%(QQQ는 약간 좋아지고 XLK는 나빠짐), 2.7~2.9배 넘으면 2.5배로(낙폭이 그냥 섞기에 가까움), SGOV 분할 투입(닷컴은 조금 낫고 2010년 이후는 나쁨). 연말 하베스팅은 QLD에도 같은 이득이라 비교 우위는 아닙니다.</li>
+      <li>기본 규칙(계좌 전체 기준): 노출이 2.45배를 넘으면 새 적립금은 SGOV로 보내고(매도 없음), 2.55배를 넘으면 3배를 팔아 2배로 낮추고 판 돈은 SGOV에 둡니다. 1.65배 밑으로 내려가면 SGOV로 3배를 사서 2배로 올립니다. 2배 밑일 때 새 적립금을 3배 쪽에 더 넣어 팔지 않고 2배로 다가갑니다(기울이기). 2.45배에서 바로 팔던 이전 규칙보다 QQQ 계열 적립 10년 구간 IRR이 1987~·1999~ 시작에서 중앙 +0.7~1.1%p 높았고, 2010~ 시작은 같았으며 최대 낙폭은 비슷했습니다. 매도 기준을 2.6배 이상으로 올리면 2010년 이후 성적이 크게 흔들려(2.6배 56%, 2.65배 45% 구간 승) 2.55배로 두었습니다. 기울이기는 QQQ 계열 5년 적립 구간 승률을 59%→70%(1987~), 51%→69%(2010~)로 올렸고, 10년 구간에서도 비슷하거나 나았습니다. 2배보다 높을 때까지 기울이면(양쪽) 2010~ 10년 승률이 21%로 무너져 아래쪽만 씁니다.</li>
+      <li><b>기준값 고르기는 예측력이 없습니다</b>: 위·매도·아래 기준 45개 조합을 2009년까지 자료로 골라 2010년 이후에 시험하면, 훈련 구간 순위와 시험 구간 순위의 상관이 −0.35였습니다. 훈련에서 1등(2.55/2.75/1.5)은 2010년 이후 10년 적립에서 QLD를 38%만 이겼고, 지금 기본값은 훈련 24등이었지만 시험에선 81%를 이겼습니다. 45개 중 30개(거치식 43개)가 시험 구간에서 60% 넘게 이겨, 규칙 모양 자체는 튼튼하지만 소수점 기준값을 맞추는 건 의미가 없습니다. 매도 기준을 위 기준 +0.2배 이상 벌리는 쪽이 과거엔 좋아 보여도 2010년 이후 실패해서 +0.1배로 둡니다.</li>
+      <li>시험했지만 채택하지 않은 것: 줄일 땐 투자분·올릴 땐 전체로 재는 혼합 기준(SGOV가 50% 넘게 쌓여 수익 하락), SGOV 상한 15~25%(QQQ는 약간 좋아지고 기술주 업종 ETF로는 나빠짐), 2.7~2.9배 넘으면 2.5배로(낙폭이 그냥 섞기에 가까움), SGOV 분할 투입(닷컴은 조금 낫고 2010년 이후는 나쁨). 연말 하베스팅은 QLD에도 같은 이득이라 비교 우위는 아닙니다.</li>
       <li>투자분 기준(SGOV 제외)으로 재면, 줄인 직후 투자분이 정확히 2배라 다시 아래 기준까지 내려가려면 나스닥이 20~25% 이상 빠져야 합니다. SGOV는 따로 두고 TQQQ:QQQ 비율만 봅니다. 2006년 이후엔 다시 사는 일이 0~2번뿐이라 SGOV가 계좌의 50~68%까지 쌓이고, 계좌 전체 노출(SGOV 포함)은 평균 1.6~1.9배로 내려갑니다. 반대로 닷컴 붕괴처럼 길게 빠지는 장에선 미리 쌓아 둔 SGOV로 여러 번 다시 사서 크게 유리했습니다. 낙폭은 크게 얕아지지만(2010년~ -42% 대 QLD -61%) 수익은 QLD와 그냥 섞기보다 대부분 낮았습니다.</li>
       <li>'1년에 한 번' 재조정은 몇 월에 하느냐에 따라 결과가 크게 달라졌습니다(QQQ 계열 2010년~ 10년 적립 구간에서 1월이면 QLD를 66% 이겼지만 7월이면 0%). 날짜 운이 섞인 결과라 특정 달이 좋다고 보기 어렵습니다.</li>
       <li>과거 수익률은 미래를 보장하지 않습니다.</li>
@@ -295,25 +297,28 @@ __ENGINE__
   const D = prepData(RAW);
 function buildAssets(RAW, D) {
   const n = D.n, ETF = RAW.etf || {}, WHT = 0.15;
-  // yearly cost beyond L x underlying, fitted on 2011-2025 real prices; used only before each fund existed
-  const COST = { QLD: 0.0134, TQQQ: 0.0236, ROM: 0.0230, TECL: 0.0384 };
+  // yearly cost beyond L x underlying (adjusted), fitted on 2011-2025 real prices; used only before each fund existed
+  const COST = { QLD: 0.0134, TQQQ: 0.0236, SSO: 0.0139, UPRO: 0.0207 };
   const retOf = nm => { const e = ETF[nm]; if (!e) return null; const r = new Float64Array(n).fill(NaN); for (let k = 0; k < e.r.length; k++) r[e.s + k + 1] = e.r[k]; return { r, s: e.s }; };
   const divOf = nm => { const a = new Float64Array(n); for (const [i, d] of ((ETF[nm] || {}).d || [])) a[i] = d; return a; };
   const out = {}, first = {};
-  // underlyings (gross daily returns, with dividends)
-  const q = retOf('QQQ'), x = retOf('XLK'); const uG = { QQQ: new Float64Array(n).fill(NaN), XLK: new Float64Array(n).fill(NaN) };
-  for (let i = 1; i < n; i++) { uG.QQQ[i] = q && i > q.s ? q.r[i] : RAW.rq[i]; if (x && i > x.s) uG.XLK[i] = x.r[i]; }
-  first.QQQ = 0; first.XLK = x ? x.s : n;
+  const q = retOf('QQQ'), sp = retOf('SPY'), sx = retOf('SPX');
+  const uG = { QQQ: new Float64Array(n).fill(NaN), SPY: new Float64Array(n).fill(NaN) };
+  for (let i = 1; i < n; i++) {
+    uG.QQQ[i] = q && i > q.s ? q.r[i] : RAW.rq[i];
+    if (sp && i > sp.s) uG.SPY[i] = sp.r[i]; else if (sx && i > sx.s) uG.SPY[i] = sx.r[i] + 0.03 / 252; // S&P 500 price + ~3% dividends before SPY
+  }
+  first.QQQ = 0; first.SPY = sx ? sx.s : (sp ? sp.s : n);
   const idx = (r, f0, div, preDiv) => { const g = new Float64Array(n).fill(NaN); g[f0] = 1; for (let i = f0 + 1; i < n; i++) g[i] = g[i - 1] * (1 + r[i] - WHT * (div ? div[i] : 0) - (preDiv ? preDiv(i) : 0)); return g; };
   out.QQQ = idx(uG.QQQ, 0, divOf('QQQ'), i => (!q || i <= q.s) ? WHT * 0.005 / 252 : 0);
-  out.XLK = x ? idx(uG.XLK, first.XLK, divOf('XLK')) : null;
-  for (const [nm, u, L] of [['QLD', 'QQQ', 2], ['TQQQ', 'QQQ', 3], ['ROM', 'XLK', 2], ['TECL', 'XLK', 3]]) {
+  out.SPY = first.SPY < n ? idx(uG.SPY, first.SPY, divOf('SPY'), i => (!sp || i <= sp.s) ? WHT * 0.03 / 252 : 0) : null;
+  for (const [nm, u, L] of [['QLD', 'QQQ', 2], ['TQQQ', 'QQQ', 3], ['SSO', 'SPY', 2], ['UPRO', 'SPY', 3]]) {
     const f0 = first[u]; if (f0 >= n) { out[nm] = null; continue; }
     const real = retOf(nm), r = new Float64Array(n).fill(NaN);
     for (let i = f0 + 1; i < n; i++) r[i] = real && i > real.s ? real.r[i] : L * uG[u][i] - (L - 1) * D.tb[i] / 252 - COST[nm] / 252;
     out[nm] = idx(r, f0, divOf(nm)); first[nm] = f0;
   }
-  out.first = first; out.since = { QQQ: q ? q.s : n, QLD: (ETF.QLD || {}).s, TQQQ: (ETF.TQQQ || {}).s, XLK: x ? x.s : n, ROM: (ETF.ROM || {}).s, TECL: (ETF.TECL || {}).s };
+  out.first = first; out.since = { QQQ: q ? q.s : n, SPY: sp ? sp.s : n, QLD: (ETF.QLD || {}).s, TQQQ: (ETF.TQQQ || {}).s, SSO: (ETF.SSO || {}).s, UPRO: (ETF.UPRO || {}).s };
   return out;
 }
 
@@ -321,8 +326,8 @@ function buildAssets(RAW, D) {
   const ACC = [
     { k: 'A', name: () => mixName('TQQQ', 'QQQ'), color: '--s-strat', px: { hi: A.TQQQ, lo: A.QQQ }, mix: true, f0: 0 },
     { k: 'B', name: () => 'QLD', color: '--s-dca', px: { hi: A.QLD, lo: A.QLD }, two: true, f0: 0 },
-    { k: 'C', name: () => mixName('TECL', 'XLK'), color: '--s-x1', px: { hi: A.TECL, lo: A.XLK }, mix: true, f0: A.first.XLK },
-    { k: 'E', name: () => 'ROM', color: '--s-x2', px: { hi: A.ROM, lo: A.ROM }, two: true, f0: A.first.XLK },
+    { k: 'C', name: () => mixName('UPRO', 'SPY'), color: '--s-x1', px: { hi: A.UPRO, lo: A.SPY }, mix: true, f0: A.first.SPY },
+    { k: 'E', name: () => 'SSO', color: '--s-x2', px: { hi: A.SSO, lo: A.SSO }, two: true, f0: A.first.SPY },
   ];
   const wtNow = () => +$('wt').value / 100;
   const mixName = (h, l) => { const t = wtNow(); return t === 0.5 ? `${h}+${l}` : `${h} ${Math.round(t * 100)}·${l} ${Math.round((1 - t) * 100)}`; };
@@ -437,7 +442,7 @@ function buildAssets(RAW, D) {
   function params() {
     return { initialKRW: Math.max(0, +$('initial').value || 0) * 1e4, weeklyKRW: Math.max(0, +$('weekly').value || 0) * 1e4, fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100,
       taxRate: +$('taxRate').value / 100, deduct: 2500000, w: wtNow(), reb: $('reb').value, month: +$('month').value, band: +$('band').value, check: 'd',
-      up: +$('up').value, lo: +$('lo').value, relever: $('relever').value, expoBase: $('expoBase').value, upSell: Math.max(+$('upSell').value, +$('up').value), flowBuf: $('flowBuf').checked, harvest: $('harvest').checked };
+      up: +$('up').value, lo: +$('lo').value, relever: $('relever').value, expoBase: $('expoBase').value, upSell: Math.max(+$('upSell').value, +$('up').value), flowBuf: $('flowBuf').checked, tilt: $('tilt').checked ? 'below' : null, harvest: $('harvest').checked };
   }
   const run = (acc, i0, i1, p) => {
     if (i0 < acc.f0 + 1) return null;
@@ -477,7 +482,7 @@ function buildAssets(RAW, D) {
     $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])} · ${yrs.toFixed(1)}년 · 납입 ${krw(R[1].contributed)}`;
     const nm = ACC.map(x => x.name());
     const line = (x, y) => { if (!R[x] || !R[y]) return ''; const w = R[x].finalAfter > R[y].finalAfter; return `<p><b>${w ? nm[x] : nm[y]}</b> 승: ${nm[x]} ${krw(R[x].finalAfter)} · 연 ${pct(R[x].irr)} · MDD ${pct(R[x].mddTwr, 0)} 대 ${nm[y]} ${krw(R[y].finalAfter)} · 연 ${pct(R[y].irr)} · MDD ${pct(R[y].mddTwr, 0)}</p>`; };
-    $('verdict').innerHTML = line(0, 1) + (R[2] ? line(2, 3) + line(2, 0) : '<p class="hint">이 기간엔 XLK 계열 자료가 없습니다(1998년 12월부터).</p>');
+    $('verdict').innerHTML = line(0, 1) + line(2, 3);
     const rows = [
       ['세후 청산가치', r => krw(r.finalAfter)], ['세전 평가액', r => krw(r.finalPre)], ['연환산 수익률 (IRR)', r => pct(r.irr)], ['CAGR (시간가중)', r => pct(r.twrCagr)],
       ['MDD (시간가중)', r => pct(r.mddTwr, 0)], ['평가액 최대 낙폭', r => pct(r.mddValue, 0)], ['원금 대비 최악', r => pct(r.worstVsPaid, 0)],
@@ -500,31 +505,40 @@ function buildAssets(RAW, D) {
         R[0] ? { name: `${nm[0]} 전체`, color: '--s-strat', v: pick(R[0].expo) } : null, R[2] ? { name: `${nm[2]} 전체`, color: '--s-x1', v: pick(R[2].expo) } : null].filter(Boolean),
       extra: k => [[0, nm[0]], [2, nm[2]]].filter(([j]) => R[j]).map(([j, n]) => `<div class="r"><span>${n} SGOV</span><b>${pct(R[j].cashW[idx[k] - i0], 0)}</b></div>`).join('') });
     lastR = R; renderLog();
-    $('rebNote').textContent = { none: '되돌리지 않음', year: `매년 ${p.month}월 첫 거래일에 되돌림`, band: `2배 ± ${p.band.toFixed(2)}배를 벗어나면 되돌림`, flow: '적립금으로만 되돌림', sgov: p.expoBase === 'total' ? `${p.up.toFixed(2)}배 넘으면 적립금 SGOV로${p.flowBuf ? '' : '(끔)'}, ${p.upSell.toFixed(2)}배 넘으면 3배 매도, ${p.lo.toFixed(2)}배 밑이면 SGOV로 다시 올림` : `투자분 ${p.up.toFixed(2)}배 넘으면 SGOV로, ${p.lo.toFixed(2)}배 밑이면 다시 올림` }[p.reb];
-    clearTimeout(rollTimer); $('rollNote').textContent = '계산 중…'; rollTimer = setTimeout(() => renderRoll(p), 40);
+    $('rebNote').textContent = { none: '되돌리지 않음', year: `매년 ${p.month}월 첫 거래일에 되돌림`, band: `2배 ± ${p.band.toFixed(2)}배를 벗어나면 되돌림`, flow: '적립금으로만 되돌림', sgov: p.expoBase === 'total' ? `${p.up.toFixed(2)}배 넘으면 적립금 SGOV로${p.flowBuf ? '' : '(끔)'}${p.flowBuf && p.tilt ? ', 2배 밑이면 적립금을 3배 쪽에 더' : ''}, ${p.upSell.toFixed(2)}배 넘으면 3배 매도, ${p.lo.toFixed(2)}배 밑이면 SGOV로 다시 올림` : `투자분 ${p.up.toFixed(2)}배 넘으면 SGOV로, ${p.lo.toFixed(2)}배 밑이면 다시 올림` }[p.reb];
+    clearTimeout(rollTimer); rollTok++; $('rollNote').textContent = '계산 중…'; rollTimer = setTimeout(() => renderRoll(p), 40);
     renderYears();
   }
-  function renderRoll(p) {
-    const rows = [];
-    for (const [from, lab] of [[1999, '1999~'], [2010, '2010~']]) for (const Y of [3, 5, 10, 15]) {
-      const W = [];
+  let rollTok = 0;
+  async function renderRoll(p) {
+    // runs in small slices so the page stays responsive; a newer render cancels this one
+    const tok = ++rollTok, rows = [], tb = $('roll').querySelector('tbody'), sets = [];
+    for (const [from, lab] of [[1987, '1987~'], [1999, '1999~'], [2010, '2010~']]) for (const Y of [3, 5, 10, 15]) sets.push([from, lab, Y]);
+    tb.innerHTML = '';
+    for (let si = 0; si < sets.length; si++) {
+      const [from, lab, Y] = sets[si], W = [];
       for (let y = from; y <= 2026; y++) for (let m = 1; m <= 12; m++) {
         if (from === 2010 && y === 2010 && m < 3) continue;
         const d0 = Date.UTC(y, m - 1, 1) / 86400000, d1 = d0 + Math.round(Y * 365.25); if (d1 > D.day[D.n - 1]) continue;
-        W.push([Math.max(idxOfDay(D, d0, true), A.first.XLK + 1), idxOfDay(D, d1, false)]);
+        W.push([Math.max(idxOfDay(D, d0, true), A.first.SPY + 1, 1), idxOfDay(D, d1, false)]);
       }
       if (W.length < 12) continue;
-      const res = W.map(([a, b]) => ACC.map(acc => run(acc, a, b, p)));
+      const res = [];
+      for (let k = 0; k < W.length; k++) {
+        res.push(ACC.map(acc => run(acc, W[k][0], W[k][1], p)));
+        if (k % 15 === 14) { await new Promise(r => setTimeout(r, 0)); if (tok !== rollTok) return; }
+      }
       const cmp = (x, y) => { let w = 0; const d = []; for (const r of res) { if (r[x].finalAfter > r[y].finalAfter) w++; d.push(r[x].irr - r[y].irr); } d.sort((a, b) => a - b);
         const s = w / res.length; return `<td class="num ${s >= 0.5 ? 'pos' : 'neg'}">${pct(s, 0)} <span class="hint">(${dP(d[d.length >> 1])})</span></td>`; };
-      rows.push(`<tr><th scope="row">${lab} ${Y}년</th><td class="num">${W.length}</td>${cmp(0, 1)}${cmp(2, 3)}${cmp(2, 0)}${cmp(3, 1)}</tr>`);
+      rows.push(`<tr><th scope="row">${lab} ${Y}년</th><td class="num">${W.length}</td>${cmp(0, 1)}${cmp(2, 3)}</tr>`);
+      tb.innerHTML = rows.join(''); $('rollNote').textContent = `계산 중… ${si + 1}/${sets.length}`;
     }
-    $('roll').querySelector('tbody').innerHTML = rows.join(''); $('rollNote').textContent = `${p.weeklyKRW > 0 ? '적립' : '거치'} · ${$('rebNote').textContent}`;
+    $('rollNote').textContent = `${p.weeklyKRW > 0 ? '적립' : '거치'} · ${$('rebNote').textContent}`;
   }
   let yrG = 'Q';
   document.querySelectorAll('#yrPick .chip').forEach(bt => bt.addEventListener('click', () => { yrG = bt.dataset.g; document.querySelectorAll('#yrPick .chip').forEach(x => x.setAttribute('aria-pressed', String(x === bt))); renderYears(); }));
   function renderYears() {
-    const [u, l2, l3] = yrG === 'Q' ? ['QQQ', 'QLD', 'TQQQ'] : ['XLK', 'ROM', 'TECL'];
+    const [u, l2, l3] = yrG === 'Q' ? ['QQQ', 'QLD', 'TQQQ'] : ['SPY', 'SSO', 'UPRO'];
     document.querySelector('#yr .h1').textContent = u; document.querySelector('#yr .h2').textContent = l2; document.querySelector('#yr .h3').textContent = l3;
     const rows = [];
     for (let y = 2011; y <= 2025; y++) {
