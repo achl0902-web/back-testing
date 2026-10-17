@@ -1,5 +1,32 @@
 {
  "date": "2026-10-16",
+ "kelly": {
+  "target": 3,
+  "mix": [
+   1,
+   0,
+   0
+  ],
+  "hold": 3.0,
+  "holdMix": [
+   1.0,
+   0.0,
+   0
+  ],
+  "band": 1,
+  "act": false,
+  "sigma": 0.1858,
+  "mu": 0.1366,
+  "contribMix": [
+   1,
+   0,
+   0
+  ],
+  "lastTrade": {
+   "date": "2026-08-27",
+   "msg": "노출 1.99배 → 3.00배 (20일 변동성 21%, 기대수익 13.7%) · TQQQ 100% · QQQ 0% · SGOV 0% (실현손익 −151.41억원)"
+  }
+ },
  "regime": "in",
  "votes": 0,
  "axes": [
@@ -20,8 +47,12 @@
  "ndx": 29187.55,
  "ma20": 30524.21,
  "rules": {
+  "kelly": {
+   "name": "노출 조절 (TQQQ·QQQ·SGOV)",
+   "regime": "in"
+  },
   "final": {
-   "name": "최종 (기술 + 매크로 이탈)",
+   "name": "이전 최종 (기술 + 매크로 이탈)",
    "regime": "in"
   },
   "tech": {
@@ -50,7 +81,7 @@
   "cugold": -1.9
  },
  "macro_ok": true,
- "built": "2026-10-17 08:59 KST",
+ "built": "2026-10-17 10:29 KST",
  "sources": [
   "github-mirrors",
   "yahoo(5/5)"
