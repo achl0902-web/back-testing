@@ -157,7 +157,8 @@ open(P('site', 'index.html'), 'w').write(html)
 
 # ---------- daily signal: final strategy (and the two references) ----------
 RULES = {
-    'final': ('최종 (기술 + 매크로 이탈)', "{}"),
+    'kelly': ('노출 조절 (TQQQ·QQQ·SGOV)', "{rule:'kelly'}"),
+    'final': ('이전 최종 (기술 + 매크로 이탈)', "{}"),
     'tech': ('기술 4축만', "{useMacro:false}"),
     'vol': ('이전 방어형', "{rule:'vol',peakRatio:0.67}"),
 }
@@ -172,6 +173,9 @@ const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j
   axes:ax,votes:ax.reduce((a,b)=>a+b,0),votesPrev:axp.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],msPrev:isNaN(D.ms[j-1])?null:D.ms[j-1],
   macroOnset:E.macroOnset(D,P,j),reentry:ax.reduce((a,b)=>a+b,0)<=P.reMaxVotes&&D.px[j]>D.ma[20][j]&&D.vols.rv10[j]<D.v60[j],
   px:D.px[j],ma20:D.ma[20][j],rules:{{}}}};
+{{const K=Object.assign({{}},E.DEFAULTS,{{strategy:true,rule:'kelly'}});const R=E.runBT(D,i0,j,K,true);const e=E.kellyTarget(D,K,j),cur=R.expoTot[R.expoTot.length-1];
+  const lastEv=R.log.filter(x=>x.type==='down'||x.type==='up').pop()||null;
+  out.kelly={{target:e,mix:E.mixOf(e),hold:cur,holdMix:E.mixOf(cur),band:K.band,act:Math.abs(e-cur)>K.band,sigma:D.rv[j],mu:D.mu[j],lastTrade:lastEv?{{d:lastEv.d,msg:lastEv.msg}}:null,contribMix:E.mixOf(R.tgtE)}};}}
 """ + ''.join(f"{{const R=E.runBT(D,i0,j,Object.assign({{strategy:true}},{cfg}),false);out.rules[{json.dumps(k)}]={{regime:R.regime}};}}\n" for k, (_, cfg) in RULES.items())
  + "console.log(JSON.stringify(out));\n")
 st = subprocess.run(['node', js], capture_output=True, text=True, timeout=600)
@@ -179,7 +183,12 @@ if st.returncode != 0:
     print(st.stderr, file=sys.stderr); sys.exit(1)
 s = json.loads(st.stdout.strip().splitlines()[-1])
 r4 = lambda x: None if x is None else round(x, 4)
-status = dict(date=last, regime=s['rules']['final']['regime'], votes=s['votes'], axes=s['axes'],
+K = s['kelly']
+r2 = lambda x: None if x is None else round(x, 2)
+kelly = dict(target=r2(K['target']), mix=[round(x, 3) for x in K['mix']], hold=r2(K['hold']), holdMix=[round(x, 3) for x in K['holdMix']],
+             band=K['band'], act=bool(K['act']), sigma=r4(K['sigma']), mu=r4(K['mu']), contribMix=[round(x, 3) for x in K['contribMix']],
+             lastTrade=None if not K['lastTrade'] else dict(date=iso(K['lastTrade']['d']), msg=K['lastTrade']['msg']))
+status = dict(date=last, kelly=kelly, regime=s['rules']['final']['regime'], votes=s['votes'], axes=s['axes'],
               down20=r4(s['down20']), up20=r4(s['up20']), r10=r4(s['r10']), rsiw=round(s['rsiw'], 1), expand=round(s['expand'], 2),
               macro=r4(s['ms']), macroOnset=s['macroOnset'], reentryOK=s['reentry'], rv20=r4(s['rv20']),
               ndx=round(s['px'], 2), ma20=round(s['ma20'], 2),
@@ -195,25 +204,20 @@ json.dump(status, open(P('site', 'status.json'), 'w'), ensure_ascii=False, inden
 
 # ---------- alert ----------
 NAME = {'in': 'QLD 보유', 'out': '이탈 중 (SGOV)', 'staged': '단계 복귀 중'}
+mixtxt = lambda m: f"TQQQ {round(m[0]*100)}% · QQQ {round(m[1]*100)}% · SGOV {round(m[2]*100)}%"
 AX = ['변동성', '급락', '추세', '급팽창']
 pv = lambda x: '–' if x is None else f'{x*100:.1f}%'
 msgs = []
-if prev.get('date') != last:
-    old = (prev.get('rules') or {}).get('final', {}).get('regime') or prev.get('regime')
-    if old and old != status['regime']:
-        msgs.append(f"최종 전략 상태 변경: {NAME.get(old, old)} → **{NAME[status['regime']]}**")
-    if status['votes'] >= 2 and (prev.get('votes') is None or prev['votes'] < 2):
-        msgs.append(f"기술 축 {status['votes']}개가 켜졌습니다 ({'·'.join(a for a, v in zip(AX, status['axes']) if v)}). 이탈 조건입니다.")
-    if status['macroOnset']:
-        msgs.append(f"매크로 경보 비율이 {pv(status['macro'])}로 50%를 새로 넘었습니다. 이탈 조건입니다.")
-    if status['regime'] == 'out' and status['reentryOK'] and not prev.get('reentryOK'):
-        msgs.append("복귀 조건(켜진 축 1개 이하 · 20일선 위 · 단기 변동성 진정)이 충족되었습니다.")
+if prev.get('date') != last and kelly['act']:
+    msgs.append(f"노출 조절: 목표 **{kelly['target']:.2f}배** ({mixtxt(kelly['mix'])})가 규칙상 보유 {kelly['hold']:.2f}배와 조정 폭 {kelly['band']}배 이상 차이 납니다. "
+                f"**다음 거래일 종가에 목표 비중으로 맞춥니다.**")
 if msgs:
     lines = [f"- {m}" for m in msgs]
-    lines.append(f"\n현재: 기술 {status['votes']}/4축 · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · "
+    lines.append(f"\n노출 계산: 20일 변동성 {pv(kelly['sigma'])} · 기대수익 {pv(kelly['mu'])} → μ÷σ² = 목표 {kelly['target']:.2f}배")
+    lines.append(f"참고(이전 규칙): 기술 {status['votes']}/4축 · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · "
                  f"주봉 RSI {status['rsiw']} · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}")
-    lines.append('상태: ' + ' · '.join(f"{v['name']} {NAME[v['regime']]}" for v in status['rules'].values()))
-    lines.append('실행: 신호가 켜진 다음 거래일 종가에 매매합니다 (복귀 후 40거래일 안에는 3축 이상일 때만 이탈).')
+    lines.append('이전 규칙 상태: ' + ' · '.join(f"{v['name']} {NAME[v['regime']]}" for k, v in status['rules'].items() if k != 'kelly'))
+    lines.append('실행: 전날 종가로 계산한 목표 비중으로 다음 거래일 종가에 TQQQ·QQQ·SGOV를 맞춥니다. 이전 규칙 상태는 참고용입니다.')
     lines.append(f"데이터 출처: {', '.join(used)}")
     open(P('alert.md'), 'w').write(f"**{last} 종가 기준**\n\n" + '\n'.join(lines) + '\n')
 print(json.dumps(status, ensure_ascii=False))
