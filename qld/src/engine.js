@@ -69,8 +69,9 @@ const DEFAULTS = {
   rule: 'final', dnHi: 0.30, upHi: 0.35, crash: -0.08, rsiW: 45, expand: 1.6, votes: 2, strongVotes: 3, hold: 40,
   reMaxVotes: 1, useMacro: true, macroTh: 0.5,
   parkQQQ: 0, weeklyCheck: false,
-  // growth-optimal (Kelly) exposure with TQQQ/QQQ/SGOV: target = clamp(kellyFrac * mu/sigma^2, 0, maxLev); rebalance on check days when |target - holding| > band
-  maxLev: 3, kellyFrac: 1, band: 1, check: 'd', capRule: 'none', capLev: 1.5, exitFrac: 1, volHi2: null, volMeasure: 'rv20', maGate: 0, maMode: 'and', maBand: 0,
+  // volatility-sized exposure with TQQQ/QQQ/SGOV. Default: step table on 20-day vol (<25% 2.5x, <35% 2x, <45% 1x, else 0x);
+  // 'kelly' sizing: kellyFrac * mu/sigma^2. Rebalance on check days when |target - holding| > band
+  maxLev: 2.5, kellyFrac: 1, band: 0.5, check: 'd', sizing: 'steps', hyst: 0.03, anchorVol: 0.2, anchorLev: 2, steps: [[0.25, 2.5], [0.35, 2], [0.45, 1], [Infinity, 0]], capRule: 'none', capLev: 1.5, exitFrac: 1, volHi2: null, volMeasure: 'rv20', maGate: 0, maMode: 'and', maBand: 0,
 };
 
 function axesAt(D, p, j) {
@@ -89,11 +90,23 @@ function reentryOK(D, p, cnt, j) { return cnt <= p.reMaxVotes && D.px[j] > D.ma[
 
 function kellyTarget(D, p, j) {
   p = Object.assign({}, DEFAULTS, p);
-  const s = D.rv[j], m = D.mu[j];
-  if (isNaN(s) || isNaN(m) || s <= 0) return 2;
-  let e = Math.min(p.maxLev, Math.max(0, p.kellyFrac * m / (s * s)));
+  const s = D.rv[j] + (p._sAdd || 0), m = D.mu[j];
+  if (isNaN(s) || s <= 0 || (isNaN(m) && (!p.sizing || p.sizing === 'kelly'))) return 2;
+  let e;
+  if (p.sizing === 'steps') { e = p.steps[p.steps.length - 1][1]; for (const [lim, lev] of p.steps) if (s < lim) { e = lev; break; } }
+  else if (p.sizing === 'invvol') e = p.anchorLev * p.anchorVol / s;
+  else if (p.sizing === 'invvar') e = p.anchorLev * (p.anchorVol / s) ** 2;
+  else e = p.kellyFrac * m / (s * s);
+  e = Math.min(p.maxLev, Math.max(0, e));
   if (p.capRule === 'macro' && !isNaN(D.ms[j]) && D.ms[j] >= 0.5) e = Math.min(e, p.capLev);
   if (p.capRule === 'ma200' && !isNaN(D.ma[200][j]) && D.px[j] < D.ma[200][j]) e = Math.min(e, p.capLev);
+  return e;
+}
+// target given the last executed target: cut as soon as vol crosses a boundary, raise only when vol is `hyst` below it
+function targetFrom(D, p, j, last) {
+  p = Object.assign({}, DEFAULTS, p);
+  let e = Math.max(0, Math.min(p.maxLev, kellyTarget(D, p, j)));
+  if (p.hyst > 0 && e > last) e = Math.max(last, Math.min(e, kellyTarget(D, Object.assign({}, p, { _sAdd: p.hyst }), j)));
   return e;
 }
 // exposure -> weights of [TQQQ, QQQ, SGOV]
@@ -171,7 +184,8 @@ function runBT(D, i0, i1, p, wantLog) {
       const chk = i === i0 || p.check === 'd' || (p.check === 'w' ? D.week[i] !== D.week[i - 1]
         : D.month[i] !== D.month[i - 1] && (D.month[i] - 1) % (+String(p.check).slice(1) || 1) === 0);
       if (chk) {
-        const e = Math.max(0, Math.min(p.maxLev, kellyTarget(D, p, j))); lastTgt = e;
+        const e = i > i0 ? targetFrom(D, p, j, tgtE) : Math.max(0, Math.min(p.maxLev, kellyTarget(D, p, j)));
+        lastTgt = e;
         const V = sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i] + cash;
         const cur = V > 0 ? (LV * sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i]) / V : 0;
         if (V > 0 && (i === i0 || Math.abs(e - cur) > p.band)) {
@@ -183,7 +197,7 @@ function runBT(D, i0, i1, p, wantLog) {
           if (wa * V > qv2) buy(0, wa * V - qv2, i);
           if (wb * V > uv2) buy(1, wb * V - uv2, i);
           if (i > i0) { nReb++; const [x, y, z] = mixOf(e);
-            L(i, e < cur ? 'down' : 'up', `노출 ${cur.toFixed(2)}배 → ${e.toFixed(2)}배 (20일 변동성 ${(D.rv[j] * 100).toFixed(0)}%, 기대수익 ${(D.mu[j] * 100).toFixed(1)}%) · TQQQ ${Math.round(x * 100)}% · QQQ ${Math.round(y * 100)}% · SGOV ${Math.round(z * 100)}%` + (Math.abs(realized - r0) > 1 ? ` (실현손익 ${fmt(realized - r0)})` : '')); }
+            L(i, e < cur ? 'down' : 'up', `노출 ${cur.toFixed(2)}배 → ${e.toFixed(2)}배 (20일 변동성 ${(D.rv[j] * 100).toFixed(0)}%${p.sizing === 'kelly' ? `, 기대수익 ${(D.mu[j] * 100).toFixed(1)}%` : ''}) · TQQQ ${Math.round(x * 100)}% · QQQ ${Math.round(y * 100)}% · SGOV ${Math.round(z * 100)}%` + (Math.abs(realized - r0) > 1 ? ` (실현손익 ${fmt(realized - r0)})` : '')); }
         }
       }
     } else if (p.strategy && check && p.rule === 'final' && !p.exitSig) {
@@ -304,4 +318,4 @@ function xirr(flows) {
   return (lo + hi) / 2;
 }
 
-if (typeof module !== 'undefined') module.exports = { prepData, runBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, mixOf };
+if (typeof module !== 'undefined') module.exports = { prepData, runBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };

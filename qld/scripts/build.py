@@ -157,7 +157,7 @@ open(P('site', 'index.html'), 'w').write(html)
 
 # ---------- daily signal: final strategy (and the two references) ----------
 RULES = {
-    'kelly': ('노출 조절 (TQQQ·QQQ·SGOV)', "{rule:'kelly'}"),
+    'kelly': ('변동성 계단 (TQQQ·QQQ·SGOV)', "{rule:'kelly'}"),
     'final': ('이전 최종 (기술 + 매크로 이탈)', "{}"),
     'tech': ('기술 4축만', "{useMacro:false}"),
     'vol': ('이전 방어형', "{rule:'vol',peakRatio:0.67}"),
@@ -173,7 +173,7 @@ const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j
   axes:ax,votes:ax.reduce((a,b)=>a+b,0),votesPrev:axp.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],msPrev:isNaN(D.ms[j-1])?null:D.ms[j-1],
   macroOnset:E.macroOnset(D,P,j),reentry:ax.reduce((a,b)=>a+b,0)<=P.reMaxVotes&&D.px[j]>D.ma[20][j]&&D.vols.rv10[j]<D.v60[j],
   px:D.px[j],ma20:D.ma[20][j],rules:{{}}}};
-{{const K=Object.assign({{}},E.DEFAULTS,{{strategy:true,rule:'kelly'}});const R=E.runBT(D,i0,j,K,true);const e=E.kellyTarget(D,K,j),cur=R.expoTot[R.expoTot.length-1];
+{{const K=Object.assign({{}},E.DEFAULTS,{{strategy:true,rule:'kelly'}});const R=E.runBT(D,i0,j,K,true);const e=E.targetFrom(D,K,j,R.tgtE),cur=R.expoTot[R.expoTot.length-1];
   const lastEv=R.log.filter(x=>x.type==='down'||x.type==='up').pop()||null;
   out.kelly={{target:e,mix:E.mixOf(e),hold:cur,holdMix:E.mixOf(cur),band:K.band,act:Math.abs(e-cur)>K.band,sigma:D.rv[j],mu:D.mu[j],lastTrade:lastEv?{{d:lastEv.d,msg:lastEv.msg}}:null,contribMix:E.mixOf(R.tgtE)}};}}
 """ + ''.join(f"{{const R=E.runBT(D,i0,j,Object.assign({{strategy:true}},{cfg}),false);out.rules[{json.dumps(k)}]={{regime:R.regime}};}}\n" for k, (_, cfg) in RULES.items())
@@ -213,7 +213,7 @@ if prev.get('date') != last and kelly['act']:
                 f"**다음 거래일 종가에 목표 비중으로 맞춥니다.**")
 if msgs:
     lines = [f"- {m}" for m in msgs]
-    lines.append(f"\n노출 계산: 20일 변동성 {pv(kelly['sigma'])} · 기대수익 {pv(kelly['mu'])} → μ÷σ² = 목표 {kelly['target']:.2f}배")
+    lines.append(f"\n노출 계산: 나스닥100 20일 변동성 {pv(kelly['sigma'])} → 계단표(25% 미만 2.5배 · 35% 미만 2배 · 45% 미만 1배 · 그 이상 0배, 올릴 땐 경계보다 3%p 낮아야) → 목표 {kelly['target']:.2f}배")
     lines.append(f"참고(이전 규칙): 기술 {status['votes']}/4축 · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · "
                  f"주봉 RSI {status['rsiw']} · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}")
     lines.append('이전 규칙 상태: ' + ' · '.join(f"{v['name']} {NAME[v['regime']]}" for k, v in status['rules'].items() if k != 'kelly'))
