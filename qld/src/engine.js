@@ -310,6 +310,45 @@ function runBT(D, i0, i1, p, wantLog) {
     vals, contr, expo, twr };
 }
 
+// buy-and-hold comparison: every contribution (and the optional lump sum) is split between assets by fixed weights; never sells, never rebalances.
+// weights: { t: TQQQ, q: QQQ, l: QLD } (sum 1). Tax only at the final liquidation (gains offset across assets, one year's deduction).
+function holdBT(D, i0, i1, p) {
+  p = Object.assign({ initialKRW: 0, weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, taxRate: 0.22, deduct: 2500000, w: { t: 0.5, q: 0.5, l: 0 } }, p);
+  const A = [['t', D.lx3], ['q', D.ix], ['l', D.lx]].filter(([k]) => p.w[k] > 0);
+  const sh = A.map(() => 0), cost = A.map(() => 0);
+  const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1);
+  const flows = []; let contributed = 0, prevVal = 0, fees = 0;
+  const LEV = { t: 3, q: 1, l: 2 };
+  for (let i = i0; i <= i1; i++) {
+    const k = i - i0;
+    const inKRW = (i === i0 ? p.initialKRW : 0) + ((i === i0 || D.week[i] !== D.week[i - 1]) ? p.weeklyKRW : 0);
+    if (inKRW > 0) {
+      const usd = inKRW / (D.fx[i] * (1 + p.fxSpread));
+      A.forEach(([key, px], a) => { const u = usd * p.w[key]; sh[a] += u * (1 - p.fee) / px[i]; cost[a] += u * D.fx[i]; fees += u * p.fee * D.fx[i]; });
+      contributed += inKRW; flows.push([D.day[i], -inKRW]);
+    }
+    let v = 0, ex = 0, vt = 0;
+    A.forEach(([key, px], a) => { const x = sh[a] * px[i]; v += x; ex += LEV[key] * x; if (key === 't') vt = x; });
+    v *= D.fx[i];
+    vals[k] = v; contr[k] = contributed; expo[k] = v > 0 ? ex * D.fx[i] / v : 0; wT[k] = v > 0 ? vt * D.fx[i] / v : 0;
+    if (k === 0) twr[k] = 1; else { const base = prevVal + inKRW; twr[k] = twr[k - 1] * (base > 0 ? v / base : 1); }
+    prevVal = v;
+  }
+  const i = i1; let gain = 0, gross = 0;
+  A.forEach(([key, px], a) => { const net = sh[a] * px[i] * (1 - p.fee) * D.fx[i]; gross += net; gain += net - cost[a]; });
+  const liqTax = Math.max(gain - p.deduct, 0) * p.taxRate, finalAfter = gross - liqTax;
+  flows.push([D.day[i], finalAfter]);
+  let pk = 0, mddV = 0, pkT = 0, mddT = 0, worst = 0;
+  for (let k = 0; k < n1; k++) {
+    pk = Math.max(pk, vals[k]); if (pk > 0) mddV = Math.min(mddV, vals[k] / pk - 1);
+    pkT = Math.max(pkT, twr[k]); mddT = Math.min(mddT, twr[k] / pkT - 1);
+    if (contr[k] > 0) worst = Math.min(worst, vals[k] / contr[k] - 1);
+  }
+  const yrs = (D.day[i1] - D.day[i0]) / 365.25;
+  return { finalPre: vals[n1 - 1], finalAfter, liqTax, contributed, irr: xirr(flows), twrCagr: Math.pow(twr[n1 - 1], 1 / yrs) - 1,
+    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, vals, contr, twr, expo, wT };
+}
+
 function xirr(flows) {
   const t0 = flows[0][0];
   const f = r => { let s = 0; for (const [d, c] of flows) s += c / Math.pow(1 + r, (d - t0) / 365.25); return s; };
@@ -318,4 +357,4 @@ function xirr(flows) {
   return (lo + hi) / 2;
 }
 
-if (typeof module !== 'undefined') module.exports = { prepData, runBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };
+if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };

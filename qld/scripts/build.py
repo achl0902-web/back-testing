@@ -154,6 +154,9 @@ html = ('<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '</head><body>' + page + '</body></html>')
 os.makedirs(P('site'), exist_ok=True)
 open(P('site', 'index.html'), 'w').write(html)
+hold = (open(P('src', 'hold_tpl.html')).read().replace('__DATA__', data_js).replace('__ENGINE__', eng)
+        .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built))
+open(P('site', 'hold.html'), 'w').write(html.replace(page, hold))
 
 # ---------- daily signal: final strategy (and the two references) ----------
 RULES = {
