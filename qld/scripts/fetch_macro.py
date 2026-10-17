@@ -89,7 +89,9 @@ if KEY:
         except Exception as e:
             log.append(f'FRED-API {s}: {type(e).__name__} {str(e)[:120]}')
 
-YAHOO = {'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC'}
+YAHOO = {'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC',
+         # ETFs for the buy-and-hold comparison page (adjusted closes = total return before withholding)
+         'XLK': 'XLK', 'ROM': 'ROM', 'TECL': 'TECL', 'QQQ': 'QQQ', 'QLD': 'QLD', 'TQQQ': 'TQQQ'}
 try:
     import yfinance as yf
     import pandas as pd
