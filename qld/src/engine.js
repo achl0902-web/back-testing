@@ -363,7 +363,7 @@ function mixBT(D, i0, i1, px, p) {
   const sh = [0, 0], basis = [0, 0]; // basis = total KRW cost of current shares
   const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1), expoInv = new Float64Array(n1), cashW = new Float64Array(n1);
   const fmtK = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; return a >= 1e8 ? s + (a / 1e8).toFixed(2) + '억원' : s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
-  const flows = []; let lowNoted = false, nTrim = 0, nUp = 0, cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
+  const flows = []; let stage = 0, lowNoted = false, nTrim = 0, nUp = 0, cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
   const log = [];
   const valUSD = i => sh[0] * P[0][i] + sh[1] * P[1][i] + cash;
   const expoAt = i => { const v = valUSD(i); return v > 0 ? (LV[0] * sh[0] * P[0][i] + LV[1] * sh[1] * P[1][i]) / v : p.target; };
@@ -391,7 +391,11 @@ function mixBT(D, i0, i1, px, p) {
         const T = sh[0] * P[0][i], Q = sh[1] * P[1][i], C = usd * (1 - p.fee), wt = (p.target - LV[1]) / (LV[0] - LV[1]);
         f = Math.min(1, Math.max(0, (wt * (T + Q + C) - T) / C));
       }
-      buy(0, usd * f, i); buy(1, usd * (1 - f), i);
+      if (p.flowBuf && p.reb === 'sgov2' && i > i0) { // route new money instead of selling: above the trim line it waits in SGOV, below the buy line it all goes to the 3x fund
+        const e = expoAt(i);
+        if (e > p.up) { cash += usd; f = -1; } else if (e < p.lo) f = 1;
+      }
+      if (f >= 0) { buy(0, usd * f, i); buy(1, usd * (1 - f), i); }
       contributed += inKRW; flows.push([D.day[i], -inKRW]);
     }
     if (i > i0 && (p.reb === 'band' || p.reb === 'flowband')) {
@@ -426,6 +430,32 @@ function mixBT(D, i0, i1, px, p) {
         }
       }
     }
+    if (i > i0 && p.reb === 'sgov2') {
+      // generalised SGOV buffer: trim on total or invested exposure, re-lever on total exposure (optionally guarded by the
+      // invested exposure), optional staged re-entry and optional SGOV cap whose excess flows back into the mix
+      const chk = p.check === 'd' || (p.check === 'w' ? D.week[i] !== D.week[i - 1] : D.month[i] !== D.month[i - 1]);
+      if (chk) {
+        const tau = p.target, V = valUSD(i), eT = expoAt(i), eI = invAt(i), T = sh[0] * P[0][i], Q = sh[1] * P[1][i];
+        const trimE = p.trimBase === 'invested' ? eI : eT, upSell = p.upSell || p.up;
+        const levels = p.tranches || [p.lo];
+        if (eT >= tau) stage = 0;
+        if (trimE > upSell) {
+          const to = p.trimTo || tau;
+          const x = p.trimBase === 'invested' ? T - (to - LV[1]) / (LV[0] - to) * Q : (eT - to) * V / LV[0];
+          const r0 = realized; const pr = sell(0, x, i); cash += pr; nReb++; nTrim++; stage = 0;
+          log.push({ d: D.day[i], type: 'down', msg: `${p.trimBase === 'invested' ? '투자분' : '전체'} ${trimE.toFixed(2)}배 > ${upSell}배: 3배 ${fmtK(pr * D.fx[i])} 팔아 SGOV로 (실현 ${fmtK(realized - r0)}) ${state(i)}` });
+        } else if (cash > 0 && stage < levels.length && eT < levels[stage] && (!p.relevGuard || eI < p.relevGuard)) {
+          const needT = Math.max(0, (tau - eT) * V / LV[0]);
+          const frac = p.tranches ? 1 / (levels.length - stage) : 1;
+          const amt = Math.min(cash * frac, needT);
+          if (amt > 0) { buyCash(0, amt, i); nReb++; nUp++;
+            log.push({ d: D.day[i], type: 'up', msg: `전체 ${eT.toFixed(2)}배 < ${levels[stage]}배${p.tranches ? ` (${stage + 1}/${levels.length}차)` : ''}: SGOV ${fmtK(amt * D.fx[i])}로 3배 매수 ${state(i)}` }); }
+          if (p.tranches) stage++;
+        }
+        if (p.cap && cash > p.cap * valUSD(i)) { const ex = cash - p.cap * valUSD(i); const f = (tau - LV[1]) / (LV[0] - LV[1]); buyCash(0, ex * f, i); buyCash(1, ex * (1 - f), i);
+          log.push({ d: D.day[i], type: 'rebal', msg: `SGOV ${Math.round(p.cap * 100)}% 초과분 ${fmtK(ex * D.fx[i])}를 섞기로 되돌림 ${state(i)}` }); }
+      }
+    }
     if (i > i0 && p.reb === 'year' && D.month[i] !== D.month[i - 1] && D.month[i] === (p.month || 1) && (p.everyMonths ? true : true)) {
       if (!p.upOnly || expoAt(i) > p.target) rebalance(i);
     }
@@ -433,6 +463,12 @@ function mixBT(D, i0, i1, px, p) {
     if (i > i0 && p.reb === 'upband') { const chk = p.check === 'd' || D.week[i] !== D.week[i - 1]; if (chk && expoAt(i) > p.target + p.band) rebalance(i); }
     // year end: pay tax on this year's realized gains by selling both funds pro rata
     const lastOfYear = i === D.n - 1 || D.year[i + 1] !== D.year[i];
+    if (lastOfYear && i !== i1 && p.harvest) {
+      let room = p.deduct - realized; const rStart = realized;
+      for (const a2 of [0, 1]) { if (room <= 1 || sh[a2] <= 0) continue; const val = sh[a2] * P[a2][i], g = (val * D.fx[i] - basis[a2]) / (val * D.fx[i]);
+        if (g > 0.001) { const sv = Math.min(val, room / g / D.fx[i]); const r0 = realized; const pr = sell(a2, sv, i); buy(a2, pr, i); room -= realized - r0; } }
+      if (realized - rStart > 1e4) log.push({ d: D.day[i], type: 'tax', msg: `연말 공제 하베스팅: 차익 ${fmtK(realized - rStart)} 실현 후 바로 재매수 (세금 0, 취득가 상승)` });
+    }
     if (lastOfYear && i !== i1) {
       const tax = Math.max(realized - p.deduct, 0) * p.taxRate; realized = 0;
       if (tax > 0) log.push({ d: D.day[i], type: 'tax', msg: `${D.year[i]}년 실현 차익 양도세 ${fmtK(tax)}` });

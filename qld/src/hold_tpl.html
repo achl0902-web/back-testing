@@ -177,21 +177,24 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <div class="field"><label for="wt">3배 비율 (나머지 1배) <b id="lblWt"></b></label><input type="range" id="wt" min="0" max="100" step="5" value="50"></div>
       <div class="field"><label for="reb">다시 2배로 되돌리기</label>
         <select id="reb">
-          <option value="none">안 함 · 사기만 (기본)</option>
+          <option value="none">안 함 · 사기만</option>
           <option value="year">1년에 한 번</option>
           <option value="band">노출이 2배에서 벗어나면</option>
           <option value="flow">적립금으로만 (매도 없음)</option>
-          <option value="sgov">넘치면 3배 일부를 SGOV로, 빠지면 SGOV로 다시 3배</option>
+          <option value="sgov" selected>넘치면 SGOV로, 빠지면 SGOV로 다시 3배 (기본)</option>
         </select></div>
-      <div class="field sgovBox"><label for="up">위 기준: 노출이 이보다 크면 2배로 줄이고 SGOV 보관 <b id="lblUp"></b></label><input type="range" id="up" min="2.1" max="2.9" step="0.05" value="2.5"></div>
+      <div class="field sgovBox"><label for="up">위 기준: 노출이 이보다 크면 새 적립금은 SGOV로 <b id="lblUp"></b></label><input type="range" id="up" min="2.1" max="2.9" step="0.05" value="2.45"></div>
+      <div class="field sgovBox totBox"><label for="upSell">매도 기준: 이보다 크면 3배를 팔아 2배로 <b id="lblUpSell"></b></label><input type="range" id="upSell" min="2.1" max="3.0" step="0.05" value="2.55"></div>
       <div class="field sgovBox"><label for="lo">아래 기준: 노출이 이보다 작으면 2배로 다시 올림 <b id="lblLo"></b></label><input type="range" id="lo" min="1.3" max="1.9" step="0.05" value="1.65"></div>
       <div class="field sgovBox"><label for="expoBase">노출 계산</label>
         <select id="expoBase"><option value="total">계좌 전체 기준 (SGOV 포함, 기본)</option><option value="invested">투자분 기준 (SGOV 제외)</option></select></div>
-      <div class="field sgovBox"><label for="relever">다시 올릴 돈</label>
+      <label class="toggle sgovBox totBox" for="flowBuf">위 기준을 넘으면 적립금을 SGOV로 (매도 없이 버퍼 쌓기) <input type="checkbox" id="flowBuf" checked></label>
+      <div class="field sgovBox invBox"><label for="relever">다시 올릴 돈</label>
         <select id="relever"><option value="sgov">2배까지 필요한 만큼 SGOV에서 (기본)</option><option value="all">SGOV 전부 다시 투입</option><option value="full">SGOV가 모자라면 1배를 팔아 3배로</option></select></div>
       <div class="field" id="monthBox"><label for="month">되돌리는 달</label>
         <select id="month"><option value="1">1월 첫 거래일</option><option value="2">2월 첫 거래일</option><option value="3">3월 첫 거래일</option><option value="4">4월 첫 거래일</option><option value="5">5월 첫 거래일</option><option value="6">6월 첫 거래일</option><option value="7">7월 첫 거래일</option><option value="8">8월 첫 거래일</option><option value="9">9월 첫 거래일</option><option value="10">10월 첫 거래일</option><option value="11">11월 첫 거래일</option><option value="12">12월 첫 거래일</option></select></div>
       <div class="field" id="bandBox"><label for="band">허용 폭: 2배 ± <b id="lblBand"></b></label><input type="range" id="band" min="0.1" max="0.8" step="0.05" value="0.5"></div>
+      <label class="toggle" for="harvest">연말 공제(250만원) 하베스팅 · 네 계좌 모두 <input type="checkbox" id="harvest" checked></label>
       <div class="field"><label for="fee">매매 수수료 (편도) <b id="lblFee"></b></label><input type="range" id="fee" min="0" max="0.5" step="0.01" value="0.1"></div>
       <div class="field"><label for="fxs">환전 스프레드 <b id="lblFxs"></b></label><input type="range" id="fxs" min="0" max="1" step="0.05" value="0.1"></div>
       <div class="field"><label for="taxRate">양도세율 <b id="lblTax"></b></label><input type="range" id="taxRate" min="0" max="33" step="0.5" value="22"></div>
@@ -268,7 +271,8 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <li>분배금: 수정주가와 원주가의 비율로 실제 분배일·분배율을 찾아 15% 원천징수를 뺍니다. 하루 3%가 넘는 값은 분할·자본이득 분배로 보고 뺐습니다.</li>
       <li>매수: 매주 첫 거래일 종가, 원화를 환전 스프레드를 내고 달러로 바꿔 삽니다. 소수점 매수를 가정합니다(QQQ·XLK는 1주가 비쌉니다).</li>
       <li>재조정 매도는 평균단가로 차익을 계산하고, 연말에 그해 차익의 양도세를 냅니다. 마지막 날 전량 매도 세금까지 뺀 값이 세후 청산가치입니다.</li>
-      <li>'넘치면 SGOV로' 규칙(QQQ 계열, 주 적립 10년 구간): 계좌 전체 기준(SGOV 포함)으로 위 기준 2.45~2.5배면 QLD를 1987~ 75~81%, 1999~ 71~73%, 2010~ 84~89% 구간에서 이겼습니다(IRR 중앙 +0.7~+1.5%p). 2.4배는 60~75%, 2.3배 이하는 QLD와 비슷했습니다. 2010년 이후엔 그냥 섞기보다 낙폭이 6~10%p 얕았고, QLD보다는 2~4%p 깊었습니다. 평균 노출은 2.1~2.2배로 QLD보다 조금 높습니다.</li>
+      <li>기본 규칙(계좌 전체 기준): 노출이 2.45배를 넘으면 새 적립금은 SGOV로 보내고(매도 없음), 2.55배를 넘으면 3배를 팔아 2배로 낮추고 판 돈은 SGOV에 둡니다. 1.65배 밑으로 내려가면 SGOV로 3배를 사서 2배로 올립니다. 2.45배에서 바로 팔던 이전 규칙보다 QQQ 계열 적립 10년 구간 IRR이 1987~·1999~ 시작에서 중앙 +0.7~1.1%p 높았고, 2010~ 시작은 같았으며 최대 낙폭은 비슷했습니다. 매도 기준을 2.6배 이상으로 올리면 2010년 이후 성적이 크게 흔들려(2.6배 56%, 2.65배 45% 구간 승) 2.55배로 두었습니다.</li>
+      <li>시험했지만 채택하지 않은 것: 줄일 땐 투자분·올릴 땐 전체로 재는 혼합 기준(SGOV가 50% 넘게 쌓여 수익 하락), SGOV 상한 15~25%(QQQ는 약간 좋아지고 XLK는 나빠짐), 2.7~2.9배 넘으면 2.5배로(낙폭이 그냥 섞기에 가까움), SGOV 분할 투입(닷컴은 조금 낫고 2010년 이후는 나쁨). 연말 하베스팅은 QLD에도 같은 이득이라 비교 우위는 아닙니다.</li>
       <li>투자분 기준(SGOV 제외)으로 재면, 줄인 직후 투자분이 정확히 2배라 다시 아래 기준까지 내려가려면 나스닥이 20~25% 이상 빠져야 합니다. SGOV는 따로 두고 TQQQ:QQQ 비율만 봅니다. 2006년 이후엔 다시 사는 일이 0~2번뿐이라 SGOV가 계좌의 50~68%까지 쌓이고, 계좌 전체 노출(SGOV 포함)은 평균 1.6~1.9배로 내려갑니다. 반대로 닷컴 붕괴처럼 길게 빠지는 장에선 미리 쌓아 둔 SGOV로 여러 번 다시 사서 크게 유리했습니다. 낙폭은 크게 얕아지지만(2010년~ -42% 대 QLD -61%) 수익은 QLD와 그냥 섞기보다 대부분 낮았습니다.</li>
       <li>'1년에 한 번' 재조정은 몇 월에 하느냐에 따라 결과가 크게 달라졌습니다(QQQ 계열 2010년~ 10년 적립 구간에서 1월이면 QLD를 66% 이겼지만 7월이면 0%). 날짜 운이 섞인 결과라 특정 달이 좋다고 보기 어렵습니다.</li>
       <li>과거 수익률은 미래를 보장하지 않습니다.</li>
@@ -433,11 +437,12 @@ function buildAssets(RAW, D) {
   function params() {
     return { initialKRW: Math.max(0, +$('initial').value || 0) * 1e4, weeklyKRW: Math.max(0, +$('weekly').value || 0) * 1e4, fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100,
       taxRate: +$('taxRate').value / 100, deduct: 2500000, w: wtNow(), reb: $('reb').value, month: +$('month').value, band: +$('band').value, check: 'd',
-      up: +$('up').value, lo: +$('lo').value, relever: $('relever').value, expoBase: $('expoBase').value };
+      up: +$('up').value, lo: +$('lo').value, relever: $('relever').value, expoBase: $('expoBase').value, upSell: Math.max(+$('upSell').value, +$('up').value), flowBuf: $('flowBuf').checked, harvest: $('harvest').checked };
   }
   const run = (acc, i0, i1, p) => {
     if (i0 < acc.f0 + 1) return null;
-    const o = acc.two ? Object.assign({}, p, { levHi: 2, levLo: 2, w: 1, reb: 'none' }) : Object.assign({}, p, { levHi: 3, levLo: 1, target: 1 + 2 * p.w });
+    const o = acc.two ? Object.assign({}, p, { levHi: 2, levLo: 2, w: 1, reb: 'none' }) : Object.assign({}, p, { levHi: 3, levLo: 1, target: 1 + 2 * p.w },
+      p.reb === 'sgov' && p.expoBase === 'total' ? { reb: 'sgov2', trimBase: 'total' } : {});
     return mixBT(D, i0, i1, acc.px, o);
   };
   const dP = v => isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%p' : '–';
@@ -456,7 +461,9 @@ function buildAssets(RAW, D) {
   function render() {
     const p = params();
     $('monthBox').style.display = p.reb === 'year' ? '' : 'none'; $('bandBox').style.display = p.reb === 'band' ? '' : 'none';
-    document.querySelectorAll('.sgovBox').forEach(e => { e.style.display = p.reb === 'sgov' ? '' : 'none'; }); $('lblUp').textContent = p.up.toFixed(2) + '배'; $('lblLo').textContent = p.lo.toFixed(2) + '배';
+    document.querySelectorAll('.sgovBox').forEach(e => { e.style.display = p.reb === 'sgov' ? '' : 'none'; });
+    if (p.reb === 'sgov') { document.querySelectorAll('.totBox').forEach(e => { e.style.display = p.expoBase === 'total' ? '' : 'none'; }); document.querySelectorAll('.invBox').forEach(e => { e.style.display = p.expoBase === 'invested' ? '' : 'none'; }); }
+    $('lblUpSell').textContent = p.upSell.toFixed(2) + '배'; $('lblUp').textContent = p.up.toFixed(2) + '배'; $('lblLo').textContent = p.lo.toFixed(2) + '배';
     $('lblInitial').textContent = p.initialKRW > 0 ? krw(p.initialKRW) : '없음'; $('lblWeekly').textContent = p.weeklyKRW > 0 ? `${p.weeklyKRW / 1e4}만원` : '적립 안 함';
     $('lblWt').textContent = `${Math.round(p.w * 100)}% (처음 노출 ${(1 + 2 * p.w).toFixed(1)}배)`; $('lblBand').textContent = p.band.toFixed(2) + '배';
     $('lblFee').textContent = (p.fee * 100).toFixed(2) + '%'; $('lblFxs').textContent = (p.fxSpread * 100).toFixed(2) + '%'; $('lblTax').textContent = (p.taxRate * 100).toFixed(1) + '%';
@@ -493,7 +500,7 @@ function buildAssets(RAW, D) {
         R[0] ? { name: `${nm[0]} 전체`, color: '--s-strat', v: pick(R[0].expo) } : null, R[2] ? { name: `${nm[2]} 전체`, color: '--s-x1', v: pick(R[2].expo) } : null].filter(Boolean),
       extra: k => [[0, nm[0]], [2, nm[2]]].filter(([j]) => R[j]).map(([j, n]) => `<div class="r"><span>${n} SGOV</span><b>${pct(R[j].cashW[idx[k] - i0], 0)}</b></div>`).join('') });
     lastR = R; renderLog();
-    $('rebNote').textContent = { none: '되돌리지 않음', year: `매년 ${p.month}월 첫 거래일에 되돌림`, band: `2배 ± ${p.band.toFixed(2)}배를 벗어나면 되돌림`, flow: '적립금으로만 되돌림', sgov: `${p.up.toFixed(2)}배 넘으면 SGOV로, ${p.lo.toFixed(2)}배 밑이면 다시 올림` }[p.reb];
+    $('rebNote').textContent = { none: '되돌리지 않음', year: `매년 ${p.month}월 첫 거래일에 되돌림`, band: `2배 ± ${p.band.toFixed(2)}배를 벗어나면 되돌림`, flow: '적립금으로만 되돌림', sgov: p.expoBase === 'total' ? `${p.up.toFixed(2)}배 넘으면 적립금 SGOV로${p.flowBuf ? '' : '(끔)'}, ${p.upSell.toFixed(2)}배 넘으면 3배 매도, ${p.lo.toFixed(2)}배 밑이면 SGOV로 다시 올림` : `투자분 ${p.up.toFixed(2)}배 넘으면 SGOV로, ${p.lo.toFixed(2)}배 밑이면 다시 올림` }[p.reb];
     clearTimeout(rollTimer); $('rollNote').textContent = '계산 중…'; rollTimer = setTimeout(() => renderRoll(p), 40);
     renderYears();
   }
