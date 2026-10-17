@@ -1,30 +1,30 @@
 {
  "date": "2026-10-16",
  "kelly": {
-  "target": 3,
+  "target": 2.5,
   "mix": [
-   1,
-   0,
+   0.75,
+   0.25,
    0
   ],
-  "hold": 3.0,
+  "hold": 2.34,
   "holdMix": [
-   1.0,
-   0.0,
+   0.669,
+   0.331,
    0
   ],
-  "band": 1,
+  "band": 0.5,
   "act": false,
   "sigma": 0.1858,
   "mu": 0.1366,
   "contribMix": [
-   1,
-   0,
+   0.5,
+   0.5,
    0
   ],
   "lastTrade": {
-   "date": "2026-08-27",
-   "msg": "노출 1.99배 → 3.00배 (20일 변동성 21%, 기대수익 13.7%) · TQQQ 100% · QQQ 0% · SGOV 0% (실현손익 −151.41억원)"
+   "date": "2025-05-09",
+   "msg": "노출 0.00배 → 2.00배 (20일 변동성 29%) · TQQQ 50% · QQQ 50% · SGOV 0%"
   }
  },
  "regime": "in",
@@ -48,7 +48,7 @@
  "ma20": 30524.21,
  "rules": {
   "kelly": {
-   "name": "노출 조절 (TQQQ·QQQ·SGOV)",
+   "name": "변동성 계단 (TQQQ·QQQ·SGOV)",
    "regime": "in"
   },
   "final": {
@@ -81,7 +81,7 @@
   "cugold": -1.9
  },
  "macro_ok": true,
- "built": "2026-10-17 10:29 KST",
+ "built": "2026-10-17 11:11 KST",
  "sources": [
   "github-mirrors",
   "yahoo(5/5)"
