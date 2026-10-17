@@ -1,4 +1,4 @@
-<title>반반 vs QLD 적립</title>
+<title>2배 만드는 법 비교</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -8,7 +8,7 @@
 :root {
   --bg: #f3f5f8; --surface: #ffffff; --sunken: #eef1f5; --fg: #121820; --muted: #59616f; --faint: #8a919d; --line: #dfe3e9;
   --accent: #1f5fc4; --accent-ink: #ffffff;
-  --s-strat: #2a78d6; --s-dca: #eb6834; --s-paid: #8a919d;
+  --s-strat: #2a78d6; --s-dca: #eb6834; --s-paid: #8a919d; --s-x1: #12936b; --s-x2: #9b4dca;
   --good: #16794a; --good-bg: #e3f3ea; --warn: #9a6400; --warn-bg: #fbf0d9; --bad: #c2312f; --bad-bg: #fbe6e5;
   --band-out: rgba(194, 49, 47, 0.10); --band-staged: rgba(201, 133, 0, 0.12); --sel-fill: rgba(31, 95, 196, 0.12);
   --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
@@ -17,14 +17,14 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1116; --surface: #161b22; --sunken: #1c222b; --fg: #e7eaef; --muted: #a3abb8; --faint: #747d8b; --line: #2a313b;
   --accent: #5b93ea; --accent-ink: #0e1116;
-  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695;
+  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695; --s-x1: #2fbf8f; --s-x2: #b77be0;
   --good: #4cc48a; --good-bg: #13291f; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #ef6b68; --bad-bg: #2d1717;
   --band-out: rgba(239, 107, 104, 0.13); --band-staged: rgba(226, 166, 59, 0.14); --sel-fill: rgba(91, 147, 234, 0.16);
   color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #0e1116; --surface: #161b22; --sunken: #1c222b; --fg: #e7eaef; --muted: #a3abb8; --faint: #747d8b; --line: #2a313b;
   --accent: #5b93ea; --accent-ink: #0e1116;
-  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695;
+  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695; --s-x1: #2fbf8f; --s-x2: #b77be0;
   --good: #4cc48a; --good-bg: #13291f; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #ef6b68; --bad-bg: #2d1717;
   --band-out: rgba(239, 107, 104, 0.13); --band-staged: rgba(226, 166, 59, 0.14); --sel-fill: rgba(91, 147, 234, 0.16);
   color-scheme: dark; }
@@ -134,105 +134,120 @@ td.num { font-family: var(--f-num); }
 details summary { cursor: pointer; font-weight: 600; }
 details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
-.ctl2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 18px; }
-input[type=month] { width: 100%; font: inherit; font-family: var(--f-num); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); color: var(--fg); }
-.verdict { font-size: 1.02rem; margin: 0; } .verdict b { font-family: var(--f-num); }
+.verdict { margin: 0; display: grid; gap: 6px; } .verdict p { margin: 0; } .verdict b { font-family: var(--f-num); font-weight: 600; }
 .back { font-size: 0.85rem; color: var(--accent); text-decoration: none; }
-.yr td:nth-child(6), .yr th:nth-child(6) { text-align: left; }
+.ctl2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px 18px; align-items: start; }
+.span2 { grid-column: 1 / -1; }
+.how { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 82ch; color: var(--muted); } .how b { color: var(--fg); font-weight: 600; }
+#yr td:nth-child(6) { text-align: left; }
+.na { color: var(--faint); }
 </style>
 <div class="wrap">
   <header>
     <a class="back" href="./">← QLD 노출 조절 백테스터</a>
-    <div class="eyebrow" style="margin-top:8px">매수만 · 리밸런싱 없음 · 세후 원화 기준</div>
-    <h1>TQQQ·QQQ 반반 vs QLD 100%</h1>
-    <p class="sub">매주(또는 처음 한 번) 같은 돈을 넣되, 한쪽은 TQQQ와 QQQ를 정한 비율로 나눠 사고 다른 쪽은 QLD만 삽니다. 둘 다 팔지도 비중을 맞추지도 않고 끝까지 들고 갑니다. 처음 산 날 노출은 둘 다 2배지만, 반반 쪽은 이후 TQQQ와 QQQ가 따로 움직여 노출이 1~3배 사이로 표류합니다.</p>
+    <div class="eyebrow" style="margin-top:8px">매수 위주 · 실제 ETF 가격 · 세후 원화 기준</div>
+    <h1>3배+1배 섞기 vs 2배 하나</h1>
+    <p class="sub">같은 날 같은 돈을 넣는 네 계좌를 비교합니다: <b style="color:var(--s-strat)">TQQQ+QQQ</b> 대 <b style="color:var(--s-dca)">QLD</b>, <b style="color:var(--s-x1)">TECL+XLK</b> 대 <b style="color:var(--s-x2)">ROM</b>. 섞는 계좌는 처음 산 날 2배이고, 그 뒤엔 3배와 1배가 따로 움직여 노출이 표류합니다. 다시 2배로 되돌리는 방법(재조정)도 고를 수 있습니다. 각 ETF가 상장한 뒤로는 실제 가격을, 그 전은 실제 가격에 맞춘 합성값을 씁니다.</p>
   </header>
 
   <section class="panel">
     <div class="chart-head"><h2>결론</h2><span class="hint" id="periodNote"></span></div>
-    <p class="verdict" id="verdict">계산 중…</p>
+    <div class="verdict" id="verdict">계산 중…</div>
   </section>
 
   <form class="panel" id="ctl" autocomplete="off">
     <div class="ctl2">
-      <div class="field"><label for="start">시작 월</label><input type="month" id="start" value="2010-02"></div>
-      <div class="field"><label for="end">종료 월</label><input type="month" id="end"></div>
-      <div class="field"><label for="initial">처음 한 번 넣는 거치금 (만원) <b id="lblInitial"></b></label><input type="number" id="initial" min="0" step="100" value="0" inputmode="numeric"></div>
+      <div class="field span2">
+        <div class="rowlab"><span>시작 <b id="lblStart"></b></span><span>종료 <b id="lblEnd"></b></span></div>
+        <div class="brush" id="brush"><canvas aria-hidden="true"></canvas><input type="range" id="rStart" aria-label="시작 월"><input type="range" id="rEnd" aria-label="종료 월"></div>
+        <p class="hint" style="margin-top:4px">뒤 배경은 QQQ(배당 포함, 로그). 양끝 손잡이를 끌어 기간을 고르세요. XLK 계열은 1998년 12월부터 있습니다.</p>
+        <div class="chips" id="presets" style="margin-top:6px">
+          <button type="button" class="chip" data-p="1986-01">1986~</button>
+          <button type="button" class="chip" data-p="1999-01">1999~</button>
+          <button type="button" class="chip" data-p="2007-02">2007~ (ROM 상장)</button>
+          <button type="button" class="chip" data-p="2010-02">2010~ (TQQQ 상장)</button>
+          <button type="button" class="chip" data-p="-10">최근 10년</button>
+          <button type="button" class="chip" data-p="-5">최근 5년</button>
+        </div>
+      </div>
+      <div class="field"><label for="initial">처음 한 번 넣는 거치금 (만원) <b id="lblInitial"></b></label><input type="number" id="initial" min="0" step="100" value="0" inputmode="numeric">
+        <div class="chips" style="margin-top:6px"><button type="button" class="chip" data-i="0" data-w="70">적립 주 70만</button><button type="button" class="chip" data-i="10000" data-w="0">거치 1억</button></div></div>
       <div class="field"><label for="weekly">주간 적립액 (만원) <b id="lblWeekly"></b></label><input type="number" id="weekly" min="0" step="5" value="70" inputmode="numeric"></div>
-      <div class="field"><label for="wt">TQQQ 비율 (나머지 QQQ) <b id="lblWt"></b></label><input type="range" id="wt" min="0" max="100" step="5" value="50"></div>
-      <div class="field"><label for="cost">비용 가정</label>
-        <select id="cost"><option value="real">실제 ETF에 맞춤 (기본)</option><option value="model">기존 모델 (스프레드 0.5% 공통, 배당세 없음)</option></select></div>
+      <div class="field"><label for="wt">3배 비율 (나머지 1배) <b id="lblWt"></b></label><input type="range" id="wt" min="0" max="100" step="5" value="50"></div>
+      <div class="field"><label for="reb">다시 2배로 되돌리기</label>
+        <select id="reb">
+          <option value="none">안 함 · 사기만 (기본)</option>
+          <option value="year">1년에 한 번</option>
+          <option value="band">노출이 2배에서 벗어나면</option>
+          <option value="flow">적립금으로만 (매도 없음)</option>
+        </select></div>
+      <div class="field" id="monthBox"><label for="month">되돌리는 달</label>
+        <select id="month"><option value="1">1월 첫 거래일</option><option value="2">2월 첫 거래일</option><option value="3">3월 첫 거래일</option><option value="4">4월 첫 거래일</option><option value="5">5월 첫 거래일</option><option value="6">6월 첫 거래일</option><option value="7">7월 첫 거래일</option><option value="8">8월 첫 거래일</option><option value="9">9월 첫 거래일</option><option value="10">10월 첫 거래일</option><option value="11">11월 첫 거래일</option><option value="12">12월 첫 거래일</option></select></div>
+      <div class="field" id="bandBox"><label for="band">허용 폭: 2배 ± <b id="lblBand"></b></label><input type="range" id="band" min="0.1" max="0.8" step="0.05" value="0.5"></div>
       <div class="field"><label for="fee">매매 수수료 (편도) <b id="lblFee"></b></label><input type="range" id="fee" min="0" max="0.5" step="0.01" value="0.1"></div>
       <div class="field"><label for="fxs">환전 스프레드 <b id="lblFxs"></b></label><input type="range" id="fxs" min="0" max="1" step="0.05" value="0.1"></div>
-      <div class="field"><label for="taxRate">양도세율 (청산 시) <b id="lblTax"></b></label><input type="range" id="taxRate" min="0" max="33" step="0.5" value="22"></div>
+      <div class="field"><label for="taxRate">양도세율 <b id="lblTax"></b></label><input type="range" id="taxRate" min="0" max="33" step="0.5" value="22"></div>
     </div>
-    <div class="chips" id="presets" style="margin-top:12px">
-      <button type="button" class="chip" data-p="1987-01">1987~</button>
-      <button type="button" class="chip" data-p="1999-03">1999~ (거품 정점)</button>
-      <button type="button" class="chip" data-p="2006-07">2006~ (QLD 상장)</button>
-      <button type="button" class="chip" data-p="2010-02">2010~ (TQQQ 상장)</button>
-      <button type="button" class="chip" data-p="-10">최근 10년</button>
-      <button type="button" class="chip" data-p="-5">최근 5년</button>
-      <button type="button" class="chip" data-i="0" data-w="70">적립 주 70만</button>
-      <button type="button" class="chip" data-i="10000" data-w="0">거치 1억</button>
-    </div>
-    <p class="hint" style="margin-top:8px">거치금과 적립액은 같은 날 같은 비율로 나눠 삽니다. 적립액을 0으로 두면 거치식입니다. 양도세는 마지막 날 전부 판다고 보고 한 번만 계산합니다(손익 통산, 연 250만원 공제).</p>
+    <p class="hint" style="margin-top:10px">되돌릴 때 파는 차익은 그해 양도세(연 250만원 공제, 22%)로 연말에 두 종목을 같은 비율로 팔아 냅니다. 마지막 날엔 전부 판다고 보고 남은 차익에 한 번 더 세금을 매깁니다. '적립금으로만'은 새 돈을 2배에 가까워지는 쪽으로 사서 팔지 않고 되돌립니다(거치식에선 효과 없음).</p>
   </form>
 
   <section class="panel">
-    <div class="chart-head"><h2>결과</h2><span class="hint">같은 날 같은 금액을 넣은 두 계좌</span></div>
+    <div class="chart-head"><h2>결과</h2><span class="hint">같은 날 같은 금액</span></div>
     <div class="tablewrap"><table id="kpi">
-      <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span><span id="mixName">반반</span></th><th scope="col"><span class="key" style="background:var(--s-dca)"></span>QLD 100%</th><th scope="col">차이</th></tr></thead>
+      <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span><span class="nmA">TQQQ+QQQ</span></th><th scope="col"><span class="key" style="background:var(--s-dca)"></span>QLD</th><th scope="col"><span class="key" style="background:var(--s-x1)"></span><span class="nmC">TECL+XLK</span></th><th scope="col"><span class="key" style="background:var(--s-x2)"></span>ROM</th></tr></thead>
       <tbody></tbody></table></div>
+    <p class="hint" style="margin-top:8px">IRR은 넣은 시점과 금액을 반영한 연환산 수익률, MDD는 입출금 영향을 뺀 시간가중 기준입니다. 기간이 1998년 12월 이전에서 시작하면 XLK 계열은 비워 둡니다.</p>
   </section>
 
   <section class="panel">
     <div class="chart-head"><h2>평가액</h2><div class="chips"><button type="button" class="chip" id="logBtn" aria-pressed="true">로그 축</button></div></div>
-    <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="mixL">반반</span></span><span><i style="background:var(--s-dca)"></i>QLD 100%</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span></div>
+    <div class="legend" id="lgV"></div>
     <div class="cv" id="cvValue"><canvas aria-label="평가액 추이" role="img"></canvas></div>
   </section>
 
   <section class="panel">
     <div class="chart-head"><h2>낙폭 (시간가중)</h2></div>
-    <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="mixL">반반</span></span><span><i style="background:var(--s-dca)"></i>QLD 100%</span></div>
+    <div class="legend" id="lgD"></div>
     <div class="cv short" id="cvDD"><canvas aria-label="낙폭" role="img"></canvas></div>
   </section>
 
   <section class="panel">
-    <div class="chart-head"><h2>반반 계좌의 노출 표류</h2><span class="hint">리밸런싱이 없어서 생기는 변화</span></div>
-    <div class="legend"><span><i style="background:var(--s-strat)"></i>나스닥100 노출 (배)</span><span><i style="background:var(--fg)"></i>TQQQ 비중 × 3</span><span><i style="background:var(--warn)"></i>QLD 2배</span></div>
+    <div class="chart-head"><h2>섞은 계좌의 노출 표류</h2><span class="hint" id="rebNote"></span></div>
+    <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="nmA">TQQQ+QQQ</span></span><span><i style="background:var(--s-x1)"></i><span class="nmC">TECL+XLK</span></span><span><i style="background:var(--warn)"></i>2배</span></div>
     <div class="cv short" id="cvExpo"><canvas aria-label="노출 표류" role="img"></canvas></div>
-    <p class="hint" style="margin-top:8px">오르는 장에서는 TQQQ가 QQQ보다 빨리 커져 계좌 노출이 3배 쪽으로, 크게 빠지면 TQQQ가 쪼그라들어 1배 쪽으로 갑니다. 적립을 계속하면 새 돈은 2배로 들어가 표류를 조금씩 되돌립니다.</p>
+    <p class="hint" style="margin-top:8px">오르는 장에선 3배 쪽이 빨리 커져 노출이 3배로, 크게 빠지면 3배 쪽이 쪼그라들어 1배로 갑니다. 이 '빠질 때 저절로 줄고 오를 때 저절로 느는' 성질이 섞기의 장점이자, 오래 오른 뒤 낙폭이 깊어지는 이유입니다.</p>
   </section>
 
   <section class="panel">
     <div class="chart-head"><h2>시작 시점을 바꿔 가며 (같은 설정)</h2><span class="hint" id="rollNote">계산 중…</span></div>
     <div class="tablewrap"><table id="roll">
-      <thead><tr><th scope="col">구간</th><th scope="col">구간 수</th><th scope="col">반반 승률</th><th scope="col">IRR 차 중앙</th><th scope="col">하위 10%</th><th scope="col">상위 10%</th><th scope="col">MDD 차 중앙</th></tr></thead>
+      <thead><tr><th scope="col">구간</th><th scope="col">구간 수</th><th scope="col"><span class="nmA">TQQQ+QQQ</span> > QLD</th><th scope="col"><span class="nmC">TECL+XLK</span> > ROM</th><th scope="col">XLK 섞기 > QQQ 섞기</th><th scope="col">ROM > QLD</th></tr></thead>
       <tbody></tbody></table></div>
-    <p class="hint" style="margin-top:8px">매달 1일에 시작해 정한 기간 동안 같은 방식으로 넣었을 때, 세후 청산가치로 누가 이겼는지 셉니다. IRR·MDD 차는 반반 − QLD(MDD 차가 음수면 반반 낙폭이 더 깊음). '2010~'은 TQQQ가 실제로 있던 시기만 쓴 결과입니다.</p>
+    <p class="hint" style="margin-top:8px">매달 1일에 시작해 정한 기간 동안 같은 방식으로 넣었을 때 세후 청산가치로 이긴 비율, 괄호는 IRR 차의 중앙값(앞 − 뒤)입니다. 1999~는 XLK가 있는 시기 전체, 2010~은 네 ETF가 모두 실제로 있던 시기입니다.</p>
   </section>
 
   <section class="panel">
-    <div class="chart-head"><h2>비용과 변동성 끌림</h2><span class="hint">연초에 산 1년 보유 기준, 합성 수익률</span></div>
-    <div class="tablewrap"><table id="yr" class="yr">
-      <thead><tr><th scope="col">연도</th><th scope="col">나스닥 변동성</th><th scope="col">QQQ</th><th scope="col">QLD</th><th scope="col">TQQQ</th><th scope="col">반반 vs QLD</th><th scope="col">끌림 QLD·TQQQ</th><th scope="col">보수+차입 QLD·반반</th></tr></thead>
+    <div class="chart-head"><h2>연도별 실제 수익과 비용</h2>
+      <div class="chips" id="yrPick"><button type="button" class="chip" data-g="Q" aria-pressed="true">QQQ 계열</button><button type="button" class="chip" data-g="X" aria-pressed="false">XLK 계열</button></div></div>
+    <div class="tablewrap"><table id="yr">
+      <thead><tr><th scope="col">연도</th><th scope="col">변동성</th><th scope="col" class="h1">QQQ</th><th scope="col" class="h2">QLD</th><th scope="col" class="h3">TQQQ</th><th scope="col">섞기(연초 반반) vs 2배</th><th scope="col">끌림 2배·3배</th></tr></thead>
       <tbody></tbody></table></div>
     <ul class="how" style="margin-top:12px">
-      <li><b>끌림</b>: 매일 배수를 맞추는 상품은 변동성의 제곱에 비례해 깎입니다. 1년에 대략 QLD는 σ², TQQQ는 3σ²(σ = 그해 나스닥100 변동성). 반반은 처음엔 1.5σ²로 QLD보다 0.5σ² 더 깎입니다(변동성 20%면 연 2%p).</li>
-      <li><b>비용</b>: 빌리는 돈은 둘이 같습니다(QLD 1배, 반반의 TQQQ 절반 × 2배 = 1배). 보수는 QLD 0.95%, 반반 0.52%(TQQQ 0.84%·QQQ 0.20%의 절반씩)라 반반이 연 0.4%p 싸지만, 실제 수익률로 보정한 차입 스프레드는 QLD 0.25%, TQQQ 0.5%라 차이는 연 0.2%p 정도로 줄어듭니다.</li>
-      <li><b>그래도 반반이 이기는 경우</b>: 리밸런싱이 없으니 반반 계좌는 TQQQ와 QQQ 각자의 결과를 더한 값입니다. 오래 들고 가면 TQQQ의 성장률(≈ 3μ − 4.5σ²)과 QLD의 성장률(≈ 2μ − 2σ²)을 비교하게 되는데, 나스닥100 초과수익 μ가 2.5σ²보다 크면(변동성 20%면 10%, 25%면 15.6%) TQQQ가 더 크게 자라 반반이 이깁니다. 낮은 변동성으로 꾸준히 오르는 장(2013·2017·2019·2023년)이 그렇고, 출렁이는 보통 해는 QLD가 이깁니다.</li>
-      <li><b>매매 비용</b>: 수수료·환전은 금액 비율이라 두 종목으로 나눠 사도 같습니다. 다만 QQQ는 한 주가 비싸서 주 35만원씩 사려면 소수점 매수가 필요하고, 증권사에 따라 체결 시점·가격이 불리할 수 있습니다(반영 안 함).</li>
+      <li><b>끌림</b>: 매일 배수를 맞추는 상품은 1년에 대략 2배가 σ², 3배가 3σ²만큼 깎입니다(σ = 그해 변동성). 반반은 처음부터 2배보다 0.5σ² 더 깎이는 대신, 3배와 1배가 따로 굴러가 크게 오르는 해엔 3배 쪽이 더 크게 자랍니다.</li>
+      <li><b>보수·차입</b>: 실제 가격으로 잰 연 비용(3배·2배를 기초자산의 배수와 비교한 차이 − 금리분, 2011~2025): QLD 1.34%, TQQQ 2.36%, ROM 2.30%, TECL 3.84%. 1배는 QQQ 0.20%, XLK 0.08% 보수뿐입니다. 빌리는 돈은 반반과 2배가 같아(1배분) 금리 부담은 같습니다.</li>
+      <li><b>배당 원천징수</b>: 미국 ETF 분배금엔 15%가 떼입니다. 2010년대 XLK 분배율은 연 1.3~1.9%로 QQQ(0.8~1.5%)보다 높아, 그만큼 원천징수 손실(연 0.1~0.3%)도 큽니다. 배당이 많은 건 세후로는 장점이 아닙니다. XLK는 보수가 낮아(0.08%) 일부 상쇄됩니다.</li>
+      <li><b>ROM은 XLK와 지수가 다릅니다</b>: ROM은 다우존스 미국 기술 지수를 2배로 따라가서 XLK 2배와의 일별 추적 차이가 연 7~10%입니다. TECL은 XLK와 같은 지수를 3배로 따라갑니다.</li>
     </ul>
   </section>
 
   <details class="panel">
     <summary>데이터와 가정</summary>
     <ul>
-      <li>QQQ: 배당 포함 수익률(1999년 3월 이전은 나스닥100 + 연 0.3%). '실제 ETF에 맞춤'은 배당(연 약 0.6%)의 미국 원천징수 15%를 뺍니다(연 약 0.09%).</li>
-      <li>QLD: QQQ 일간 수익률 × 2 − (3개월 금리 + 스프레드) − 보수 0.95%. TQQQ: × 3 − 2 × (3개월 금리 + 스프레드) − 보수 0.84%. '실제 ETF에 맞춤'의 스프레드는 2011~2025년 실제 연도별 수익률에 맞춘 값(QLD 0.25%, TQQQ 0.5%)으로, 합성과 실제의 연평균 차이가 QLD −0.02%p, TQQQ +0.03%p입니다. QLD 상장(2006년)·TQQQ 상장(2010년) 이전은 합성값입니다.</li>
-      <li>레버리지 ETF도 금리가 높던 2023년 이후 연 1% 안팎을 분배했고 같은 15% 원천징수가 붙지만, 양쪽에 비슷하게 걸려 반영하지 않았습니다.</li>
-      <li>적립은 매주 첫 거래일 종가, 원화를 환전 스프레드를 내고 달러로 바꿔 매수합니다. 매도·리밸런싱·하베스팅 없음, 마지막 날 전량 매도로 세후 청산가치를 계산합니다.</li>
+      <li>실제 가격(배당 재투자 수정주가, Yahoo Finance): QQQ 1999.03~, XLK 1998.12~, QLD 2006.06~, ROM 2007.02~, TECL 2008.12~, TQQQ 2010.02~. 그 이전은 기초자산 일간 수익률 × 배수 − (배수−1) × 3개월 금리 − 위의 연 비용으로 만든 합성값이고, QQQ 이전은 나스닥100 + 연 0.3%입니다.</li>
+      <li>분배금: 수정주가와 원주가의 비율로 실제 분배일·분배율을 찾아 15% 원천징수를 뺍니다. 하루 3%가 넘는 값은 분할·자본이득 분배로 보고 뺐습니다.</li>
+      <li>매수: 매주 첫 거래일 종가, 원화를 환전 스프레드를 내고 달러로 바꿔 삽니다. 소수점 매수를 가정합니다(QQQ·XLK는 1주가 비쌉니다).</li>
+      <li>재조정 매도는 평균단가로 차익을 계산하고, 연말에 그해 차익의 양도세를 냅니다. 마지막 날 전량 매도 세금까지 뺀 값이 세후 청산가치입니다.</li>
+      <li>'1년에 한 번' 재조정은 몇 월에 하느냐에 따라 결과가 크게 달라졌습니다(QQQ 계열 2010년~ 10년 적립 구간에서 1월이면 QLD를 66% 이겼지만 7월이면 0%). 날짜 운이 섞인 결과라 특정 달이 좋다고 보기 어렵습니다.</li>
       <li>과거 수익률은 미래를 보장하지 않습니다.</li>
     </ul>
   </details>
@@ -247,22 +262,49 @@ __ENGINE__
   const $ = id => document.getElementById(id);
   const toDate = d => new Date(d * 86400000);
   const ymd = d => { const t = toDate(d); return `${t.getUTCFullYear()}.${String(t.getUTCMonth() + 1).padStart(2, '0')}.${String(t.getUTCDate()).padStart(2, '0')}`; };
-  const krw = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; if (a >= 1e8) return s + (a / 1e8).toFixed(a >= 1e10 ? 0 : 2) + '억원'; return s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
-  const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
+  const krw = x => { if (!isFinite(x)) return '–'; const a = Math.abs(x), s = x < 0 ? '−' : ''; if (a >= 1e8) return s + (a / 1e8).toFixed(a >= 1e10 ? 0 : 2) + '억원'; return s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
+  const pct = (x, d = 1) => isFinite(x) ? (x * 100).toFixed(d) + '%' : '–';
   const axisKrw = v => { const t = v >= 1e8 ? v / 1e8 : v / 1e4; const s = Number.isInteger(Math.round(t * 100) / 100) ? Math.round(t).toLocaleString('ko-KR') : (Math.round(t * 10) / 10).toLocaleString('ko-KR'); return s + (v >= 1e8 ? '억' : '만'); };
-  // data sets for the two cost models
-  function build(model) {
-    const real = model === 'real';
-    const D = prepData(RAW, 2, 0.0095, real ? 0.0025 : 0.005), D3 = prepData(RAW, 3, 0.0084, 0.005);
-    D.lx3 = D3.lx;
-    if (real) { const ix = new Float64Array(D.n); ix[0] = 1; for (let i = 1; i < D.n; i++) ix[i] = ix[i - 1] * (1 + RAW.rq[i] - 0.15 * 0.006 / 252); D.ix = ix; }
-    return D;
+  const D = prepData(RAW);
+function buildAssets(RAW, D) {
+  const n = D.n, ETF = RAW.etf || {}, WHT = 0.15;
+  // yearly cost beyond L x underlying, fitted on 2011-2025 real prices; used only before each fund existed
+  const COST = { QLD: 0.0134, TQQQ: 0.0236, ROM: 0.0230, TECL: 0.0384 };
+  const retOf = nm => { const e = ETF[nm]; if (!e) return null; const r = new Float64Array(n).fill(NaN); for (let k = 0; k < e.r.length; k++) r[e.s + k + 1] = e.r[k]; return { r, s: e.s }; };
+  const divOf = nm => { const a = new Float64Array(n); for (const [i, d] of ((ETF[nm] || {}).d || [])) a[i] = d; return a; };
+  const out = {}, first = {};
+  // underlyings (gross daily returns, with dividends)
+  const q = retOf('QQQ'), x = retOf('XLK'); const uG = { QQQ: new Float64Array(n).fill(NaN), XLK: new Float64Array(n).fill(NaN) };
+  for (let i = 1; i < n; i++) { uG.QQQ[i] = q && i > q.s ? q.r[i] : RAW.rq[i]; if (x && i > x.s) uG.XLK[i] = x.r[i]; }
+  first.QQQ = 0; first.XLK = x ? x.s : n;
+  const idx = (r, f0, div, preDiv) => { const g = new Float64Array(n).fill(NaN); g[f0] = 1; for (let i = f0 + 1; i < n; i++) g[i] = g[i - 1] * (1 + r[i] - WHT * (div ? div[i] : 0) - (preDiv ? preDiv(i) : 0)); return g; };
+  out.QQQ = idx(uG.QQQ, 0, divOf('QQQ'), i => (!q || i <= q.s) ? WHT * 0.005 / 252 : 0);
+  out.XLK = x ? idx(uG.XLK, first.XLK, divOf('XLK')) : null;
+  for (const [nm, u, L] of [['QLD', 'QQQ', 2], ['TQQQ', 'QQQ', 3], ['ROM', 'XLK', 2], ['TECL', 'XLK', 3]]) {
+    const f0 = first[u]; if (f0 >= n) { out[nm] = null; continue; }
+    const real = retOf(nm), r = new Float64Array(n).fill(NaN);
+    for (let i = f0 + 1; i < n; i++) r[i] = real && i > real.s ? real.r[i] : L * uG[u][i] - (L - 1) * D.tb[i] / 252 - COST[nm] / 252;
+    out[nm] = idx(r, f0, divOf(nm)); first[nm] = f0;
   }
-  const DS = { real: build('real'), model: build('model') };
-  let D = DS.real;
-  const lastYM = (() => { const t = toDate(D.day[D.n - 1]); return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}`; })();
-  $('end').value = lastYM; $('end').max = lastYM; $('start').max = lastYM; $('start').min = '1986-01'; $('end').min = '1986-02';
-  const dayOf = (ym, endOfMonth) => { const [y, m] = ym.split('-').map(Number); return endOfMonth ? Date.UTC(y, m, 0) / 86400000 : Date.UTC(y, m - 1, 1) / 86400000; };
+  out.first = first; out.since = { QQQ: q ? q.s : n, QLD: (ETF.QLD || {}).s, TQQQ: (ETF.TQQQ || {}).s, XLK: x ? x.s : n, ROM: (ETF.ROM || {}).s, TECL: (ETF.TECL || {}).s };
+  return out;
+}
+
+  const A = buildAssets(RAW, D);
+  const ACC = [
+    { k: 'A', name: () => mixName('TQQQ', 'QQQ'), color: '--s-strat', px: { hi: A.TQQQ, lo: A.QQQ }, mix: true, f0: 0 },
+    { k: 'B', name: () => 'QLD', color: '--s-dca', px: { hi: A.QLD, lo: A.QLD }, two: true, f0: 0 },
+    { k: 'C', name: () => mixName('TECL', 'XLK'), color: '--s-x1', px: { hi: A.TECL, lo: A.XLK }, mix: true, f0: A.first.XLK },
+    { k: 'E', name: () => 'ROM', color: '--s-x2', px: { hi: A.ROM, lo: A.ROM }, two: true, f0: A.first.XLK },
+  ];
+  const wtNow = () => +$('wt').value / 100;
+  const mixName = (h, l) => { const t = wtNow(); return t === 0.5 ? `${h}+${l}` : `${h} ${Math.round(t * 100)}·${l} ${Math.round((1 - t) * 100)}`; };
+  // month list and brush with QQQ background
+  const months = []; { let cur = null; for (let i = 0; i < D.n; i++) { const t = toDate(D.day[i]); const key = t.getUTCFullYear() * 12 + t.getUTCMonth(); if (!cur || cur.key !== key) { cur = { key, y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, i0: i, i1: i }; months.push(cur); } else cur.i1 = i; } }
+  months.shift();
+  const rS = $('rStart'), rE = $('rEnd'); [rS, rE].forEach(r => { r.min = 0; r.max = months.length - 1; r.step = 1; });
+  const mIdx = s => { const [y, m] = s.split('-').map(Number); const k = months.findIndex(o => o.y === y && o.m === m); return k < 0 ? 0 : k; };
+  rS.value = mIdx('2010-02'); rE.value = months.length - 1;
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   function makeChart(host, opts) {
     const cv = host.querySelector('canvas'); const ctx = cv.getContext('2d');
@@ -346,96 +388,113 @@ __ENGINE__
     return { set(data) { st.data = data; st.hover = -1; draw(); }, draw };
   }
 
+  const brushHost = $('brush'), bcv = brushHost.querySelector('canvas'), bctx = bcv.getContext('2d');
+  const mPx = months.map(o => A.QQQ[o.i1]);
+  function drawBrush() {
+    const w = brushHost.clientWidth, h = brushHost.clientHeight, dpr = window.devicePixelRatio || 1; if (!w) return;
+    bcv.width = Math.round(w * dpr); bcv.height = Math.round(h * dpr); bctx.setTransform(dpr, 0, 0, dpr, 0, 0); bctx.clearRect(0, 0, w, h);
+    const M = months.length - 1, tw = 20, X = k => tw / 2 + k / M * (w - tw);
+    const lo = Math.log10(Math.min(...mPx)), hi = Math.log10(Math.max(...mPx)), Y = v => 8 + (1 - (Math.log10(v) - lo) / (hi - lo)) * (h - 26);
+    const a = +rS.value, b = +rE.value;
+    const path = (k0, k1) => { bctx.beginPath(); for (let k = k0; k <= k1; k++) { const x = X(k), y = Y(mPx[k]); k === k0 ? bctx.moveTo(x, y) : bctx.lineTo(x, y); } };
+    path(0, M); bctx.strokeStyle = css('--faint'); bctx.lineWidth = 1.25; bctx.stroke();
+    path(a, b); bctx.lineTo(X(b), h - 18); bctx.lineTo(X(a), h - 18); bctx.closePath(); bctx.fillStyle = css('--sel-fill'); bctx.fill();
+    path(a, b); bctx.strokeStyle = css('--accent'); bctx.lineWidth = 2; bctx.stroke();
+    bctx.font = '10px ' + css('--f-num'); bctx.fillStyle = css('--faint'); bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
+    const step = w < 360 ? 10 : 5; months.forEach((o, k) => { if (o.m === 1 && o.y % step === 0) bctx.fillText(String(o.y), X(k), h - 3); });
+  }
+  new ResizeObserver(drawBrush).observe(brushHost);
   const chV = makeChart($('cvValue'), { padL: 64 }), chD = makeChart($('cvDD'), { padL: 52 }), chE = makeChart($('cvExpo'), { padL: 52 });
   let logScale = true;
   $('logBtn').addEventListener('click', e => { logScale = !logScale; e.currentTarget.setAttribute('aria-pressed', String(logScale)); render(); });
   function params() {
-    const t = +$('wt').value / 100;
     return { initialKRW: Math.max(0, +$('initial').value || 0) * 1e4, weeklyKRW: Math.max(0, +$('weekly').value || 0) * 1e4, fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100,
-      taxRate: +$('taxRate').value / 100, deduct: 2500000, t };
+      taxRate: +$('taxRate').value / 100, deduct: 2500000, w: wtNow(), reb: $('reb').value, month: +$('month').value, band: +$('band').value, check: 'd' };
   }
-  const MIX = p => Object.assign({}, p, { w: { t: p.t, q: 1 - p.t, l: 0 } }), QLD = p => Object.assign({}, p, { w: { t: 0, q: 0, l: 1 } });
-  const mixName = p => p.t === 0.5 ? '반반' : `TQQQ ${Math.round(p.t * 100)} · QQQ ${Math.round((1 - p.t) * 100)}`;
-  function row(name, a, b, fmt, diff, better) {
-    let dtxt = '', cls = '';
-    if (diff) { const v = a - b; dtxt = diff(v); if (better && Math.abs(v) > 1e-12) cls = (v > 0) === (better === 'up') ? 'pos' : 'neg'; }
-    return `<tr><th scope="row">${name}</th><td class="num">${fmt(a)}</td><td class="num">${fmt(b)}</td><td class="num ${cls}">${dtxt}</td></tr>`;
-  }
-  const dP = v => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%p', dK = v => Math.abs(v) < 5000 ? '0' : (v >= 0 ? '+' : '') + krw(v);
+  const run = (acc, i0, i1, p) => {
+    if (i0 < acc.f0 + 1) return null;
+    const o = acc.two ? Object.assign({}, p, { levHi: 2, levLo: 2, w: 1, reb: 'none' }) : Object.assign({}, p, { levHi: 3, levLo: 1, target: 1 + 2 * p.w });
+    return mixBT(D, i0, i1, acc.px, o);
+  };
+  const dP = v => isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%p' : '–';
   let rollTimer = 0;
   function render() {
-    const p = params(); D = DS[$('cost').value];
-    $('lblInitial').textContent = p.initialKRW > 0 ? krw(p.initialKRW) : '없음';
-    $('lblWeekly').textContent = p.weeklyKRW > 0 ? `${p.weeklyKRW / 1e4}만원` : '적립 안 함';
-    $('lblWt').textContent = `${Math.round(p.t * 100)}% · QQQ ${Math.round((1 - p.t) * 100)}% (처음 노출 ${(1 + 2 * p.t).toFixed(1)}배)`;
+    const p = params();
+    $('monthBox').style.display = p.reb === 'year' ? '' : 'none'; $('bandBox').style.display = p.reb === 'band' ? '' : 'none';
+    $('lblInitial').textContent = p.initialKRW > 0 ? krw(p.initialKRW) : '없음'; $('lblWeekly').textContent = p.weeklyKRW > 0 ? `${p.weeklyKRW / 1e4}만원` : '적립 안 함';
+    $('lblWt').textContent = `${Math.round(p.w * 100)}% (처음 노출 ${(1 + 2 * p.w).toFixed(1)}배)`; $('lblBand').textContent = p.band.toFixed(2) + '배';
     $('lblFee').textContent = (p.fee * 100).toFixed(2) + '%'; $('lblFxs').textContent = (p.fxSpread * 100).toFixed(2) + '%'; $('lblTax').textContent = (p.taxRate * 100).toFixed(1) + '%';
-    const nm = mixName(p); $('mixName').textContent = nm; document.querySelectorAll('.mixL').forEach(e => { e.textContent = nm; });
+    document.querySelectorAll('.nmA').forEach(e => { e.textContent = ACC[0].name(); }); document.querySelectorAll('.nmC').forEach(e => { e.textContent = ACC[2].name(); });
+    let a = +rS.value, b = +rE.value; if (b - a < 6) { if (document.activeElement === rS) { a = Math.max(0, b - 6); rS.value = a; } else { b = Math.min(months.length - 1, a + 6); rE.value = b; } }
+    $('lblStart').textContent = `${months[a].y}.${String(months[a].m).padStart(2, '0')}`; $('lblEnd').textContent = `${months[b].y}.${String(months[b].m).padStart(2, '0')}`; drawBrush();
     if (!(p.initialKRW > 0 || p.weeklyKRW > 0)) { $('verdict').textContent = '거치금이나 주간 적립액 중 하나는 0보다 커야 합니다.'; return; }
-    let i0 = idxOfDay(D, dayOf($('start').value || '2010-02'), true), i1 = idxOfDay(D, dayOf($('end').value || lastYM, true), false);
-    i0 = Math.max(i0, 1); if (i1 - i0 < 60) i1 = Math.min(D.n - 1, i0 + 60);
-    const A = holdBT(D, i0, i1, MIX(p)), B = holdBT(D, i0, i1, QLD(p));
+    const i0 = Math.max(1, months[a].i0), i1 = months[b].i1;
+    const R = ACC.map(acc => run(acc, i0, i1, p));
     const yrs = (D.day[i1] - D.day[i0]) / 365.25;
-    $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])} · ${yrs.toFixed(1)}년 · 납입 ${krw(A.contributed)}`;
-    const win = A.finalAfter > B.finalAfter, gap = A.finalAfter / B.finalAfter - 1;
-    $('verdict').innerHTML = `이 기간엔 <b>${win ? nm : 'QLD 100%'}</b> 쪽이 이겼습니다. 세후 청산가치 ${krw(A.finalAfter)} 대 ${krw(B.finalAfter)} (${win ? '+' : ''}${(gap * 100).toFixed(1)}%), 연환산 ${pct(A.irr)} 대 ${pct(B.irr)}. 최대 낙폭은 ${pct(A.mddTwr, 0)} 대 ${pct(B.mddTwr, 0)}이고, 마지막 날 ${nm} 계좌의 노출은 ${A.expo[A.expo.length - 1].toFixed(2)}배(TQQQ 비중 ${pct(A.wT[A.wT.length - 1], 0)})까지 표류해 있었습니다.`;
-    $('kpi').querySelector('tbody').innerHTML = [
-      row('세후 청산가치', A.finalAfter, B.finalAfter, krw, dK, 'up'),
-      row('세전 평가액', A.finalPre, B.finalPre, krw, dK, 'up'),
-      row('연환산 수익률 (IRR)', A.irr, B.irr, v => pct(v), dP, 'up'),
-      row('CAGR (시간가중)', A.twrCagr, B.twrCagr, v => pct(v), dP, 'up'),
-      row('MDD (시간가중)', A.mddTwr, B.mddTwr, v => pct(v, 0), dP, 'up'),
-      row('평가액 최대 낙폭', A.mddValue, B.mddValue, v => pct(v, 0), dP, 'up'),
-      row('원금 대비 최악', A.worstVsPaid, B.worstVsPaid, v => pct(v, 0), dP, 'up'),
-      row('마지막 날 노출', A.expo[A.expo.length - 1], 2, v => v.toFixed(2) + '배', v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2), null),
-      row('청산 시 양도세', A.liqTax, B.liqTax, krw, dK, 'down'),
-      row('매수 수수료 합계', A.fees, B.fees, krw, dK, 'down'),
-    ].join('');
+    $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])} · ${yrs.toFixed(1)}년 · 납입 ${krw(R[1].contributed)}`;
+    const nm = ACC.map(x => x.name());
+    const line = (x, y) => { if (!R[x] || !R[y]) return ''; const w = R[x].finalAfter > R[y].finalAfter; return `<p><b>${w ? nm[x] : nm[y]}</b> 승: ${nm[x]} ${krw(R[x].finalAfter)} · 연 ${pct(R[x].irr)} · MDD ${pct(R[x].mddTwr, 0)} 대 ${nm[y]} ${krw(R[y].finalAfter)} · 연 ${pct(R[y].irr)} · MDD ${pct(R[y].mddTwr, 0)}</p>`; };
+    $('verdict').innerHTML = line(0, 1) + (R[2] ? line(2, 3) + line(2, 0) : '<p class="hint">이 기간엔 XLK 계열 자료가 없습니다(1998년 12월부터).</p>');
+    const rows = [
+      ['세후 청산가치', r => krw(r.finalAfter)], ['세전 평가액', r => krw(r.finalPre)], ['연환산 수익률 (IRR)', r => pct(r.irr)], ['CAGR (시간가중)', r => pct(r.twrCagr)],
+      ['MDD (시간가중)', r => pct(r.mddTwr, 0)], ['평가액 최대 낙폭', r => pct(r.mddValue, 0)], ['원금 대비 최악', r => pct(r.worstVsPaid, 0)],
+      ['마지막 날 노출', (r, k) => ACC[k].two ? '2.00배' : r.expo[r.expo.length - 1].toFixed(2) + '배'], ['되돌린 횟수', (r, k) => ACC[k].two ? '–' : r.nReb + '회'],
+      ['기간 중 낸 양도세', r => krw(r.taxesPaid)], ['청산 시 양도세', r => krw(r.liqTax)],
+    ];
+    const best = k => { const v = R.map(r => r ? r.finalAfter : -Infinity); return Math.max(...v) === v[k]; };
+    $('kpi').querySelector('tbody').innerHTML = rows.map(([lab, f], ri) => `<tr><th scope="row">${lab}</th>${R.map((r, k) => `<td class="num${!r ? ' na' : ''}${ri === 0 && r && best(k) ? ' pos' : ''}">${r ? f(r, k) : '–'}</td>`).join('')}</tr>`).join('');
     const idx = []; for (let i = i0; i <= i1; i++) if (i === i1 || D.week[i + 1] !== D.week[i]) idx.push(i);
-    const x = idx.map(i => D.day[i]), pick = arr => idx.map(i => arr[i - i0]);
-    chV.set({ x, log: logScale, yfmt: axisKrw, tfmt: krw, series: [{ name: '납입 원금', color: '--s-paid', v: pick(A.contr), dash: [5, 4], w: 1.5 }, { name: 'QLD 100%', color: '--s-dca', v: pick(B.vals) }, { name: nm, color: '--s-strat', v: pick(A.vals) }] });
+    const x = idx.map(i => D.day[i]), pick = (arr, k) => idx.map(i => arr[i - i0]);
+    const legend = () => ACC.map((acc, k) => R[k] ? `<span><i style="background:var(${acc.color})"></i>${nm[k]}</span>` : '').join('');
+    $('lgV').innerHTML = legend() + '<span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span>'; $('lgD').innerHTML = legend();
+    const ser = (f, w) => ACC.map((acc, k) => R[k] ? { name: nm[k], color: acc.color, v: pick(f(R[k])), w: w || 1.75 } : null).filter(Boolean);
+    chV.set({ x, log: logScale, yfmt: axisKrw, tfmt: krw, series: [{ name: '납입 원금', color: '--s-paid', v: pick(R[1].contr), dash: [5, 4], w: 1.5 }].concat(ser(r => r.vals)) });
     const dd = tw => { let pk = 0; return Array.from(tw, v => { pk = Math.max(pk, v); return v / pk - 1; }); };
-    chD.set({ x, log: false, yMax: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1), series: [{ name: 'QLD 100%', color: '--s-dca', v: pick(dd(B.twr)) }, { name: nm, color: '--s-strat', v: pick(dd(A.twr)) }] });
-    chE.set({ x, log: false, yMin: 0, yMax: 3, yfmt: v => v.toFixed(1) + '배', tfmt: v => v.toFixed(2) + '배', hlines: [{ y: 2, label: 'QLD 2배', color: '--warn' }],
-      series: [{ name: 'TQQQ 비중 × 3', color: '--fg', v: pick(A.wT).map(v => v * 3), w: 1 }, { name: '노출', color: '--s-strat', v: pick(A.expo), w: 1.75 }],
-      extra: k => `<div class="r"><span>TQQQ 비중</span><b>${pct(A.wT[idx[k] - i0], 0)}</b></div>` });
-    clearTimeout(rollTimer); $('rollNote').textContent = '계산 중…'; rollTimer = setTimeout(() => renderRoll(p), 30);
+    chD.set({ x, log: false, yMax: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1), series: ser(r => dd(r.twr), 1.5) });
+    chE.set({ x, log: false, yMin: 0, yMax: 3, yfmt: v => v.toFixed(1) + '배', tfmt: v => isFinite(v) ? v.toFixed(2) + '배' : '–', hlines: [{ y: 1 + 2 * p.w, label: `${(1 + 2 * p.w).toFixed(1)}배`, color: '--warn' }],
+      series: [R[0] ? { name: nm[0], color: '--s-strat', v: pick(R[0].expo) } : null, R[2] ? { name: nm[2], color: '--s-x1', v: pick(R[2].expo) } : null].filter(Boolean) });
+    $('rebNote').textContent = { none: '되돌리지 않음', year: `매년 ${p.month}월 첫 거래일에 되돌림`, band: `2배 ± ${p.band.toFixed(2)}배를 벗어나면 되돌림`, flow: '적립금으로만 되돌림' }[p.reb];
+    clearTimeout(rollTimer); $('rollNote').textContent = '계산 중…'; rollTimer = setTimeout(() => renderRoll(p), 40);
     renderYears();
   }
   function renderRoll(p) {
     const rows = [];
-    for (const [from, lab] of [[1987, '1987~'], [2010, '2010~ (실제 TQQQ)']]) for (const Y of [3, 5, 10, 15]) {
-      const g = [], md = []; let w = 0;
+    for (const [from, lab] of [[1999, '1999~'], [2010, '2010~']]) for (const Y of [3, 5, 10, 15]) {
+      const W = [];
       for (let y = from; y <= 2026; y++) for (let m = 1; m <= 12; m++) {
         if (from === 2010 && y === 2010 && m < 3) continue;
         const d0 = Date.UTC(y, m - 1, 1) / 86400000, d1 = d0 + Math.round(Y * 365.25); if (d1 > D.day[D.n - 1]) continue;
-        const a0 = idxOfDay(D, d0, true), a1 = idxOfDay(D, d1, false);
-        const A = holdBT(D, a0, a1, MIX(p)), B = holdBT(D, a0, a1, QLD(p)); if (A.finalAfter > B.finalAfter) w++; g.push(A.irr - B.irr); md.push(A.mddTwr - B.mddTwr);
+        W.push([Math.max(idxOfDay(D, d0, true), A.first.XLK + 1), idxOfDay(D, d1, false)]);
       }
-      if (g.length < 12) continue; g.sort((a, b) => a - b); md.sort((a, b) => a - b); const n = g.length;
-      rows.push(`<tr><th scope="row">${lab} ${Y}년</th><td class="num">${n}</td><td class="num ${w / n >= 0.5 ? 'pos' : 'neg'}">${pct(w / n, 0)}</td><td class="num">${dP(g[n >> 1])}</td><td class="num">${dP(g[Math.floor(n * 0.1)])}</td><td class="num">${dP(g[Math.floor(n * 0.9)])}</td><td class="num">${dP(md[n >> 1])}</td></tr>`);
+      if (W.length < 12) continue;
+      const res = W.map(([a, b]) => ACC.map(acc => run(acc, a, b, p)));
+      const cmp = (x, y) => { let w = 0; const d = []; for (const r of res) { if (r[x].finalAfter > r[y].finalAfter) w++; d.push(r[x].irr - r[y].irr); } d.sort((a, b) => a - b);
+        const s = w / res.length; return `<td class="num ${s >= 0.5 ? 'pos' : 'neg'}">${pct(s, 0)} <span class="hint">(${dP(d[d.length >> 1])})</span></td>`; };
+      rows.push(`<tr><th scope="row">${lab} ${Y}년</th><td class="num">${W.length}</td>${cmp(0, 1)}${cmp(2, 3)}${cmp(2, 0)}${cmp(3, 1)}</tr>`);
     }
-    $('roll').querySelector('tbody').innerHTML = rows.join(''); $('rollNote').textContent = `${mixName(p)} vs QLD · ${p.weeklyKRW > 0 ? '적립' : '거치'} · ${$('cost').value === 'real' ? '실제 ETF에 맞춘 비용' : '기존 모델'}`;
+    $('roll').querySelector('tbody').innerHTML = rows.join(''); $('rollNote').textContent = `${p.weeklyKRW > 0 ? '적립' : '거치'} · ${$('rebNote').textContent}`;
   }
+  let yrG = 'Q';
+  document.querySelectorAll('#yrPick .chip').forEach(bt => bt.addEventListener('click', () => { yrG = bt.dataset.g; document.querySelectorAll('#yrPick .chip').forEach(x => x.setAttribute('aria-pressed', String(x === bt))); renderYears(); }));
   function renderYears() {
+    const [u, l2, l3] = yrG === 'Q' ? ['QQQ', 'QLD', 'TQQQ'] : ['XLK', 'ROM', 'TECL'];
+    document.querySelector('#yr .h1').textContent = u; document.querySelector('#yr .h2').textContent = l2; document.querySelector('#yr .h3').textContent = l3;
     const rows = [];
     for (let y = 2011; y <= 2025; y++) {
       const a = idxOfDay(D, Date.UTC(y, 0, 1) / 86400000, true) - 1, b = idxOfDay(D, Date.UTC(y, 11, 31) / 86400000, false);
-      let s2 = 0, tb = 0; for (let i = a + 1; i <= b; i++) { s2 += RAW.rq[i] ** 2; tb += RAW.tb[i]; } const N = b - a, v = s2 / N * 252; tb /= N;
-      const q = D.ix[b] / D.ix[a] - 1, l = D.lx[b] / D.lx[a] - 1, t = D.lx3[b] / D.lx3[a] - 1, mix = 0.5 * t + 0.5 * q;
-      const sp = $('cost').value === 'real' ? 0.0025 : 0.005;
+      let s2 = 0; for (let i = a + 1; i <= b; i++) { const r = A[u][i] / A[u][i - 1] - 1; s2 += r * r; } const v = s2 / (b - a) * 252;
+      const q = A[u][b] / A[u][a] - 1, t2 = A[l2][b] / A[l2][a] - 1, t3 = A[l3][b] / A[l3][a] - 1, mix = 0.5 * t3 + 0.5 * q;
       const f = z => (z >= 0 ? '+' : '') + (z * 100).toFixed(0) + '%';
-      rows.push(`<tr><th scope="row">${y}</th><td class="num">${pct(Math.sqrt(v), 0)}</td><td class="num">${f(q)}</td><td class="num">${f(l)}</td><td class="num">${f(t)}</td><td>${f(mix)} ${mix > l ? '<span class="st good">반반</span>' : '<span class="st mid">QLD</span>'}</td><td class="num">−${(v * 100).toFixed(1)} · −${(3 * v * 100).toFixed(1)}%</td><td class="num">${((0.0095 + tb + sp) * 100).toFixed(1)} · ${((0.0052 + tb + 0.005) * 100).toFixed(1)}%</td></tr>`);
+      rows.push(`<tr><th scope="row">${y}</th><td class="num">${pct(Math.sqrt(v), 0)}</td><td class="num">${f(q)}</td><td class="num">${f(t2)}</td><td class="num">${f(t3)}</td><td>${f(mix)} ${mix > t2 ? '<span class="st good">섞기</span>' : `<span class="st mid">${l2}</span>`}</td><td class="num">−${(v * 100).toFixed(1)} · −${(3 * v * 100).toFixed(1)}%</td></tr>`);
     }
     $('yr').querySelector('tbody').innerHTML = rows.join('');
   }
   let timer = 0; const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 80); };
   $('ctl').addEventListener('input', schedule); $('ctl').addEventListener('change', schedule); $('ctl').addEventListener('submit', e => e.preventDefault());
-  document.querySelectorAll('#presets .chip').forEach(b => b.addEventListener('click', () => {
-    if (b.dataset.p) { const v = b.dataset.p; if (v.startsWith('-')) { const t = toDate(D.day[D.n - 1]); $('start').value = `${t.getUTCFullYear() - (+v.slice(1))}-${String(t.getUTCMonth() + 1).padStart(2, '0')}`; } else $('start').value = v; $('end').value = lastYM; }
-    if (b.dataset.i != null) { $('initial').value = b.dataset.i; $('weekly').value = b.dataset.w; }
-    render();
-  }));
-  const redraw = () => { chV.draw(); chD.draw(); chE.draw(); };
+  document.querySelectorAll('#presets .chip').forEach(bt => bt.addEventListener('click', () => { const v = bt.dataset.p, M = months.length - 1;
+    if (v.startsWith('-')) { rS.value = Math.max(0, M - (+v.slice(1)) * 12 + 1); } else rS.value = mIdx(v); rE.value = M; render(); }));
+  document.querySelectorAll('[data-i]').forEach(bt => bt.addEventListener('click', () => { $('initial').value = bt.dataset.i; $('weekly').value = bt.dataset.w; render(); }));
+  const redraw = () => { chV.draw(); chD.draw(); chE.draw(); drawBrush(); };
   try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
   render();

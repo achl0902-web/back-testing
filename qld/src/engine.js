@@ -349,6 +349,81 @@ function holdBT(D, i0, i1, p) {
     mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, vals, contr, twr, expo, wT };
 }
 
+// two-fund leveraged mix (e.g. TQQQ + QQQ) against a 2x fund, with optional ways to pull the mix back to 2x:
+//   reb 'none'  : never touch (contributions split by w)
+//   reb 'flow'  : no selling; each contribution is split so the account moves back toward 2x
+//   reb 'band'  : on check days, if exposure leaves [2-band, 2+band], sell/buy back to 2x (taxable)
+//   reb 'year'  : first trading day of each year, sell/buy back to 2x (taxable)
+//   reb 'flowband': 'flow' plus a 'band' backstop
+// px: { hi: 3x prices, lo: 1x prices } in USD; average-cost basis in KRW; yearly tax on realized gains (deduction, rate),
+// paid at year end by selling both funds pro rata; final liquidation taxed once more.
+function mixBT(D, i0, i1, px, p) {
+  p = Object.assign({ initialKRW: 0, weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, taxRate: 0.22, deduct: 2500000, w: 0.5, reb: 'none', band: 0.5, check: 'd', levHi: 3, levLo: 1, target: 2 }, p);
+  const P = [px.hi, px.lo], LV = [p.levHi, p.levLo];
+  const sh = [0, 0], basis = [0, 0]; // basis = total KRW cost of current shares
+  const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1);
+  const flows = []; let contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
+  const log = [];
+  const valUSD = i => sh[0] * P[0][i] + sh[1] * P[1][i];
+  const expoAt = i => { const v = valUSD(i); return v > 0 ? (LV[0] * sh[0] * P[0][i] + LV[1] * sh[1] * P[1][i]) / v : p.target; };
+  function buy(a, usd, i) { if (usd <= 0) return; sh[a] += usd * (1 - p.fee) / P[a][i]; basis[a] += usd * D.fx[i]; fees += usd * p.fee * D.fx[i]; }
+  function sell(a, usd, i) { if (usd <= 0 || sh[a] <= 0) return 0; const q = Math.min(sh[a], usd / P[a][i]), frac = q / sh[a], cb = basis[a] * frac;
+    const proceeds = q * P[a][i] * (1 - p.fee); realized += proceeds * D.fx[i] - cb; basis[a] -= cb; sh[a] -= q; fees += q * P[a][i] * p.fee * D.fx[i]; return proceeds; }
+  function rebalance(i) {
+    const v = valUSD(i), e = expoAt(i); if (v <= 0) return;
+    // weight of the hi fund that gives the target exposure
+    const wt = (p.target - LV[1]) / (LV[0] - LV[1]), want = [wt * v, (1 - wt) * v], have = [sh[0] * P[0][i], sh[1] * P[1][i]];
+    const a = have[0] > want[0] ? 0 : 1, b = 1 - a; const cash = sell(a, have[a] - want[a], i); buy(b, cash, i);
+    nReb++; log.push({ d: D.day[i], type: 'rebal', msg: `노출 ${e.toFixed(2)}배 → ${p.target}배` });
+  }
+  for (let i = i0; i <= i1; i++) {
+    const k = i - i0;
+    const inKRW = (i === i0 ? p.initialKRW : 0) + ((i === i0 || D.week[i] !== D.week[i - 1]) ? p.weeklyKRW : 0);
+    if (inKRW > 0) {
+      const usd = inKRW / (D.fx[i] * (1 + p.fxSpread));
+      let f = p.w;
+      if ((p.reb === 'flow' || p.reb === 'flowband') && i > i0) {
+        const T = sh[0] * P[0][i], Q = sh[1] * P[1][i], C = usd * (1 - p.fee), wt = (p.target - LV[1]) / (LV[0] - LV[1]);
+        f = Math.min(1, Math.max(0, (wt * (T + Q + C) - T) / C));
+      }
+      buy(0, usd * f, i); buy(1, usd * (1 - f), i);
+      contributed += inKRW; flows.push([D.day[i], -inKRW]);
+    }
+    if (i > i0 && (p.reb === 'band' || p.reb === 'flowband')) {
+      const chk = p.check === 'd' || (p.check === 'w' ? D.week[i] !== D.week[i - 1] : D.month[i] !== D.month[i - 1]);
+      if (chk) { const e = expoAt(i); if (Math.abs(e - p.target) > p.band) rebalance(i); }
+    }
+    if (i > i0 && p.reb === 'year' && D.month[i] !== D.month[i - 1] && D.month[i] === (p.month || 1) && (p.everyMonths ? true : true)) {
+      if (!p.upOnly || expoAt(i) > p.target) rebalance(i);
+    }
+    if (i > i0 && p.reb === 'months' && D.month[i] !== D.month[i - 1] && (D.month[i] - (p.month || 1) + 12) % p.everyMonths === 0) rebalance(i);
+    if (i > i0 && p.reb === 'upband') { const chk = p.check === 'd' || D.week[i] !== D.week[i - 1]; if (chk && expoAt(i) > p.target + p.band) rebalance(i); }
+    // year end: pay tax on this year's realized gains by selling both funds pro rata
+    const lastOfYear = i === D.n - 1 || D.year[i + 1] !== D.year[i];
+    if (lastOfYear && i !== i1) {
+      const tax = Math.max(realized - p.deduct, 0) * p.taxRate; realized = 0;
+      if (tax > 0) { const v = valUSD(i) * D.fx[i]; const fr = Math.min(1, tax / v); for (const a of [0, 1]) sell(a, sh[a] * P[a][i] * fr, i); taxesPaid += tax; }
+    }
+    const v = valUSD(i) * D.fx[i];
+    vals[k] = v; contr[k] = contributed; expo[k] = expoAt(i); wT[k] = v > 0 ? sh[0] * P[0][i] * D.fx[i] / v : 0;
+    if (k === 0) twr[k] = 1; else { const base = prevVal + inKRW; twr[k] = twr[k - 1] * (base > 0 ? v / base : 1); }
+    prevVal = v;
+  }
+  const i = i1; let gross = 0, gain = realized;
+  for (const a of [0, 1]) { const net = sh[a] * P[a][i] * (1 - p.fee) * D.fx[i]; gross += net; gain += net - basis[a]; }
+  const liqTax = Math.max(gain - p.deduct, 0) * p.taxRate, finalAfter = gross - liqTax;
+  flows.push([D.day[i], finalAfter]);
+  let pk = 0, mddV = 0, pkT = 0, mddT = 0, worst = 0;
+  for (let k = 0; k < n1; k++) {
+    pk = Math.max(pk, vals[k]); if (pk > 0) mddV = Math.min(mddV, vals[k] / pk - 1);
+    pkT = Math.max(pkT, twr[k]); mddT = Math.min(mddT, twr[k] / pkT - 1);
+    if (contr[k] > 0) worst = Math.min(worst, vals[k] / contr[k] - 1);
+  }
+  const yrs = (D.day[i1] - D.day[i0]) / 365.25;
+  return { finalPre: vals[n1 - 1], finalAfter, liqTax, taxesPaid, contributed, irr: xirr(flows), twrCagr: Math.pow(twr[n1 - 1], 1 / yrs) - 1,
+    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, log, vals, contr, twr, expo, wT };
+}
+
 function xirr(flows) {
   const t0 = flows[0][0];
   const f = r => { let s = 0; for (const [d, c] of flows) s += c / Math.pow(1 + r, (d - t0) / 365.25); return s; };
@@ -357,4 +432,4 @@ function xirr(flows) {
   return (lo + hi) / 2;
 }
 
-if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };
+if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, mixBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };

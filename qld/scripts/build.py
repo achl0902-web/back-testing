@@ -137,8 +137,34 @@ try:
 except Exception as e:
     print('macro share unavailable:', type(e).__name__, e, file=sys.stderr)
 
-data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, macroNow=macro_now)
-data_js = json.dumps(data, separators=(',', ':'))
+# ---------- real ETF series for the buy-and-hold comparison page (hold.html) ----------
+# daily adjusted-close returns from each ETF's first day, plus dividend events (adj/close ratio, events > 3% dropped
+# as split or capital-gain artifacts) so the page can take off the 15% US withholding.
+etf = {}
+try:
+    import pandas as pd
+    idx_days = pd.to_datetime([iso(n) for n in days])
+    for nm in ['QQQ', 'QLD', 'TQQQ', 'XLK', 'ROM', 'TECL']:
+        fa, fc = P('data', 'macro', f'Y_{nm}.csv'), P('data', 'macro', f'Y_{nm}_C.csv')
+        if not os.path.exists(fa):
+            continue
+        a = pd.read_csv(fa, parse_dates=['date'], index_col='date')['value'].dropna()
+        a = a[~a.index.duplicated()].reindex(idx_days[idx_days >= a.index[0]]).ffill()
+        s0 = len(idx_days) - len(a)
+        r = (a / a.shift(1) - 1).fillna(0.0).values[1:]
+        dv = []
+        if os.path.exists(fc):
+            c = pd.read_csv(fc, parse_dates=['date'], index_col='date')['value'].dropna()
+            c = c[~c.index.duplicated()].reindex(a.index).ffill()
+            d = ((a / a.shift(1)) / (c / c.shift(1)) - 1).fillna(0.0).values
+            dv = [[s0 + k, round(float(x), 5)] for k, x in enumerate(d) if 1e-5 < x < 0.03]
+        etf[nm] = dict(s=s0, r=[float('%.6g' % x) for x in r], d=dv)
+except Exception as e:
+    print('etf series unavailable:', type(e).__name__, e, file=sys.stderr)
+
+data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, macroNow=macro_now, etf=etf)
+data_js = json.dumps({k: v for k, v in data.items() if k != 'etf'}, separators=(',', ':'))
+hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix')}, separators=(',', ':'))
 last = iso(days[-1])
 y, m, d_ = last.split('-')
 built = dt.datetime.now(KST).strftime('%Y-%m-%d %H:%M KST')
@@ -154,7 +180,7 @@ html = ('<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '</head><body>' + page + '</body></html>')
 os.makedirs(P('site'), exist_ok=True)
 open(P('site', 'index.html'), 'w').write(html)
-hold = (open(P('src', 'hold_tpl.html')).read().replace('__DATA__', data_js).replace('__ENGINE__', eng)
+hold = (open(P('src', 'hold_tpl.html')).read().replace('__DATA__', hold_js).replace('__ENGINE__', eng)
         .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built))
 open(P('site', 'hold.html'), 'w').write(html.replace(page, hold))
 
