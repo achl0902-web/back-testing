@@ -358,14 +358,15 @@ function holdBT(D, i0, i1, p) {
 // px: { hi: 3x prices, lo: 1x prices } in USD; average-cost basis in KRW; yearly tax on realized gains (deduction, rate),
 // paid at year end by selling both funds pro rata; final liquidation taxed once more.
 function mixBT(D, i0, i1, px, p) {
-  p = Object.assign({ initialKRW: 0, weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, taxRate: 0.22, deduct: 2500000, w: 0.5, reb: 'none', band: 0.5, check: 'd', levHi: 3, levLo: 1, target: 2 }, p);
+  p = Object.assign({ initialKRW: 0, weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, taxRate: 0.22, deduct: 2500000, w: 0.5, reb: 'none', band: 0.5, check: 'd', levHi: 3, levLo: 1, target: 2, up: 2.3, lo: 1.7, relever: 'sgov', cashHaircut: 0.001, cashWht: 0.15 }, p);
   const P = [px.hi, px.lo], LV = [p.levHi, p.levLo];
   const sh = [0, 0], basis = [0, 0]; // basis = total KRW cost of current shares
   const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1);
-  const flows = []; let contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
+  const flows = []; let cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
   const log = [];
-  const valUSD = i => sh[0] * P[0][i] + sh[1] * P[1][i];
+  const valUSD = i => sh[0] * P[0][i] + sh[1] * P[1][i] + cash;
   const expoAt = i => { const v = valUSD(i); return v > 0 ? (LV[0] * sh[0] * P[0][i] + LV[1] * sh[1] * P[1][i]) / v : p.target; };
+  const buyCash = (a, usd, i) => { usd = Math.min(usd, cash); if (usd > 0) { cash -= usd; buy(a, usd, i); } };
   function buy(a, usd, i) { if (usd <= 0) return; sh[a] += usd * (1 - p.fee) / P[a][i]; basis[a] += usd * D.fx[i]; fees += usd * p.fee * D.fx[i]; }
   function sell(a, usd, i) { if (usd <= 0 || sh[a] <= 0) return 0; const q = Math.min(sh[a], usd / P[a][i]), frac = q / sh[a], cb = basis[a] * frac;
     const proceeds = q * P[a][i] * (1 - p.fee); realized += proceeds * D.fx[i] - cb; basis[a] -= cb; sh[a] -= q; fees += q * P[a][i] * p.fee * D.fx[i]; return proceeds; }
@@ -378,6 +379,7 @@ function mixBT(D, i0, i1, px, p) {
   }
   for (let i = i0; i <= i1; i++) {
     const k = i - i0;
+    if (i > i0 && cash > 0) cash *= 1 + Math.max(D.tb[i] - p.cashHaircut, 0) * (1 - p.cashWht) / 252;
     const inKRW = (i === i0 ? p.initialKRW : 0) + ((i === i0 || D.week[i] !== D.week[i - 1]) ? p.weeklyKRW : 0);
     if (inKRW > 0) {
       const usd = inKRW / (D.fx[i] * (1 + p.fxSpread));
@@ -393,6 +395,22 @@ function mixBT(D, i0, i1, px, p) {
       const chk = p.check === 'd' || (p.check === 'w' ? D.week[i] !== D.week[i - 1] : D.month[i] !== D.month[i - 1]);
       if (chk) { const e = expoAt(i); if (Math.abs(e - p.target) > p.band) rebalance(i); }
     }
+    if (i > i0 && p.reb === 'sgov') {
+      const chk = p.check === 'd' || (p.check === 'w' ? D.week[i] !== D.week[i - 1] : D.month[i] !== D.month[i - 1]);
+      if (chk) {
+        const e = expoAt(i), v = valUSD(i);
+        if (e > p.up) { // trim the 3x fund back to the target, park the proceeds in SGOV
+          const x = (e - p.target) * v / LV[0]; const pr = sell(0, x, i); cash += pr; nReb++;
+          log.push({ d: D.day[i], type: 'down', msg: `노출 ${e.toFixed(2)}배 → ${p.target}배, SGOV로 ${pr.toFixed(0)}달러` });
+        } else if (e < p.lo) { // re-lever with SGOV first, then (optionally) by swapping the 1x fund into the 3x fund
+          const need = (p.target - e) * v / LV[0]; const fromCash = Math.min(cash, need);
+          if (fromCash > 0) buyCash(0, fromCash, i);
+          let rest = need - fromCash;
+          if (rest > 1e-9 && p.relever === 'full') { const pr = sell(1, rest * LV[0] / (LV[0] - LV[1]), i); buy(0, pr, i); }
+          if (fromCash > 0 || (rest > 1e-9 && p.relever === 'full')) { nReb++; log.push({ d: D.day[i], type: 'up', msg: `노출 ${e.toFixed(2)}배 → 다시 올림 (SGOV ${fromCash.toFixed(0)}달러 사용)` }); }
+        }
+      }
+    }
     if (i > i0 && p.reb === 'year' && D.month[i] !== D.month[i - 1] && D.month[i] === (p.month || 1) && (p.everyMonths ? true : true)) {
       if (!p.upOnly || expoAt(i) > p.target) rebalance(i);
     }
@@ -402,14 +420,14 @@ function mixBT(D, i0, i1, px, p) {
     const lastOfYear = i === D.n - 1 || D.year[i + 1] !== D.year[i];
     if (lastOfYear && i !== i1) {
       const tax = Math.max(realized - p.deduct, 0) * p.taxRate; realized = 0;
-      if (tax > 0) { const v = valUSD(i) * D.fx[i]; const fr = Math.min(1, tax / v); for (const a of [0, 1]) sell(a, sh[a] * P[a][i] * fr, i); taxesPaid += tax; }
+      if (tax > 0) { let usd = tax / D.fx[i]; const c = Math.min(cash, usd); cash -= c; usd -= c; const v = sh[0] * P[0][i] + sh[1] * P[1][i]; if (usd > 0 && v > 0) { const fr = Math.min(1, usd / v); for (const a of [0, 1]) sell(a, sh[a] * P[a][i] * fr, i); } taxesPaid += tax; }
     }
-    const v = valUSD(i) * D.fx[i];
+    const v = valUSD(i) * D.fx[i]; cashMax = Math.max(cashMax, v > 0 ? cash * D.fx[i] / v : 0);
     vals[k] = v; contr[k] = contributed; expo[k] = expoAt(i); wT[k] = v > 0 ? sh[0] * P[0][i] * D.fx[i] / v : 0;
     if (k === 0) twr[k] = 1; else { const base = prevVal + inKRW; twr[k] = twr[k - 1] * (base > 0 ? v / base : 1); }
     prevVal = v;
   }
-  const i = i1; let gross = 0, gain = realized;
+  const i = i1; let gross = cash * D.fx[i], gain = realized;
   for (const a of [0, 1]) { const net = sh[a] * P[a][i] * (1 - p.fee) * D.fx[i]; gross += net; gain += net - basis[a]; }
   const liqTax = Math.max(gain - p.deduct, 0) * p.taxRate, finalAfter = gross - liqTax;
   flows.push([D.day[i], finalAfter]);
@@ -421,7 +439,7 @@ function mixBT(D, i0, i1, px, p) {
   }
   const yrs = (D.day[i1] - D.day[i0]) / 365.25;
   return { finalPre: vals[n1 - 1], finalAfter, liqTax, taxesPaid, contributed, irr: xirr(flows), twrCagr: Math.pow(twr[n1 - 1], 1 / yrs) - 1,
-    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, log, vals, contr, twr, expo, wT };
+    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, log, cashMax, cashEnd: cash, vals, contr, twr, expo, wT };
 }
 
 function xirr(flows) {
