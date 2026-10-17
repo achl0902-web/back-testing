@@ -141,6 +141,7 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
 .how { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 82ch; color: var(--muted); } .how b { color: var(--fg); font-weight: 600; }
 #yr td:nth-child(6) { text-align: left; }
 .na { color: var(--faint); }
+.t.down { color: var(--bad); background: var(--bad-bg); } .t.up { color: var(--good); background: var(--good-bg); } .t.empty { color: var(--warn); background: var(--warn-bg); } .t.rebal, .t.tax { color: var(--muted); background: var(--sunken); }
 </style>
 <div class="wrap">
   <header>
@@ -220,9 +221,22 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
 
   <section class="panel">
     <div class="chart-head"><h2>섞은 계좌의 노출 표류</h2><span class="hint" id="rebNote"></span></div>
-    <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="nmA">TQQQ+QQQ</span></span><span><i style="background:var(--s-x1)"></i><span class="nmC">TECL+XLK</span></span><span><i style="background:var(--warn)"></i>2배</span></div>
+    <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="nmA">TQQQ+QQQ</span> 계좌 전체</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-strat) 0 4px,transparent 4px 7px)"></i>투자분 (SGOV 제외)</span><span><i style="background:var(--s-x1)"></i><span class="nmC">TECL+XLK</span> 계좌 전체</span><span><i style="background:repeating-linear-gradient(90deg,var(--s-x1) 0 4px,transparent 4px 7px)"></i>투자분</span><span><i style="background:var(--warn)"></i>2배</span></div>
     <div class="cv short" id="cvExpo"><canvas aria-label="노출 표류" role="img"></canvas></div>
-    <p class="hint" style="margin-top:8px">오르는 장에선 3배 쪽이 빨리 커져 노출이 3배로, 크게 빠지면 3배 쪽이 쪼그라들어 1배로 갑니다. 이 '빠질 때 저절로 줄고 오를 때 저절로 느는' 성질이 섞기의 장점이자, 오래 오른 뒤 낙폭이 깊어지는 이유입니다.</p>
+    <p class="hint" style="margin-top:8px">실선은 SGOV까지 포함한 계좌 전체 노출, 점선은 TQQQ+QQQ(또는 TECL+XLK)만 본 투자분 노출입니다. SGOV가 없으면 두 선이 같습니다. 차트는 주 마지막 거래일 값이라, 다시 올린 날 2배로 돌아갔다가 그 주 안에 다시 빠진 경우는 보이지 않을 수 있습니다(아래 이벤트 로그 참고). 오르는 장에선 3배 쪽이 빨리 커져 노출이 3배로, 크게 빠지면 3배 쪽이 쪼그라들어 1배로 갑니다. 이 '빠질 때 저절로 줄고 오를 때 저절로 느는' 성질이 섞기의 장점이자, 오래 오른 뒤 낙폭이 깊어지는 이유입니다.</p>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>이벤트 로그</h2><span class="hint" id="logCount"></span></div>
+    <div class="chips" id="logAcc" style="margin-bottom:8px"><button type="button" class="chip" data-a="0" aria-pressed="true"><span class="nmA">TQQQ+QQQ</span></button><button type="button" class="chip" data-a="2" aria-pressed="false"><span class="nmC">TECL+XLK</span></button></div>
+    <div class="chips" id="logFilter" style="margin-bottom:10px">
+      <button type="button" class="chip" data-t="down" aria-pressed="true">줄여서 SGOV로</button>
+      <button type="button" class="chip" data-t="up" aria-pressed="true">다시 올림</button>
+      <button type="button" class="chip" data-t="empty" aria-pressed="true">SGOV 없음</button>
+      <button type="button" class="chip" data-t="rebal" aria-pressed="true">2배로 되돌림</button>
+      <button type="button" class="chip" data-t="tax" aria-pressed="true">양도세</button>
+    </div>
+    <div class="log" id="log"></div>
   </section>
 
   <section class="panel">
@@ -255,7 +269,7 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <li>매수: 매주 첫 거래일 종가, 원화를 환전 스프레드를 내고 달러로 바꿔 삽니다. 소수점 매수를 가정합니다(QQQ·XLK는 1주가 비쌉니다).</li>
       <li>재조정 매도는 평균단가로 차익을 계산하고, 연말에 그해 차익의 양도세를 냅니다. 마지막 날 전량 매도 세금까지 뺀 값이 세후 청산가치입니다.</li>
       <li>'넘치면 SGOV로' 규칙(QQQ 계열, 주 적립 10년 구간): 계좌 전체 기준(SGOV 포함)으로 위 기준 2.45~2.5배면 QLD를 1987~ 75~81%, 1999~ 71~73%, 2010~ 84~89% 구간에서 이겼습니다(IRR 중앙 +0.7~+1.5%p). 2.4배는 60~75%, 2.3배 이하는 QLD와 비슷했습니다. 2010년 이후엔 그냥 섞기보다 낙폭이 6~10%p 얕았고, QLD보다는 2~4%p 깊었습니다. 평균 노출은 2.1~2.2배로 QLD보다 조금 높습니다.</li>
-      <li>투자분 기준(SGOV 제외)으로 재면, 줄인 직후 투자분이 정확히 2배라 다시 아래 기준까지 내려가려면 나스닥이 20~25% 이상 빠져야 합니다. 그래서 다시 사는 일이 2006년 이후 0~2번뿐이고 SGOV가 계좌의 50~68%까지 쌓여, 평균 노출이 1.6~1.9배로 내려갑니다. 낙폭은 크게 얕아지지만(2010년~ -42% 대 QLD -61%) 수익은 QLD와 그냥 섞기보다 대부분 낮았습니다.</li>
+      <li>투자분 기준(SGOV 제외)으로 재면, 줄인 직후 투자분이 정확히 2배라 다시 아래 기준까지 내려가려면 나스닥이 20~25% 이상 빠져야 합니다. SGOV는 따로 두고 TQQQ:QQQ 비율만 봅니다. 2006년 이후엔 다시 사는 일이 0~2번뿐이라 SGOV가 계좌의 50~68%까지 쌓이고, 계좌 전체 노출(SGOV 포함)은 평균 1.6~1.9배로 내려갑니다. 반대로 닷컴 붕괴처럼 길게 빠지는 장에선 미리 쌓아 둔 SGOV로 여러 번 다시 사서 크게 유리했습니다. 낙폭은 크게 얕아지지만(2010년~ -42% 대 QLD -61%) 수익은 QLD와 그냥 섞기보다 대부분 낮았습니다.</li>
       <li>'1년에 한 번' 재조정은 몇 월에 하느냐에 따라 결과가 크게 달라졌습니다(QQQ 계열 2010년~ 10년 적립 구간에서 1월이면 QLD를 66% 이겼지만 7월이면 0%). 날짜 운이 섞인 결과라 특정 달이 좋다고 보기 어렵습니다.</li>
       <li>과거 수익률은 미래를 보장하지 않습니다.</li>
     </ul>
@@ -427,7 +441,18 @@ function buildAssets(RAW, D) {
     return mixBT(D, i0, i1, acc.px, o);
   };
   const dP = v => isFinite(v) ? (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%p' : '–';
-  let rollTimer = 0;
+  let rollTimer = 0, lastR = null, logAcc = 0;
+  const logOn = { down: true, up: true, empty: true, rebal: true, tax: true };
+  const LT = { down: '줄여서 SGOV', up: '다시 올림', empty: 'SGOV 없음', rebal: '되돌림', tax: '양도세' };
+  function renderLog() {
+    const r = lastR && lastR[logAcc]; if (!r) { $('log').innerHTML = '<p class="hint" style="padding:12px 2px">이 기간엔 자료가 없습니다.</p>'; $('logCount').textContent = ''; return; }
+    const ev = r.log.filter(e => logOn[e.type]).slice().reverse();
+    $('logCount').textContent = `${ev.length}건 · 줄임 ${r.nTrim || 0} · 올림 ${r.nUp || 0}`;
+    $('log').innerHTML = ev.length ? ev.map(e => `<div class="ev"><span class="d">${ymd(e.d)}</span><span class="t ${e.type}">${LT[e.type] || e.type}</span><span class="m">${e.msg}</span></div>`).join('')
+      : '<p class="hint" style="padding:12px 2px">선택한 종류의 이벤트가 없어요. 위에서 \'다시 2배로 되돌리기\'를 고르면 매매 기록이 생깁니다.</p>';
+  }
+  document.querySelectorAll('#logAcc .chip').forEach(b => b.addEventListener('click', () => { logAcc = +b.dataset.a; document.querySelectorAll('#logAcc .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderLog(); }));
+  document.querySelectorAll('#logFilter .chip').forEach(b => b.addEventListener('click', () => { const t = b.dataset.t; logOn[t] = !logOn[t]; b.setAttribute('aria-pressed', String(logOn[t])); renderLog(); }));
   function render() {
     const p = params();
     $('monthBox').style.display = p.reb === 'year' ? '' : 'none'; $('bandBox').style.display = p.reb === 'band' ? '' : 'none';
@@ -464,7 +489,10 @@ function buildAssets(RAW, D) {
     const dd = tw => { let pk = 0; return Array.from(tw, v => { pk = Math.max(pk, v); return v / pk - 1; }); };
     chD.set({ x, log: false, yMax: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1), series: ser(r => dd(r.twr), 1.5) });
     chE.set({ x, log: false, yMin: 0, yMax: 3, yfmt: v => v.toFixed(1) + '배', tfmt: v => isFinite(v) ? v.toFixed(2) + '배' : '–', hlines: [{ y: 1 + 2 * p.w, label: `${(1 + 2 * p.w).toFixed(1)}배`, color: '--warn' }],
-      series: [R[0] ? { name: nm[0], color: '--s-strat', v: pick(R[0].expo) } : null, R[2] ? { name: nm[2], color: '--s-x1', v: pick(R[2].expo) } : null].filter(Boolean) });
+      series: [R[0] ? { name: `${nm[0]} 투자분`, color: '--s-strat', v: pick(R[0].expoInv), dash: [5, 4], w: 1.25 } : null, R[2] ? { name: `${nm[2]} 투자분`, color: '--s-x1', v: pick(R[2].expoInv), dash: [5, 4], w: 1.25 } : null,
+        R[0] ? { name: `${nm[0]} 전체`, color: '--s-strat', v: pick(R[0].expo) } : null, R[2] ? { name: `${nm[2]} 전체`, color: '--s-x1', v: pick(R[2].expo) } : null].filter(Boolean),
+      extra: k => [[0, nm[0]], [2, nm[2]]].filter(([j]) => R[j]).map(([j, n]) => `<div class="r"><span>${n} SGOV</span><b>${pct(R[j].cashW[idx[k] - i0], 0)}</b></div>`).join('') });
+    lastR = R; renderLog();
     $('rebNote').textContent = { none: '되돌리지 않음', year: `매년 ${p.month}월 첫 거래일에 되돌림`, band: `2배 ± ${p.band.toFixed(2)}배를 벗어나면 되돌림`, flow: '적립금으로만 되돌림', sgov: `${p.up.toFixed(2)}배 넘으면 SGOV로, ${p.lo.toFixed(2)}배 밑이면 다시 올림` }[p.reb];
     clearTimeout(rollTimer); $('rollNote').textContent = '계산 중…'; rollTimer = setTimeout(() => renderRoll(p), 40);
     renderYears();

@@ -361,11 +361,14 @@ function mixBT(D, i0, i1, px, p) {
   p = Object.assign({ initialKRW: 0, weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, taxRate: 0.22, deduct: 2500000, w: 0.5, reb: 'none', band: 0.5, check: 'd', levHi: 3, levLo: 1, target: 2, up: 2.3, lo: 1.7, relever: 'sgov', expoBase: 'invested', cashHaircut: 0.001, cashWht: 0.15 }, p);
   const P = [px.hi, px.lo], LV = [p.levHi, p.levLo];
   const sh = [0, 0], basis = [0, 0]; // basis = total KRW cost of current shares
-  const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1);
-  const flows = []; let nTrim = 0, nUp = 0, cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
+  const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1), expoInv = new Float64Array(n1), cashW = new Float64Array(n1);
+  const fmtK = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; return a >= 1e8 ? s + (a / 1e8).toFixed(2) + '억원' : s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
+  const flows = []; let lowNoted = false, nTrim = 0, nUp = 0, cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
   const log = [];
   const valUSD = i => sh[0] * P[0][i] + sh[1] * P[1][i] + cash;
   const expoAt = i => { const v = valUSD(i); return v > 0 ? (LV[0] * sh[0] * P[0][i] + LV[1] * sh[1] * P[1][i]) / v : p.target; };
+  const invAt = i => { const T = sh[0] * P[0][i], Q = sh[1] * P[1][i]; return T + Q > 0 ? (LV[0] * T + LV[1] * Q) / (T + Q) : p.target; };
+  const state = i => `→ 전체 ${expoAt(i).toFixed(2)}배 · 투자분 ${invAt(i).toFixed(2)}배 · SGOV ${fmtK(cash * D.fx[i])}`;
   const buyCash = (a, usd, i) => { usd = Math.min(usd, cash); if (usd > 0) { cash -= usd; buy(a, usd, i); } };
   function buy(a, usd, i) { if (usd <= 0) return; sh[a] += usd * (1 - p.fee) / P[a][i]; basis[a] += usd * D.fx[i]; fees += usd * p.fee * D.fx[i]; }
   function sell(a, usd, i) { if (usd <= 0 || sh[a] <= 0) return 0; const q = Math.min(sh[a], usd / P[a][i]), frac = q / sh[a], cb = basis[a] * frac;
@@ -375,7 +378,7 @@ function mixBT(D, i0, i1, px, p) {
     // weight of the hi fund that gives the target exposure
     const wt = (p.target - LV[1]) / (LV[0] - LV[1]), want = [wt * v, (1 - wt) * v], have = [sh[0] * P[0][i], sh[1] * P[1][i]];
     const a = have[0] > want[0] ? 0 : 1, b = 1 - a; const cash = sell(a, have[a] - want[a], i); buy(b, cash, i);
-    nReb++; log.push({ d: D.day[i], type: 'rebal', msg: `노출 ${e.toFixed(2)}배 → ${p.target}배` });
+    nReb++; log.push({ d: D.day[i], type: 'rebal', msg: `노출 ${e.toFixed(2)}배에서 ${p.target}배로 되돌림 (${a === 0 ? '3배→1배' : '1배→3배'} ${fmtK(cash * D.fx[i])}) ${state(i)}` });
   }
   for (let i = i0; i <= i1; i++) {
     const k = i - i0;
@@ -401,10 +404,11 @@ function mixBT(D, i0, i1, px, p) {
         const T = sh[0] * P[0][i], Q = sh[1] * P[1][i], inv = T + Q, tau = p.target, kk = (tau - LV[1]) / (LV[0] - tau);
         // 'invested': exposure of the TQQQ+QQQ part only (parked SGOV left out); 'total': whole account incl. SGOV
         const e = p.expoBase === 'invested' ? (inv > 0 ? (LV[0] * T + LV[1] * Q) / inv : tau) : expoAt(i);
+        if (e >= p.lo + 0.1) lowNoted = false;
         if (e > p.up) {
           const x = p.expoBase === 'invested' ? T - kk * Q : (e - tau) * valUSD(i) / LV[0];
-          const pr = sell(0, x, i); cash += pr; nReb++; nTrim++;
-          log.push({ d: D.day[i], type: 'down', msg: `노출 ${e.toFixed(2)}배 → ${tau}배, TQQQ ${pr.toFixed(0)}달러를 SGOV로` });
+          const r0 = realized; const pr = sell(0, x, i); cash += pr; nReb++; nTrim++;
+          log.push({ d: D.day[i], type: 'down', msg: `${p.expoBase === 'invested' ? '투자분' : '전체'} ${e.toFixed(2)}배 > ${p.up}배: 3배 ${fmtK(pr * D.fx[i])} 팔아 SGOV로 (실현 ${fmtK(realized - r0)}) ${state(i)}` });
         } else if (e < p.lo) {
           const need = p.expoBase === 'invested' ? kk * Q - T : (tau - e) * valUSD(i) / LV[0];
           let fromCash = Math.min(cash, Math.max(0, need));
@@ -417,7 +421,8 @@ function mixBT(D, i0, i1, px, p) {
             const z = p.expoBase === 'invested' ? (kk * Q - (T + fromCash)) / (1 + kk) : (need - fromCash) * LV[0] / (LV[0] - LV[1]);
             if (z > 0) { const pr = sell(1, z, i); buy(0, pr, i); swapped = pr; }
           }
-          if (fromCash > 0 || swapped > 0) { nReb++; nUp++; log.push({ d: D.day[i], type: 'up', msg: `노출 ${e.toFixed(2)}배 → ${tau}배로 다시 올림 (SGOV ${fromCash.toFixed(0)}달러${swapped > 0 ? `, QQQ→TQQQ ${swapped.toFixed(0)}달러` : ''})` }); }
+          if (fromCash > 0 || swapped > 0) { nReb++; nUp++; log.push({ d: D.day[i], type: 'up', msg: `${p.expoBase === 'invested' ? '투자분' : '전체'} ${e.toFixed(2)}배 < ${p.lo}배: SGOV ${fmtK(fromCash * D.fx[i])}${swapped > 0 ? ` + 1배→3배 ${fmtK(swapped * D.fx[i])}` : ''}로 다시 올림${need - fromCash > 1e-6 && p.relever !== 'full' && p.relever !== 'all' ? ' (SGOV 부족)' : ''} ${state(i)}` }); }
+          else if (cash <= 1e-6 && !lowNoted) { lowNoted = true; log.push({ d: D.day[i], type: 'empty', msg: `${p.expoBase === 'invested' ? '투자분' : '전체'} ${e.toFixed(2)}배 < ${p.lo}배인데 SGOV가 없어 그대로 둠` }); }
         }
       }
     }
@@ -430,10 +435,11 @@ function mixBT(D, i0, i1, px, p) {
     const lastOfYear = i === D.n - 1 || D.year[i + 1] !== D.year[i];
     if (lastOfYear && i !== i1) {
       const tax = Math.max(realized - p.deduct, 0) * p.taxRate; realized = 0;
+      if (tax > 0) log.push({ d: D.day[i], type: 'tax', msg: `${D.year[i]}년 실현 차익 양도세 ${fmtK(tax)}` });
       if (tax > 0) { let usd = tax / D.fx[i]; const c = Math.min(cash, usd); cash -= c; usd -= c; const v = sh[0] * P[0][i] + sh[1] * P[1][i]; if (usd > 0 && v > 0) { const fr = Math.min(1, usd / v); for (const a of [0, 1]) sell(a, sh[a] * P[a][i] * fr, i); } taxesPaid += tax; }
     }
     const v = valUSD(i) * D.fx[i]; cashMax = Math.max(cashMax, v > 0 ? cash * D.fx[i] / v : 0);
-    vals[k] = v; contr[k] = contributed; expo[k] = expoAt(i); wT[k] = v > 0 ? sh[0] * P[0][i] * D.fx[i] / v : 0;
+    vals[k] = v; contr[k] = contributed; expo[k] = expoAt(i); expoInv[k] = invAt(i); cashW[k] = v > 0 ? cash * D.fx[i] / v : 0; wT[k] = v > 0 ? sh[0] * P[0][i] * D.fx[i] / v : 0;
     if (k === 0) twr[k] = 1; else { const base = prevVal + inKRW; twr[k] = twr[k - 1] * (base > 0 ? v / base : 1); }
     prevVal = v;
   }
@@ -449,7 +455,7 @@ function mixBT(D, i0, i1, px, p) {
   }
   const yrs = (D.day[i1] - D.day[i0]) / 365.25;
   return { finalPre: vals[n1 - 1], finalAfter, liqTax, taxesPaid, contributed, irr: xirr(flows), twrCagr: Math.pow(twr[n1 - 1], 1 / yrs) - 1,
-    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, nTrim, nUp, log, cashMax, cashEnd: cash, vals, contr, twr, expo, wT };
+    mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, nTrim, nUp, log, cashMax, cashEnd: cash, vals, contr, twr, expo, wT, expoInv, cashW };
 }
 
 function xirr(flows) {
