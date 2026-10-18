@@ -201,15 +201,18 @@ function runBT(D, i0, i1, p, wantLog) {
         }
       }
     } else if (p.strategy && check && p.rule === 'final' && !p.exitSig) {
-      const ax = axesAt(D, p, j), c = ax[0] + ax[1] + ax[2] + ax[3], mOn = macroOnset(D, p, j);
+      // research hooks (optional arrays by signal day): extraVote adds a fifth axis, extraExit is an extra exit alarm,
+      // reentryBlock vetoes re-entry while set
+      const xv = p.extraVote && p.extraVote[j] ? 1 : 0, xOn = !!(p.extraExit && p.extraExit[j]);
+      const ax = axesAt(D, p, j), c = ax[0] + ax[1] + ax[2] + ax[3] + xv, mOn = macroOnset(D, p, j) || xOn;
       if (regime === 'in') {
         if ((c >= p.votes || mOn) && (i - lastEntry >= p.hold || c >= p.strongVotes)) {
           regime = 'out'; exits++; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i], i); buy(1, pr * p.parkQQQ, i);
-          const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]);
-          const why = (c >= p.votes ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}매크로 경보 ${Math.round(D.ms[j] * 100)}%` : '');
+          const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]); if (xv) nm.push(p.extraName || '추가 축');
+          const why = (c >= p.votes ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}${xOn && !macroOnset(D, p, j) ? (p.extraName || '추가 경보') : `매크로 경보 ${Math.round(D.ms[j] * 100)}%`}` : '');
           L(i, 'exit', `${why} → QLD 전량 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
         }
-      } else if (reentryOK(D, p, c, j)) {
+      } else if (reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) {
         const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q, i);
         const amt = buy(0, cash, i); regime = 'in'; lastEntry = i;
         L(i, 'reentry', `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정 → 전량 QLD ${fmt(amt * D.fx[i])}`);

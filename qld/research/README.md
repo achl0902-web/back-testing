@@ -38,4 +38,12 @@ node lib/score.js '{"name":"섀넌 50","sim":"buy","params":{"mode":"shannon","w
 node lib/score.js '{"name":"...","money":{"lump":100000000},"params":{"strategy":true}}'
 ```
 
+신호 모듈이 돌려줄 수 있는 배열 (신호일 j 기준, 0/1):
+
+- `exitSig`, `enterSig`: 챔피언을 **대체**하는 이탈·복귀 규칙 (`params.rule`을 `"sig"`로)
+- `extraVote`: 챔피언에 다섯 번째 축으로 **추가** (켜진 축 수에 더해짐)
+- `extraExit`: 챔피언에 추가 이탈 경보 (매크로 경보처럼 켜진 날 이탈)
+- `reentryBlock`: 켜져 있는 동안 챔피언의 복귀를 막음
+- 추가형은 `params`에 `"strategy":true`를 두고 `rule`은 생략(=final). `extraName`으로 로그 이름 지정
+
 신호 모듈에서 쓸 수 있는 값: `D.px`(나스닥100), `D.lx`(QLD), `D.ma[20|50|100|200]`, `D.vols.{rv20,down20,up20,rv10}`, `D.v60`, `D.r10`, `D.rsiw`(주봉 RSI), `D.ms`(매크로 경보 비율), `D.vix`(없을 수 있음), `D.day`(1970년 기준 일수), 인자로 받는 `H`, `L`(QLD 고가·저가). 새 매크로 지표는 `../data/macro/`의 원자료를 지표별 발표 시차만큼 늦춰서 써야 합니다(`../scripts/macro.py` 참고).
