@@ -91,7 +91,7 @@ if KEY:
         except Exception as e:
             log.append(f'FRED-API {s}: {type(e).__name__} {str(e)[:120]}')
 
-YAHOO = {'MOVE': '^MOVE', 'TNX': '^TNX', 'TLT': 'TLT', 'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC',
+YAHOO = {'N225': '^N225', 'GDAXI': '^GDAXI', 'KS11': '^KS11', 'FTSE': '^FTSE', 'HSI': '^HSI', 'STOXX50E': '^STOXX50E', 'MOVE': '^MOVE', 'TNX': '^TNX', 'TLT': 'TLT', 'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC',
          # ETFs for the buy-and-hold comparison page (adjusted closes = total return before withholding)
          'QQQ': 'QQQ', 'QLD': 'QLD', 'TQQQ': 'TQQQ', 'SPY': 'SPY', 'SSO': 'SSO', 'UPRO': 'UPRO'}
 ETF_CLOSE = {'QQQ', 'QLD', 'TQQQ', 'SPY', 'SSO', 'UPRO'}

@@ -86,7 +86,9 @@ P(`\n**실행** (1999~ 주 70만): 이탈 ${r99x.exits}회 (챔피언 ${r99c.exi
 // ---- 6. auto-gate
 const trials = fs.readFileSync(path.join(C.R, 'trials.jsonl'), 'utf8').split('\n').filter(l => l.includes(`"step":"${step}"`)).length;
 const k2 = trials > 30 ? 2 : 1;
-const A1 = ['N10oos', 'S10', 'S5'].every(k => s.sets[k].dMed >= -0.01 && s.sets[k].dMin >= -0.02);
+const A1raw = ['N10oos', 'S10', 'S5'].every(k => s.sets[k].dMed >= -0.01 && s.sets[k].dMin >= -0.02);
+const untouched = ['S10', 'S5'].every(k => Math.abs(s.sets[k].dMed) < 1e-6 && Math.abs(s.sets[k].dMin) < 1e-6);
+const A1 = A1raw && !untouched;
 const A2 = ['N10', 'N10oos', 'N5'].some(k => s.sets[k].dMin >= 0.02 * k2) || (s.sets.N10.dMed >= 0.01 * k2 && s.sets.N10oos.dMed >= 0.01 * k2);
 const epv = Object.values(s.episodes).map(e => e.vsChamp);
 const A3 = epv.every(v => v >= -0.05) && epv.filter(v => v >= -1e-9).length >= 4;
@@ -97,7 +99,7 @@ const A7 = r99x.exits <= 40;
 const A10 = placeboPct == null ? null : placeboPct >= 0.95;
 const mark = v => v === null ? '해당 없음' : v ? '통과' : '실패';
 P(`\n**자동 판정** (이 스텝 시도 ${trials}회 → A2 기준 ×${k2})`);
-P(`A1 표본 밖 ${mark(A1)} · A2 개선 ${mark(A2)} · A3 사례 ${mark(A3)} · A4 이웃값 ${mark(A4)} · A5 스트레스 ${mark(A5)} · A7 이탈 ${mark(A7)} · A10 플라시보 95% ${mark(A10)} · A6·A8은 비평가가 코드로 확인`);
+P(`A1 표본 밖 ${untouched ? '확인 불가 (S&P 세트에서 규칙이 한 번도 발동하지 않음)' : mark(A1)} · A2 개선 ${mark(A2)} · A3 사례 ${mark(A3)} · A4 이웃값 ${mark(A4)} · A5 스트레스 ${mark(A5)} · A7 이탈 ${mark(A7)} · A10 플라시보 95% ${mark(A10)} · A6·A8은 비평가가 코드로 확인`);
 const pass = A1 && A2 && A3 && A4 !== false && A5 && A7 && A10 !== false;
 P(`→ 숫자 기준 ${pass ? '모두 통과 (A6·A8 확인 필요)' : '미달'}`);
 
