@@ -23,7 +23,11 @@ tools: Read, Write, Edit, Bash
 4. `steps/Sxx-plan.json`을 쓴다. 형식:
    `{"step","goal","directions":[{"id":"A","type","title","why","predict","signals","params","vary":{"키":[값,…]},"neighbors"?}]}`
    - id는 대문자 한 글자로 쓴다.
-5. `node lib/step.js check Sxx`로 오류와 신호 발동률만 확인하고, 버그를 고친다. 발동률이 0%이거나 거의 100%이면 설계를 다시 본다.
+5. `node lib/step.js check Sxx`로 오류와 신호 발동률만 확인하고, 버그를 고친다.
+   - 첫 check가 계획 스냅샷을 저장하고, run은 그 뒤에 바뀐 값을 모두 보고서에 표시한다.
+   - 첫 check 뒤 값을 바꿔도 되는 경우는 두 가지뿐이다: 오류가 날 때, 발동률이 0%이거나 거의 100%일 때. 바꾸면 plan의 `"changes"` 필드에 사유를 한 줄로 적는다.
+   - check 출력 말고는 신호를 분석하지 않는다. 챔피언과 다른 날 수, 이탈 횟수, 수익을 직접 세거나 계산하지 않는다(S12·S14 지적).
+   - 챔피언을 대체하는 방향(rule "sig")은 `candidates/S09_lib.js`의 `run(D, {훅})`으로 만든다. 그래야 배터리가 훅만 시간 이동하는 플라시보(A10)를 돌릴 수 있다.
    - 점수는 보지 않는다. score.js, screen.js, battery.js를 실행하지 않는다. 채점은 진행자가 `run`으로 한 번에 한다.
    - 커밋하지 않는다.
 

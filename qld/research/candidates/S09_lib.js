@@ -17,6 +17,16 @@ function axesOld(D, j) {
 }
 function run(D, opt = {}) {
   const n = D.n, ex = new Uint8Array(n), en = new Uint8Array(n);
+  // placebo (lib/shiftsig.js sets module.exports.__shift): evaluate the candidate's hooks k days earlier, keep the champion
+  // state machine at the true day → the modification lands at random times, the champion itself stays intact
+  module.exports.__used = true;
+  const SH = module.exports.__shift || 0;
+  if (SH) {
+    const sj = j => (((j - SH) % n) + n) % n, o = opt; opt = Object.assign({}, o);
+    if (o.axes) opt.axes = j => axes(D, j) + (o.axes(sj(j)) - axes(D, sj(j)));
+    for (const k of ['exitVotes', 'exitVeto', 'extraExit', 'enterOk']) if (o[k]) opt[k] = (j, x) => o[k](sj(j), x);
+    if (o.timeout) opt.timeout = Object.assign({}, o.timeout, { ok: (j, st) => o.timeout.ok(sj(j), st) });
+  }
   let out = false, outSince = -1, inSince = -1e9;
   const HOLD = opt.hold || 39; // 엔진 final과 일치(검증: 점수 0.00, 이탈 32)
   for (let j = 1; j < n; j++) {

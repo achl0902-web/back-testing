@@ -62,7 +62,10 @@ if (cmd === 'prep') {
 }
 
 else if (cmd === 'check') {
-  const { P } = loadPlan(step), C = require('./core.js'), { ND } = C.load();
+  const { f: pf, P } = loadPlan(step), C = require('./core.js'), { ND } = C.load();
+  // audit trail: the first check freezes a snapshot; run lists every value changed after it (PROTOCOL v3.1)
+  const snap = path.join(R, 'steps', `${step}-plan.check1.json`);
+  if (!fs.existsSync(snap)) { fs.copyFileSync(pf, snap); console.log(`계획 스냅샷 저장: steps/${step}-plan.check1.json (이후 값 변경은 run 보고에 표시됨)`); }
   const i99 = ND.day.findIndex(d => d >= C.day('1999-01-04'));
   for (const d of P.directions) for (const c of configs(step, d)) {
     if (!c.signals) { console.log(`${c.name}: 신호 모듈 없음 (엔진 파라미터만)`); continue; }
@@ -77,7 +80,13 @@ else if (cmd === 'check') {
 else if (cmd === 'run') {
   const { f, P } = loadPlan(step);
   // pre-registration: the plan and its modules are committed before anything is scored
-  const files = [path.relative(ROOT, f), ...new Set(P.directions.map(d => d.signals).filter(Boolean).map(x => path.relative(ROOT, path.join(R, x))))];
+  const snapF = path.join(R, 'steps', `${step}-plan.check1.json`), audit = [];
+  if (fs.existsSync(snapF)) {
+    const S0 = JSON.parse(fs.readFileSync(snapF, 'utf8')), key = d => JSON.stringify({ p: d.params || {}, v: d.vary || {}, n: d.neighbors || null, s: d.signals || null });
+    for (const d of P.directions) { const o = (S0.directions || []).find(x => x.id === d.id); if (!o) audit.push(`${d.id} 첫 check 뒤 추가됨`); else if (key(o) !== key(d)) audit.push(`${d.id} 값 변경: ${JSON.stringify(o.vary)} → ${JSON.stringify(d.vary)}`); }
+    for (const o of S0.directions || []) if (!P.directions.find(d => d.id === o.id)) audit.push(`${o.id} 첫 check 뒤 삭제됨`);
+  } else audit.push('check 스냅샷 없음(check 미실행)');
+  const files = [path.relative(ROOT, f), ...(fs.existsSync(snapF) ? [path.relative(ROOT, snapF)] : []), ...new Set(P.directions.map(d => d.signals).filter(Boolean).map(x => path.relative(ROOT, path.join(R, x))))];
   sh(`git add ${files.join(' ')}`, { cwd: ROOT });
   try { sh(`git commit -qm "${step} pre-registration: ${P.directions.length} directions" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`, { cwd: ROOT }); } catch { /* already committed */ }
   const all = P.directions.flatMap(d => configs(step, d));
@@ -88,7 +97,7 @@ else if (cmd === 'run') {
   const rows = fs.readFileSync(out, 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(r => r.overall);
   const md = [`# ${step} ${P.goal || ''}`, '', `- 계획(사전 등록, 채점 전 커밋): \`steps/${step}-plan.json\` · 스크린: \`${path.relative(R, out)}\` · 배터리: \`steps/${step}-battery.md\``, '',
     '| 방향 | 행동 유형 | 내용 | 근거 | 반증 예측 |', '|---|---|---|---|---|', ...P.directions.map(d => `| ${d.id} | ${d.type} | ${d.title} | ${d.why} | ${d.predict} |`), '', '## 스크린 (점수 | 세트별 Δ중앙/Δ최악 %p | 사례 최악 | 이탈)', '```'];
-  const dig = [`${step} 스크린 ${rows.length}개 설정 · 방향 ${P.directions.length}개`]; const res = [];
+  const dig = [`${step} 스크린 ${rows.length}개 설정 · 방향 ${P.directions.length}개` + (audit.length ? `\n사전 등록 감사: ${audit.join(' · ')}${P.changes ? ` (사유: ${P.changes})` : ''}` : '\n사전 등록 감사: 첫 check 이후 변경 없음')]; const res = [];
   for (const d of P.directions) {
     const rs = rows.filter(r => r.cfg.fam === d.id).sort((a, b) => b.overall.score - a.overall.score);
     for (const r of rs) md.push(C.printBrief(r.name, { overall: r.overall, sets: r.sets, episodes: r.episodes || {} }).replace(/\s+$/, ''));
@@ -104,15 +113,20 @@ else if (cmd === 'run') {
     const B = JSON.parse(fs.readFileSync(jf)); if (nbErr) { B.gates.A4 = false; B.pass = false; B.hold = false; } res.push([d, B]);
     const g = B.gates, m = v => v === null ? '–' : v ? 'O' : 'X';
     dig.push(`${d.id} ${d.type} · ${d.title}: 최고 ${best.overall.score.toFixed(2)} (${best.name.split('·').slice(1).join('·') || '단일'}), 양수 ${rs.filter(r => r.overall.score > 0).length}/${rs.length}`);
-    dig.push(`  배터리 A1${m(g.A1)} A2${m(g.A2)} A3${m(g.A3)} A4${m(g.A4)} A5${m(g.A5)} A7${m(g.A7)} A10${m(g.A10)} · 시도 ${B.trials}(×${B.k2}) · 플라시보 ${B.placebo == null ? '–' : Math.round(B.placebo * 100) + '%'} · 상위연도 ${B.years.map(y => y.join(' ')).join(', ')} → ${B.pass ? '숫자 통과' : B.hold ? '보류 후보' : '미달'}${nbErr ? ' (이웃값 실행 불가 → A4 실패, 계획에 neighbors 지정 필요)' : ''}`);
+    dig.push(`  배터리 A1${m(g.A1)} A2${m(g.A2)} A3${m(g.A3)} A4${m(g.A4)} A5${m(g.A5)} A7${m(g.A7)} A10${m(g.A10)} · 시도 ${B.trials}(×${B.k2}) · 플라시보 ${B.placebo == null ? '–' : Math.round(B.placebo * 100) + '%'} · 상위연도 ${B.years.map(y => y.join(' ')).join(', ')} · 상위2년 제외 ${B.exTop2 >= 0 ? '+' : ''}${B.exTop2} → ${B.pass ? '숫자 통과' : B.hold ? '보류 후보' : '미달'}${nbErr ? ' (이웃값 실행 불가 → A4 실패, 계획에 neighbors 지정 필요)' : ''}`);
   }
   md.push('```');
   const flagged = res.filter(([, B]) => B.pass || B.hold);
   const gate = flagged.length ? `검토 필요: ${flagged.map(([d, B]) => `${d.id}(${B.pass ? '통과' : '보류 후보'})`).join(', ')} → 비평가·결재자` : '자동 기각: 숫자 기준을 통과하거나 보류 조건에 든 방향 없음 → 비평·결재 생략';
   dig.push('게이트: ' + gate);
+  md.push('', '## 사전 등록 감사', audit.length ? audit.map(x => '- ' + x).join('\n') + (P.changes ? `\n- 사유: ${P.changes}` : '') : '- 첫 check 이후 변경 없음');
   md.push('', '## 자동 판정 요약', '```', ...dig.slice(1), '```', '');
   fs.writeFileSync(path.join(R, 'steps', `${step}.md`), md.join('\n') + '\n');
   console.log(dig.join('\n'));
+  // commit the run outputs so the tree stays clean while the review runs
+  sh('git add -A', { cwd: ROOT });
+  try { sh(`git commit -qm "${step} run: screen, batteries, step doc" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"`, { cwd: ROOT }); } catch { }
+  try { sh('git pull -q --rebase && git push -q', { cwd: ROOT, timeout: 180000 }); } catch (e) { console.log('푸시 실패: ' + String(e.stderr || e).slice(0, 120)); }
 }
 
 else if (cmd === 'close') {

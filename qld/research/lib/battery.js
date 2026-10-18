@@ -44,19 +44,20 @@ P('```');
 
 // ---- 4. placebo: circularly shift every signal array by a random offset (keeps on-rate and clustering)
 let placeboPct = null;
-if (cfg.signals && nPlacebo > 0) {
+const SIG = !!(cfg.params && cfg.params.rule === 'sig');
+let placeboErr = null;
+if (cfg.signals && nPlacebo > 0) try {
   const scores = [];
   let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   for (let k = 0; k < nPlacebo; k++) {
     const off = 252 + Math.floor(rnd() * 6000);
-    const c2 = Object.assign({}, cfg, { name: `placebo ${off}`, signals: 'lib/shiftsig.js', params: Object.assign({}, cfg.params, { _base: cfg.signals, _shift: off }) });
+    const c2 = Object.assign({}, cfg, { name: `placebo ${off}`, signals: 'lib/shiftsig.js', params: Object.assign({}, cfg.params, { _base: cfg.signals, _shift: off }, SIG ? { _hookShift: true } : {}) });
     scores.push(C.summarize(C.evaluate(c2, { noFull: true }), c2).overall.score);
   }
   scores.sort((a, b) => a - b);
   placeboPct = scores.filter(x => x < s.overall.score).length / scores.length;
-  if (cfg.params && cfg.params.rule === 'sig') { P('\n(주의: rule "sig" 대체형은 이동하면 챔피언 규칙까지 깨지므로 플라시보가 의미 없음 → A10 해당 없음)'); placeboPct = null; }
-  P(`\n**플라시보** (같은 신호를 시간축으로 무작위 이동 ${nPlacebo}회): 후보 점수 ${s.overall.score.toFixed(2)} · 플라시보 중앙 ${scores[scores.length >> 1].toFixed(2)} · 상위 10% ${scores[Math.floor(scores.length * 0.9)].toFixed(2)} · 최대 ${scores[scores.length - 1].toFixed(2)} → 후보가 플라시보의 ${(placeboPct * 100).toFixed(0)}%보다 높음`);
-}
+  P(`\n**플라시보** (${SIG ? '챔피언은 그대로 두고 후보의 변경(훅)만' : '같은 신호를'} 시간축으로 무작위 이동 ${nPlacebo}회): 후보 점수 ${s.overall.score.toFixed(2)} · 플라시보 중앙 ${scores[scores.length >> 1].toFixed(2)} · 상위 10% ${scores[Math.floor(scores.length * 0.9)].toFixed(2)} · 최대 ${scores[scores.length - 1].toFixed(2)} → 후보가 플라시보의 ${(placeboPct * 100).toFixed(0)}%보다 높음`);
+} catch (e) { placeboErr = String(e.message || e).slice(0, 80); placeboPct = null; P(`\n**플라시보** 실행 불가: ${placeboErr} → A10 해당 없음`); }
 
 // ---- 5. full-period run 1986~: year attribution, decisive differences, practicality
 const { ND } = load();
@@ -68,6 +69,8 @@ for (let k = 1; k < rc.twr.length; k++) { const y = new Date(ND.day[i0 + k] * 86
 const diffs = Object.entries(yr).map(([y, [a, b]]) => [y, Math.log(b) - Math.log(a)]).filter(d => Math.abs(d[1]) > 0.002).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
 const tot = diffs.reduce((t, d) => t + d[1], 0), gross = diffs.reduce((t, d) => t + Math.abs(d[1]), 0);
 P(`\n**연도별 기여** (1986~ 시간가중 로그수익 차이, 챔피언 대비): 합계 ${f1(tot)}%p · 상위 연도: ` + diffs.slice(0, 6).map(([y, d]) => `${y} ${f1(d)}`).join(', ') + (gross > 0 ? ` · 최대 1개 연도 비중 ${(Math.abs(diffs[0][1]) / gross * 100).toFixed(0)}%` : ''));
+const top2 = diffs.filter(d => d[1] > 0).slice(0, 2), exTop2 = tot - top2.reduce((t, d) => t + d[1], 0);
+P(`상위 이득 2개 연도(${top2.map(d => d[0]).join('·') || '-'}) 제외 합계: ${f1(exTop2)}%p (음수면 이득이 한두 해에 의존)`);
 const ev = r => r.log.filter(e => e.type === 'exit' || e.type === 'reentry').map(e => `${new Date(e.d * 864e5).toISOString().slice(0, 10)} ${e.type === 'exit' ? '이탈' : '복귀'}`);
 const ec = new Set(ev(rc)), ex = new Set(ev(rx));
 const only = [...ex].filter(x => !ec.has(x)).map(x => '+ ' + x), gone = [...ec].filter(x => !ex.has(x)).map(x => '− ' + x);
@@ -115,6 +118,6 @@ P(`→ 숫자 기준 ${pass ? '모두 통과 (A6·A8 확인 필요)' : '미달'}
 const text = out.join('\n');
 // hold is only for A2-pass candidates whose A4 or A5 is the only doubt (PROTOCOL)
 const hold = !pass && (A1 || untouched) && A2 && A3 && A7 && A10 !== false && !(A4 === false && A5 === false); // incl. A1 unconfirmable (S09 rule)
-if (opt('--json')) fs.writeFileSync(path.resolve(opt('--json')), JSON.stringify({ name: cfg.name, score: s.overall.score, trials, k2, gates: { A1: untouched ? null : A1, A2, A3, A4, A5, A7, A10 }, untouched, pass, hold, placebo: placeboPct, years: diffs.slice(0, 4).map(([y, d]) => [y, +(d * 100).toFixed(1)]), maxYearShare: gross > 0 ? +(Math.abs(diffs[0] ? diffs[0][1] : 0) / gross).toFixed(2) : 0, exits: r99x.exits }));
+if (opt('--json')) fs.writeFileSync(path.resolve(opt('--json')), JSON.stringify({ name: cfg.name, score: s.overall.score, trials, k2, gates: { A1: untouched ? null : A1, A2, A3, A4, A5, A7, A10 }, untouched, pass, hold, placebo: placeboPct, years: diffs.slice(0, 4).map(([y, d]) => [y, +(d * 100).toFixed(1)]), exTop2: +(exTop2 * 100).toFixed(1), top2: top2.map(d => d[0]), maxYearShare: gross > 0 ? +(Math.abs(diffs[0] ? diffs[0][1] : 0) / gross).toFixed(2) : 0, exits: r99x.exits }));
 if (!args.includes('--quiet')) console.log(text);
 if (opt('--md')) fs.appendFileSync(path.resolve(opt('--md')), text + '\n\n');
