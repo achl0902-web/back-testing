@@ -1,0 +1,224 @@
+[
+ {
+  "name": "S09_season_4",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_season.js",
+  "params": {
+   "strategy": true,
+   "M": 4
+  }
+ },
+ {
+  "name": "S09_season_6",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_season.js",
+  "params": {
+   "strategy": true,
+   "M": 6
+  }
+ },
+ {
+  "name": "S09_season_8",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_season.js",
+  "params": {
+   "strategy": true,
+   "M": 8
+  }
+ },
+ {
+  "name": "S09_higherlow_5",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_higherlow.js",
+  "params": {
+   "strategy": true,
+   "k": 5
+  }
+ },
+ {
+  "name": "S09_higherlow_10",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_higherlow.js",
+  "params": {
+   "strategy": true,
+   "k": 10
+  }
+ },
+ {
+  "name": "S09_higherlow_20",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_higherlow.js",
+  "params": {
+   "strategy": true,
+   "k": 20
+  }
+ },
+ {
+  "name": "S09_timeoutrsi_60",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_timeoutrsi.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "N": 60
+  }
+ },
+ {
+  "name": "S09_timeoutrsi_120",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_timeoutrsi.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "N": 120
+  }
+ },
+ {
+  "name": "S09_timeoutrsi_250",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_timeoutrsi.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "N": 250
+  }
+ },
+ {
+  "name": "S09_crash3_6",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_crash3.js",
+  "params": {
+   "strategy": true,
+   "X": 6
+  }
+ },
+ {
+  "name": "S09_crash3_8",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_crash3.js",
+  "params": {
+   "strategy": true,
+   "X": 8
+  }
+ },
+ {
+  "name": "S09_crash3_10",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_crash3.js",
+  "params": {
+   "strategy": true,
+   "X": 10
+  }
+ },
+ {
+  "name": "S09_taxdefer_10",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_taxdefer.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "K": 10
+  }
+ },
+ {
+  "name": "S09_taxdefer_20",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_taxdefer.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "K": 20
+  }
+ },
+ {
+  "name": "S09_taxdefer_40",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_taxdefer.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "K": 40
+  }
+ },
+ {
+  "name": "S09_pxconfirm_20",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_pxconfirm.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "m": 20
+  }
+ },
+ {
+  "name": "S09_pxconfirm_50",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_pxconfirm.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "m": 50
+  }
+ },
+ {
+  "name": "S09_pxconfirm_100",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_pxconfirm.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "m": 100
+  }
+ },
+ {
+  "name": "S09_minwait_5",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_minwait.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "W": 5
+  }
+ },
+ {
+  "name": "S09_minwait_10",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_minwait.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "W": 10
+  }
+ },
+ {
+  "name": "S09_minwait_20",
+  "step": "S09",
+  "by": "strategist",
+  "signals": "candidates/S09_minwait.js",
+  "params": {
+   "strategy": true,
+   "rule": "sig",
+   "W": 20
+  }
+ }
+]

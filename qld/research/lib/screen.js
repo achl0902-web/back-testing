@@ -65,7 +65,8 @@ if (opt('--extra')) for (const c of JSON.parse(fs.readFileSync(opt('--extra'))))
 C.cached('dca', {}); C.cached('champ', {});
 const nW = Math.max(1, Math.min(os.cpus().length, 4));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'screen-'));
-const out = path.join(C.R, 'steps', `${step}-screen.jsonl`);
+let out = path.join(C.R, 'steps', `${step}-screen.jsonl`);
+for (let k = 2; fs.existsSync(out); k++) out = path.join(C.R, 'steps', `${step}-screen-${k}.jsonl`); // never overwrite an earlier screen
 fs.writeFileSync(out, '');
 const results = [];
 let done = 0; const t0 = Date.now();

@@ -54,6 +54,7 @@ if (cfg.signals && nPlacebo > 0) {
   }
   scores.sort((a, b) => a - b);
   placeboPct = scores.filter(x => x < s.overall.score).length / scores.length;
+  if (cfg.params && cfg.params.rule === 'sig') { P('\n(주의: rule "sig" 대체형은 이동하면 챔피언 규칙까지 깨지므로 플라시보가 의미 없음 → A10 해당 없음)'); placeboPct = null; }
   P(`\n**플라시보** (같은 신호를 시간축으로 무작위 이동 ${nPlacebo}회): 후보 점수 ${s.overall.score.toFixed(2)} · 플라시보 중앙 ${scores[scores.length >> 1].toFixed(2)} · 상위 10% ${scores[Math.floor(scores.length * 0.9)].toFixed(2)} · 최대 ${scores[scores.length - 1].toFixed(2)} → 후보가 플라시보의 ${(placeboPct * 100).toFixed(0)}%보다 높음`);
 }
 
