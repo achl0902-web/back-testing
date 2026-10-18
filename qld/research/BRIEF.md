@@ -1,8 +1,5 @@
 # BRIEF (자동 생성: node lib/brief.js) — 연구 에이전트는 이 파일만 읽고 시작한다
 
-## 이번 스텝
-S11: 보유 중 레버리지 선택: 추세가 약하거나 횡보일 때 QLD 대신 QQQ(1배)로 감속하면 변동성 손실(2025·2020 휘프소, S&P 2배 중앙값 열위)을 줄이는가. 이탈·복귀는 챔피언 그대로
-
 ## 챔피언
 ## 현재 챔피언
 
@@ -35,6 +32,7 @@ S11: 보유 중 레버리지 선택: 추세가 약하거나 횡보일 때 QLD �
 - S08: 인플레이션·금리 인상형 하락(2022형)을 잡는 기술·매크로 축 (12개 후보, 시도 65회) → 기각, 챔피언 유지
 - S09: 행동 유형 탐색 (v2 첫 적용): 단계 이탈, 코어 유지, 이탈 중 적립, 역발상 복귀, 이탈 기간 상한, 계절성 등 46개 설정 → **보류: maxOut 120**, 나머지 기각, 챔피언 유지
 - S10: S09 보류(maxOut 120) 해소 + 해외 약세장 검증 + 시장별 문턱 정규화 (격자 30 + 전략가 21) → **기각**(maxOut 120, toloosevol 120), 챔피언 유지
+- S11: 보유 중 레버리지 선택: 추세 약할 때 QLD 대신 QQQ(1배)로 감속 (진행자 격자 6 + 전략가 18) → 기각, 챔피언 유지
 
 ## 도구 (qld/research 에서 실행, 출력은 짧게)
 - 후보 1개: `node lib/score.js '<cfg>' --brief` (1~2초). cfg = {"name","step","by","signals":"candidates/x.js","params":{"strategy":true,...}}
@@ -62,7 +60,7 @@ A1 표본 밖(N10oos·S10·S5) 중앙 −1%p·최악 −2%p 이내 · A2 최악 
 - labor: l_claims(-0.2) l_sahm(-0.6) l_unrate(-0.1)
 - liquidity: f_nfci(-0.0) f_nfcir(-0.5) f_stl(-0.7) f_m2(0.0) f_walcl(-0.5) f_ms(-3.4)
 
-상위 시험 결과: x_dxy·block·z1.5 1.08 [T01] · i_ppi·block·z2 0.98 [T01] · x_oil·alarm·z2 0.47 [T01] · S10_toloosevol_60 0.43 [S10] · S10_toloosevol_120 0.43 [S10] · r_dgs2&i_be·block·z1 0.36 [T01P] · p_ma50·block·z1.5 0.34 [T01] · x_dxy&i_ppi·block·z1 0.29 [T01P]
+상위 시험 결과: action·maxOut_120 1.94 [S11] · x_dxy·block·z1.5 1.08 [T01] · i_ppi·block·z2 0.98 [T01] · x_oil·alarm·z2 0.47 [T01] · S10_toloosevol_60 0.43 [S10] · S10_toloosevol_120 0.43 [S10] · r_dgs2&i_be·block·z1 0.36 [T01P] · p_ma50·block·z1.5 0.34 [T01]
 
 ## 아직 안 해 본 아이디어 (IDEAS.md)
 - (사용자 결정 2026-10-18) 해외 스트레스 테스트·해외 게이트는 하지 않음. 검증 범위는 나스닥100 + S&P 2배
