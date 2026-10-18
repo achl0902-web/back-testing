@@ -81,10 +81,9 @@
   "cugold": -1.9
  },
  "macro_ok": true,
- "built": "2026-10-18 19:18 KST",
+ "built": "2026-10-18 21:42 KST",
  "sources": [
-  "github-mirrors",
-  "yahoo(5/5)"
+  "github-mirrors"
  ],
  "added_rows": 1
 }
