@@ -75,7 +75,7 @@ const DEFAULTS = {
 };
 
 function axesAt(D, p, j) {
-  p = Object.assign({}, DEFAULTS, p);
+  if (!p.__merged) p = Object.assign({}, DEFAULTS, p);
   if (j < 61) return [0, 0, 0, 0];
   const v = (D.vols.down20[j] > p.dnHi || D.vols.up20[j] > p.upHi) ? 1 : 0;
   const c = D.r10[j] < p.crash ? 1 : 0;
@@ -89,7 +89,7 @@ function macroOnset(D, p, j) {
 function reentryOK(D, p, cnt, j) { return cnt <= p.reMaxVotes && D.px[j] > D.ma[20][j] && D.vols.rv10[j] < D.v60[j]; }
 
 function kellyTarget(D, p, j) {
-  p = Object.assign({}, DEFAULTS, p);
+  if (!p.__merged) p = Object.assign({}, DEFAULTS, p);
   const s = D.rv[j] + (p._sAdd || 0), m = D.mu[j];
   if (isNaN(s) || s <= 0 || (isNaN(m) && (!p.sizing || p.sizing === 'kelly'))) return 2;
   let e;
@@ -104,7 +104,7 @@ function kellyTarget(D, p, j) {
 }
 // target given the last executed target: cut as soon as vol crosses a boundary, raise only when vol is `hyst` below it
 function targetFrom(D, p, j, last) {
-  p = Object.assign({}, DEFAULTS, p);
+  if (!p.__merged) p = Object.assign({}, DEFAULTS, p);
   let e = Math.max(0, Math.min(p.maxLev, kellyTarget(D, p, j)));
   if (p.hyst > 0 && e > last) e = Math.max(last, Math.min(e, kellyTarget(D, Object.assign({}, p, { _sAdd: p.hyst }), j)));
   return e;
@@ -120,7 +120,7 @@ function idxOfDay(D, dayNum, after) {
 }
 
 function runBT(D, i0, i1, p, wantLog) {
-  p = Object.assign({}, DEFAULTS, p);
+  p = Object.assign({}, DEFAULTS, p, { __merged: true });
   const lots = [[], []]; // 0: leveraged (QLD), 1: QQQ ; each lot [shares, costKRWperShare]
   const KELLY = p.strategy && p.rule === 'kelly';
   const LX = KELLY ? D.lx3 : D.lx, LV = KELLY ? 3 : 2;
@@ -132,20 +132,21 @@ function runBT(D, i0, i1, p, wantLog) {
   const n1 = i1 - i0 + 1;
   const vals = new Float64Array(n1), contr = new Float64Array(n1), expo = new Float64Array(n1), twr = new Float64Array(n1), expoTot = new Float64Array(n1), tgtS = new Float64Array(n1).fill(NaN);
   const flows = [];
-  const sharesOf = a => { let s = 0; for (const l of lots[a]) s += l[0]; return s; };
+  const shTot = [0, 0]; // running share totals (avoids re-summing every lot each day)
+  const sharesOf = a => shTot[a];
   function sell(a, usd, i) { // FIFO
     const price = px[a][i], f = D.fx[i]; let need = usd / price, got = 0; const q = lots[a];
     while (q.length && need > 1e-12) {
       const take = Math.min(q[0][0], need);
       realized += take * (price * f * (1 - p.fee) - q[0][1]);
-      got += take; need -= take; q[0][0] -= take; if (q[0][0] <= 1e-12) q.shift();
+      got += take; need -= take; q[0][0] -= take; shTot[a] -= take; if (q[0][0] <= 1e-12) { shTot[a] -= q[0][0]; q.shift(); }
     }
     const pr = got * price * (1 - p.fee); fees += got * price * p.fee * f; cash += pr; return pr;
   }
   function buy(a, usd, i) {
     usd = Math.min(usd, cash); if (usd <= 0) return 0;
     cash -= usd; fees += usd * p.fee * D.fx[i];
-    lots[a].push([usd * (1 - p.fee) / px[a][i], px[a][i] * D.fx[i]]); return usd;
+    const sh = usd * (1 - p.fee) / px[a][i]; lots[a].push([sh, px[a][i] * D.fx[i]]); shTot[a] += sh; return usd;
   }
   function harvestAsset(a, i) {
     const room = p.deduct - realized; if (room <= 0 || !lots[a].length) return 0;
