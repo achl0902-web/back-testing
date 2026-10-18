@@ -32,6 +32,17 @@ function zscore(a, win = 756, min = 252) {
   return o;
 }
 
+// share of 8 sector/size series (XLK XLF XLY XLP SOX RUT SPX NDX) closing below their own 200-day mean (NaN until all have 200 valid days)
+function breadth(D) {
+  const ks = ['Y_XLK', 'Y_XLF', 'Y_XLY', 'Y_XLP', 'Y_SOX', 'Y_RUT', 'Y_SPX', 'Y_NDX'], o = nanArr(D.n);
+  const below = ks.map(k => { const a = M.series(D, k, 0), b = nanArr(D.n); let s = 0, c = 0;
+    for (let i = 0; i < D.n; i++) { c = isNaN(a[i]) ? 0 : c + 1; s += isNaN(a[i]) ? 0 : a[i]; if (c === 0) s = 0;
+      if (c > 200) s -= a[i - 200];
+      if (c >= 200) b[i] = a[i] < s / 200 ? 1 : 0; }
+    return b; });
+  for (let i = 0; i < D.n; i++) { let t = 0, ok = true; for (const b of below) { if (isNaN(b[i])) { ok = false; break; } t += b[i]; } if (ok) o[i] = t / ks.length; }
+  return o;
+}
 const S = (D, name, lag) => M.series(D, name, lag);
 // [key, family, label, since, build(D) -> raw (higher = riskier)]
 const CATALOG = [
@@ -71,6 +82,7 @@ const CATALOG = [
   ['x_dxy', 'xasset', '달러 6개월 상승', 1986, D => ret(S(D, 'Y_DXY', 0), 126)],
   ['x_oil', 'xasset', '유가 6개월 상승', 1987, D => ret(S(D, 'DCOILWTICO', 1), 126)],
   ['x_tlt', 'xasset', '장기채 3개월 하락', 2003, D => neg(ret(S(D, 'Y_TLT', 0), 63))],
+  ['x_breadth', 'xasset', '섹터·규모 8개 중 200일선 아래 비율 (시장 폭, S12)', 2000, D => breadth(D)],
   ['x_sbcorr', 'xasset', '주식-채권 63일 상관 (양이면 인플레 국면)', 1986, D => { const y = S(D, 'Y_TNX', 0); const dy = chg(y, 1).map(v => -v); return rollCorr(Array.from(dret(D.px)), Array.from(dy), 63); }],
   // ---- credit ----
   ['c_baa', 'credit', 'BAA 스프레드', 1987, D => S(D, 'BAA10Y', 1)],
