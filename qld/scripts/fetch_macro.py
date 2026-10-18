@@ -116,6 +116,24 @@ try:
 except Exception as e:
     log.append(f'yfinance unavailable: {e}')
 
+# daily high/low/close for oscillators that need the range (e.g. stochastics)
+try:
+    import yfinance as yf
+    import pandas as pd
+    for name, t in {'NDX': '^NDX', 'SPX': '^GSPC'}.items():
+        try:
+            df = yf.download(t, start='1985-01-01', auto_adjust=False, progress=False, threads=False)
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            df = df[['High', 'Low', 'Close']].dropna()
+            df.index = df.index.strftime('%Y-%m-%d')
+            df.to_csv(os.path.join(OUT, f'OHLC_{name}.csv'), index_label='date', float_format='%.4f')
+            log.append(f'OHLC {name}: ok {len(df)} rows {df.index[0]}..{df.index[-1]}')
+        except Exception as e:
+            log.append(f'OHLC {name}: {type(e).__name__} {str(e)[:120]}')
+except Exception as e:
+    log.append(f'OHLC skipped: {e}')
+
 with open(os.path.join(OUT, '_fetch_log.txt'), 'w') as f:
     f.write(f'fetched {dt.datetime.utcnow():%Y-%m-%d %H:%M} UTC\n' + '\n'.join(log) + '\n')
 print('\n'.join(log))
