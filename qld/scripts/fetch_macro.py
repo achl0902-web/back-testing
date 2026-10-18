@@ -15,7 +15,9 @@ UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, 
 
 FRED = ['BAA10Y', 'AAA10Y', 'BAMLH0A0HYM2', 'BAMLC0A0CM', 'T10Y3M', 'T10Y2Y', 'DGS10', 'DGS2', 'DGS3MO', 'DFF',
         'VIXCLS', 'VXNCLS', 'VXVCLS', 'STLFSI4', 'NFCI', 'ANFCI', 'NFCIRISK', 'ICSA', 'CCSA', 'SAHMREALTIME', 'UNRATE',
-        'DTWEXBGS', 'DCOILWTICO', 'TEDRATE']
+        'DTWEXBGS', 'DCOILWTICO', 'TEDRATE',
+        # inflation / real-rate block (S08)
+        'CPIAUCSL', 'CPILFESL', 'PPIACO', 'DFII10', 'T10YIE', 'T5YIFR', 'GS10', 'GS2', 'TB3MS', 'FEDFUNDS', 'M2SL', 'WALCL']
 URLS = ['https://fred.stlouisfed.org/graph/fredgraph.csv?id={s}',
         'https://fred.stlouisfed.org/series/{s}/downloaddata/{s}.csv']
 
@@ -89,7 +91,7 @@ if KEY:
         except Exception as e:
             log.append(f'FRED-API {s}: {type(e).__name__} {str(e)[:120]}')
 
-YAHOO = {'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC',
+YAHOO = {'MOVE': '^MOVE', 'TNX': '^TNX', 'TLT': 'TLT', 'SOX': '^SOX', 'VIX3M': '^VIX3M', 'DXY': 'DX-Y.NYB', 'COPPER': 'HG=F', 'GOLD': 'GC=F', 'RUT': '^RUT', 'SPX': '^GSPC',
          # ETFs for the buy-and-hold comparison page (adjusted closes = total return before withholding)
          'QQQ': 'QQQ', 'QLD': 'QLD', 'TQQQ': 'TQQQ', 'SPY': 'SPY', 'SSO': 'SSO', 'UPRO': 'UPRO'}
 ETF_CLOSE = {'QQQ', 'QLD', 'TQQQ', 'SPY', 'SSO', 'UPRO'}
