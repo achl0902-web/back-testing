@@ -1,4 +1,4 @@
-fetched 2026-10-18 00:34 UTC
+fetched 2026-10-18 06:07 UTC
 FRED BAA10Y: skipped after 3 consecutive failures
 FRED AAA10Y: skipped after 3 consecutive failures
 FRED BAMLH0A0HYM2: skipped after 3 consecutive failures
@@ -62,3 +62,5 @@ YAHOO TQQQ TQQQ: ok 4196 rows 2010-02-11..2026-10-16 (Adj Close)
 YAHOO SPY SPY: ok 8487 rows 1993-01-29..2026-10-16 (Adj Close)
 YAHOO SSO SSO: ok 5113 rows 2006-06-21..2026-10-16 (Adj Close)
 YAHOO UPRO UPRO: ok 4355 rows 2009-06-25..2026-10-16 (Adj Close)
+OHLC NDX: ok 10341 rows 1985-10-01..2026-10-16
+OHLC SPX: ok 10529 rows 1985-01-02..2026-10-16
