@@ -41,7 +41,8 @@ node lib/score.js '{"name":"...","money":{"lump":100000000},"params":{"strategy"
 신호 모듈이 돌려줄 수 있는 배열 (신호일 j 기준, 0/1):
 
 - `exitSig`, `enterSig`: 챔피언을 **대체**하는 이탈·복귀 규칙 (`params.rule`을 `"sig"`로)
-- `extraVote`: 챔피언에 다섯 번째 축으로 **추가** (켜진 축 수에 더해짐)
+- `extraVote`: 챔피언에 다섯 번째 축으로 **추가** (켜진 축 수에 더해짐). 주의: 복귀 조건(켜진 축 1개 이하)에도 세어지므로 복귀가 엄격해짐 (S08 레드팀 발견)
+- `extraVoteExit`: 이탈 표에만 더해지는 다섯 번째 축 (복귀 조건에는 영향 없음)
 - `extraExit`: 챔피언에 추가 이탈 경보 (매크로 경보처럼 켜진 날 이탈)
 - `reentryBlock`: 켜져 있는 동안 챔피언의 복귀를 막음
 - 추가형은 `params`에 `"strategy":true`를 두고 `rule`은 생략(=final). `extraName`으로 로그 이름 지정
