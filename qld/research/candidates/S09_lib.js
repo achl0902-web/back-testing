@@ -1,5 +1,6 @@
 // S09 공통: 챔피언(final) 규칙 복제 상태기계 + 행동 훅. 인덱스 j는 j일 종가까지만 사용.
-// opt: exitVotes(j,base)->필요 표수, extraExit(j)->bool, enterOk(j,st)->bool(추가 조건), timeout{N,ok(j)}
+// opt: exitVotes(j,base)->필요 표수, extraExit(j)->bool, enterOk(j,st)->bool(추가 조건), timeout{N,ok(j,st),hold}
+// S10 추가(기본값이면 동작 동일): axes(j)->켜진 축 수 대체, timeout.hold===0 이면 타임아웃 복귀 뒤 40일 보유 없음
 const E = require('../../src/engine.js');
 const P0 = E.DEFAULTS;
 function axes(D, j) {
@@ -19,7 +20,7 @@ function run(D, opt = {}) {
   let out = false, outSince = -1, inSince = -1e9;
   const HOLD = opt.hold || 39; // 엔진 final과 일치(검증: 점수 0.00, 이탈 32)
   for (let j = 1; j < n; j++) {
-    const a = axes(D, j);
+    const a = opt.axes ? opt.axes(j) : axes(D, j);
     const macro = !!E.macroOnset(D, P0, j) && !(opt.macroHold !== false && j - inSince <= HOLD);
     if (!out) {
       let need = (j - inSince <= HOLD) ? 3 : 2;
@@ -28,8 +29,9 @@ function run(D, opt = {}) {
     } else {
       let ok = a <= 1 && D.px[j] > D.ma[20][j] && D.vols.rv10[j] < D.v60[j];
       if (ok && opt.enterOk) ok = opt.enterOk(j, { outSince });
-      if (!ok && opt.timeout && j - outSince >= opt.timeout.N && opt.timeout.ok(j)) ok = true;
-      if (ok) { out = false; inSince = j; }
+      let viaT = false;
+      if (!ok && opt.timeout && j - outSince >= opt.timeout.N && opt.timeout.ok(j, { outSince, a })) { ok = true; viaT = true; }
+      if (ok) { out = false; inSince = (viaT && opt.timeout.hold === 0) ? -1e9 : j; }
     }
     ex[j] = out ? 1 : 0; en[j] = out ? 0 : 1;
   }
