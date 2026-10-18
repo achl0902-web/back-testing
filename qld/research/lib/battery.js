@@ -83,6 +83,13 @@ const longestOut = r => { let m = 0, c = 0; for (const e of r.expo) { if (e < 0.
 const r99c = C.runner(champCfg)(ND, i99, ND.n - 1, true), r99x = C.runner(cfg)(ND, i99, ND.n - 1, true);
 P(`\n**실행** (1999~ 주 70만): 이탈 ${r99x.exits}회 (챔피언 ${r99c.exits}) · 납부 양도세 ${(r99x.taxesPaid / 1e8).toFixed(0)}억 (챔피언 ${(r99c.taxesPaid / 1e8).toFixed(0)}억) · 최장 시장 밖 ${longestOut(r99x)}거래일 (챔피언 ${longestOut(r99c)}) · 세후 최종 ${(r99x.finalAfter / 1e8).toFixed(0)}억 (챔피언 ${(r99c.finalAfter / 1e8).toFixed(0)}억)`);
 
+// ---- 5b. international synthetic 2x (extra evidence, not a gate yet)
+try {
+  const I = require('./intl.js'); const it = Object.values(I.evaluate(cfg));
+  const changed = it.filter(v => v.changed > 0);
+  P(`\n**해외 합성 2배** (챔피언 대비 Δ중앙/Δ최악, 달라진 구간 승-패): ` + it.map(v => `${v.label} ${f1(v.dMed)}/${f1(v.dMin)} ${v.win}-${v.lose}`).join(' · ') + ` → 발동한 시장 ${changed.length}/5`);
+} catch (e) { P('\n(해외 검증 실패: ' + String(e).slice(0, 80) + ')'); }
+
 // ---- 6. auto-gate
 const trials = fs.readFileSync(path.join(C.R, 'trials.jsonl'), 'utf8').split('\n').filter(l => l.includes(`"step":"${step}"`)).length;
 const k2 = trials > 30 ? 2 : 1;
