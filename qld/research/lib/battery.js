@@ -91,7 +91,9 @@ if (args.includes('--intl')) try {
 } catch (e) { P('\n(해외 검증 실패: ' + String(e).slice(0, 80) + ')'); }
 
 // ---- 6. auto-gate
-const trials = fs.readFileSync(path.join(C.R, 'trials.jsonl'), 'utf8').split('\n').filter(l => l.includes(`"step":"${step}"`)).length;
+// multiple testing (A9): with --dir <id>, count only this direction's trials (configs named "<id>:..."), see PROTOCOL v3
+const dir = opt('--dir', null);
+const trials = fs.readFileSync(path.join(C.R, 'trials.jsonl'), 'utf8').split('\n').filter(l => l.includes(`"step":"${step}"`) && (!dir || l.includes(`"name":"${dir}:`))).length;
 const k2 = trials > 30 ? 2 : 1;
 const A1raw = ['N10oos', 'S10', 'S5'].every(k => s.sets[k].dMed >= -0.01 && s.sets[k].dMin >= -0.02);
 const untouched = ['S10', 'S5'].every(k => Math.abs(s.sets[k].dMed) < 1e-6 && Math.abs(s.sets[k].dMin) < 1e-6);
@@ -105,11 +107,14 @@ const A5 = st.slice(0, 2).every(([, x]) => x.overall.score > 0);
 const A7 = r99x.exits <= 40;
 const A10 = placeboPct == null ? null : placeboPct >= 0.95;
 const mark = v => v === null ? '해당 없음' : v ? '통과' : '실패';
-P(`\n**자동 판정** (이 스텝 시도 ${trials}회 → A2 기준 ×${k2})`);
+P(`\n**자동 판정** (${dir ? `방향 ${dir} ` : '이 스텝 '}시도 ${trials}회 → A2 기준 ×${k2})`);
 P(`A1 표본 밖 ${untouched ? '확인 불가 (S&P 세트에서 규칙이 한 번도 발동하지 않음)' : mark(A1)} · A2 개선 ${mark(A2)} · A3 사례 ${mark(A3)} · A4 이웃값 ${mark(A4)} · A5 스트레스 ${mark(A5)} · A7 이탈 ${mark(A7)} · A10 플라시보 95% ${mark(A10)} · A6·A8은 비평가가 코드로 확인`);
 const pass = A1 && A2 && A3 && A4 !== false && A5 && A7 && A10 !== false;
 P(`→ 숫자 기준 ${pass ? '모두 통과 (A6·A8 확인 필요)' : '미달'}`);
 
 const text = out.join('\n');
-console.log(text);
+// hold is only for A2-pass candidates whose A4 or A5 is the only doubt (PROTOCOL)
+const hold = !pass && (A1 || untouched) && A2 && A3 && A7 && A10 !== false && !(A4 === false && A5 === false); // incl. A1 unconfirmable (S09 rule)
+if (opt('--json')) fs.writeFileSync(path.resolve(opt('--json')), JSON.stringify({ name: cfg.name, score: s.overall.score, trials, k2, gates: { A1: untouched ? null : A1, A2, A3, A4, A5, A7, A10 }, untouched, pass, hold, placebo: placeboPct, years: diffs.slice(0, 4).map(([y, d]) => [y, +(d * 100).toFixed(1)]), maxYearShare: gross > 0 ? +(Math.abs(diffs[0] ? diffs[0][1] : 0) / gross).toFixed(2) : 0, exits: r99x.exits }));
+if (!args.includes('--quiet')) console.log(text);
 if (opt('--md')) fs.appendFileSync(path.resolve(opt('--md')), text + '\n\n');
