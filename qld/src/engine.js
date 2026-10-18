@@ -68,7 +68,7 @@ const DEFAULTS = {
   strategy: true, volHi: 0.35, volLo: 0.25, peakRatio: 2 / 3, reentryFrac: 1 / 3,
   rule: 'final', dnHi: 0.30, upHi: 0.35, crash: -0.08, rsiW: 45, expand: 1.6, votes: 2, strongVotes: 3, hold: 40,
   reMaxVotes: 1, useMacro: true, macroTh: 0.5,
-  parkQQQ: 0, weeklyCheck: false, slowMA: 0, slowBand: 0,
+  parkQQQ: 0, weeklyCheck: false, slowMA: 0, slowBand: 0, capQ: 0, parkMacro: 0,
   // volatility-sized exposure with TQQQ/QQQ/SGOV. Default: step table on 20-day vol (<25% 2.5x, <35% 2x, <45% 1x, else 0x);
   // 'kelly' sizing: kellyFrac * mu/sigma^2. Rebalance on check days when |target - holding| > band
   maxLev: 2.5, kellyFrac: 1, band: 0.5, check: 'd', sizing: 'steps', hyst: 0.03, anchorVol: 0.2, anchorLev: 2, steps: [[0.25, 2.5], [0.35, 2], [0.45, 1], [Infinity, 0]], capRule: 'none', capLev: 1.5, exitFrac: 1, volHi2: null, volMeasure: 'rv20', maGate: 0, maMode: 'and', maBand: 0,
@@ -121,10 +121,10 @@ function idxOfDay(D, dayNum, after) {
 
 function runBT(D, i0, i1, p, wantLog) {
   p = Object.assign({}, DEFAULTS, p, { __merged: true });
-  const lots = [[], []]; // 0: leveraged (QLD), 1: QQQ ; each lot [shares, costKRWperShare]
+  const lots = [[], [], []]; // 0: leveraged (QLD), 1: QQQ, 2: synthetic 3x (S16 boostSig) ; each lot [shares, costKRWperShare]
   const KELLY = p.strategy && p.rule === 'kelly';
   const LX = KELLY ? D.lx3 : D.lx, LV = KELLY ? 3 : 2;
-  const px = [LX, D.ix];
+  const px = [LX, D.ix, D.lx3];
   let cash = 0, realized = 0, pending = 0, contributed = 0, taxesPaid = 0, fees = 0;
   let tgtE = 2, nReb = 0, lastTgt = NaN, regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9, outSince = 0, fKeep = 1, halfPending = false, slow = false;
   const log = [];
@@ -132,7 +132,7 @@ function runBT(D, i0, i1, p, wantLog) {
   const n1 = i1 - i0 + 1;
   const vals = new Float64Array(n1), contr = new Float64Array(n1), expo = new Float64Array(n1), twr = new Float64Array(n1), expoTot = new Float64Array(n1), tgtS = new Float64Array(n1).fill(NaN);
   const flows = [];
-  const shTot = [0, 0]; // running share totals (avoids re-summing every lot each day)
+  const shTot = [0, 0, 0]; // running share totals (avoids re-summing every lot each day)
   const sharesOf = a => shTot[a];
   function sell(a, usd, i) { // FIFO
     const price = px[a][i], f = D.fx[i]; let need = usd / price, got = 0; const q = lots[a];
@@ -162,7 +162,7 @@ function runBT(D, i0, i1, p, wantLog) {
     }
     return 0;
   }
-  const valKRW = i => (sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i] + cash) * D.fx[i];
+  const valKRW = i => (sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i] + sharesOf(2) * D.lx3[i] + cash) * D.fx[i];
   const fmt = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; return a >= 1e8 ? s + (a / 1e8).toFixed(2) + '억원' : s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
   let prevVal = 0;
   for (let i = i0; i <= i1; i++) {
@@ -174,6 +174,7 @@ function runBT(D, i0, i1, p, wantLog) {
       const usd = pending / D.fx[i];
       if (cash < usd) { const short = usd - cash; const qv = sharesOf(1) * D.ix[i];
         if (qv > 0) sell(1, Math.min(short + 1e-9, qv), i);
+        if (cash < usd && sharesOf(2) > 0) sell(2, Math.min(usd - cash + 1e-9, sharesOf(2) * D.lx3[i]), i);
         if (cash < usd) sell(0, usd - cash + 1e-9, i); }
       cash -= usd; taxesPaid += pending; L(i, 'tax', `양도세 납부 ${fmt(pending)}`); pending = 0;
     }
@@ -217,10 +218,11 @@ function runBT(D, i0, i1, p, wantLog) {
       // in-market leverage choice (S11): while 'slow', the in-market holding is QQQ (1x) instead of QLD.
       //   slowMA/slowBand: slow when the index closes below its slowMA-day average by slowBand, back to QLD above it by slowBand
       //   slowSig: research hook (0/1 by signal day) that sets the slow state directly. Defaults keep the champion unchanged.
-      const SLOW = !!(p.slowSig || p.slowMA > 0);
+      const SLOW = !!(p.slowSig || p.slowMA > 0), BOOST = !!p.boostSig;
       if (p.slowSig) slow = !!p.slowSig[j];
       else if (p.slowMA > 0) { const m = D.ma[p.slowMA][j]; if (!slow && D.px[j] < m * (1 - p.slowBand)) slow = true; else if (slow && D.px[j] > m * (1 + p.slowBand)) slow = false; }
-      const inA = SLOW && slow ? 1 : 0;
+      //   boostSig (S16): research hook (0/1 by signal day); while set and not slow, the in-market holding is synthetic 3x
+      const inA = SLOW && slow ? 1 : BOOST && p.boostSig[j] ? 2 : 0;
       if (regime === 'in' && halfPending && reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) {
         const amt = buy(inA, cash, i); halfPending = false;
         L(i, 'reentry', `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정 → 나머지 QLD ${fmt(amt * D.fx[i])}`);
@@ -228,8 +230,11 @@ function runBT(D, i0, i1, p, wantLog) {
       if (regime === 'in') {
         if ((c + xe >= p.votes || mOn) && (i - lastEntry >= p.hold || c + xe >= p.strongVotes)) {
           const keep = fCore + (1 - fCore) * (strong ? 0 : 1 - (p.fExit1 ?? 1));
-          if (SLOW && sharesOf(1) > 0) sell(1, sharesOf(1) * D.ix[i], i);
-          regime = 'out'; exits++; outSince = i; fKeep = keep; halfPending = false; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i] * (1 - keep), i); buy(1, pr * p.parkQQQ, i);
+          if ((SLOW || BOOST) && sharesOf(1) > 0) sell(1, sharesOf(1) * D.ix[i], i);
+          const p3 = BOOST && sharesOf(2) > 0 ? sell(2, sharesOf(2) * D.lx3[i], i) : 0;
+          //   parkMacro (S16): share of exit proceeds parked in QQQ when the exit came from the macro alarm alone (votes below p.votes)
+          const park = (p.parkMacro > 0 && mOn && c + xe < p.votes) ? p.parkMacro : p.parkQQQ;
+          regime = 'out'; exits++; outSince = i; fKeep = keep; halfPending = false; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i] * (1 - keep), i) + p3; buy(1, pr * park, i);
           const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]); if (xv) nm.push(p.extraName || '추가 축');
           const why = (c >= p.votes ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}${xOn && !macroOnset(D, p, j) ? (p.extraName || '추가 경보') : `매크로 경보 ${Math.round(D.ms[j] * 100)}%`}` : '');
           L(i, 'exit', `${why} → QLD ${keep > 0 ? Math.round((1 - keep) * 100) + '%' : '전량'} 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
@@ -249,17 +254,20 @@ function runBT(D, i0, i1, p, wantLog) {
           // timeout re-entry options: holdTimeout = hold days after a timeout re-entry (default p.hold);
           // reFracTimeout = share of cash put back on a timeout re-entry, rest when the normal re-entry condition is met
           const fr = viaTimeout ? (p.reFracTimeout ?? 1) : 1;
-          const q = sharesOf(1) * D.ix[i]; if (q > 0 && !inA) sell(1, q, i);
+          const q = sharesOf(1) * D.ix[i]; if (q > 0 && inA !== 1) sell(1, q, i);
           const amt = buy(inA, cash * fr, i); regime = 'in'; fKeep = 1; halfPending = fr < 1;
           lastEntry = viaTimeout && p.holdTimeout != null ? i - (p.hold - p.holdTimeout) : i;
-          L(i, 'reentry', `${why} → ${fr < 1 ? Math.round(fr * 100) + '% ' : '전량 '}${inA ? 'QQQ' : 'QLD'} ${fmt(amt * D.fx[i])}`);
+          L(i, 'reentry', `${why} → ${fr < 1 ? Math.round(fr * 100) + '% ' : '전량 '}${['QLD', 'QQQ', '3배'][inA]} ${fmt(amt * D.fx[i])}`);
         }
       }
-      if (SLOW && regime === 'in') {
-        const from = inA ? 0 : 1, v0 = sharesOf(from) * (from ? D.ix[i] : LX[i]);
-        if (v0 > 0) { const r0 = realized; const pr = sell(from, v0, i); buy(inA, pr, i);
-          L(i, inA ? 'down' : 'up', `${inA ? (p.slowSig ? (p.slowName || '감속 신호') : `${p.slowMA}일선 아래`) + ' → QLD를 QQQ로 감속' : '감속 해제 → QQQ를 QLD로'} ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`); }
+      if ((SLOW || BOOST) && regime === 'in') {
+        for (const from of [0, 1, 2]) {
+          if (from === inA || sharesOf(from) <= 0) continue;
+          const v0 = sharesOf(from) * px[from][i], r0 = realized; const pr = sell(from, v0, i); buy(inA, pr, i);
+          L(i, inA === 0 ? 'up' : inA === 1 ? 'down' : 'up', `${['QLD', 'QQQ', '3배'][from]} → ${['QLD', 'QQQ', '3배'][inA]} 전환${inA === 1 ? ` (${p.slowSig ? (p.slowName || '감속 신호') : `${p.slowMA}일선 아래`})` : inA === 2 ? ` (${p.boostName || '가속 신호'})` : ''} ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
+        }
       }
+
     } else if (p.strategy && check && p.exitSig) {
       if (regime === 'in' && p.exitSig[j]) {
         regime = 'out'; exits++; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i], i); buy(1, pr * p.parkQQQ, i);
@@ -313,16 +321,23 @@ function runBT(D, i0, i1, p, wantLog) {
       if (KELLY) { const [wa, wb] = mixOf(tgtE); toQ = wa; toP = wb; }
       else if (p.strategy && p.contribAlways) { toQ = 1; toP = 0; }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && (p.slowSig || p.slowMA > 0) && slow) { toQ = 0; toP = 1; }
+      else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && p.boostSig && p.boostSig[i > i0 ? i - 1 : i0]) { toQ = 0; toP = 0; buy(2, usd, i); }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'out') { toQ = p.contribOut || 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'out') { toQ = partial ? 1 - p.exitFrac : 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'staged') { toQ = p.reentryFrac; toP = (1 - p.reentryFrac) * p.parkQQQ; }
       buy(0, usd * toQ, i); if (toP > 0) buy(1, usd * toP, i);
     }
+    //   capQ (S16): while in the market, at most this share of the portfolio in QLD; rebalanced on the first trading day of each month
+    if (p.capQ > 0 && p.strategy && p.rule === 'final' && regime === 'in' && i > i0 && D.month[i] !== D.month[i - 1]) {
+      const V = sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i] + sharesOf(2) * D.lx3[i] + cash, qv = sharesOf(0) * LX[i], tgt = p.capQ * V;
+      if (qv > tgt + 1e-9) { const r0 = realized; sell(0, qv - tgt, i); L(i, 'down', `QLD 비중 상한 ${Math.round(p.capQ * 100)}% → ${fmt((qv - tgt) * D.fx[i])} 매도 (실현손익 ${fmt(realized - r0)})`); }
+      else if (qv < tgt - 1e-9 && cash > 0) buy(0, Math.min(cash, tgt - qv), i);
+    }
     // year end
     const lastOfYear = (i === D.n - 1) || D.year[i + 1] !== D.year[i];
     if (lastOfYear && i !== i1) {
       if (p.harvest && realized < p.deduct) {
-        const r0 = realized; harvestAsset(0, i); harvestAsset(1, i);
+        const r0 = realized; harvestAsset(0, i); harvestAsset(1, i); if (shTot[2] > 0) harvestAsset(2, i);
         if (realized - r0 > 1) L(i, 'harvest', `연말 비과세 한도 실현 후 재매수: 차익 ${fmt(realized - r0)}`);
       }
       const t = Math.max(realized - p.deduct, 0) * p.taxRate;
@@ -331,8 +346,8 @@ function runBT(D, i0, i1, p, wantLog) {
     }
     const v = valKRW(i);
     vals[k] = v; contr[k] = contributed;
-    expo[k] = v > 0 ? sharesOf(0) * LX[i] * D.fx[i] / v : 0;
-    expoTot[k] = v > 0 ? (LV * sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i]) * D.fx[i] / v : 0; tgtS[k] = lastTgt;
+    expo[k] = v > 0 ? (sharesOf(0) * LX[i] + sharesOf(2) * D.lx3[i]) * D.fx[i] / v : 0;
+    expoTot[k] = v > 0 ? (LV * sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i] + 3 * sharesOf(2) * D.lx3[i]) * D.fx[i] / v : 0; tgtS[k] = lastTgt;
     if (k === 0) twr[k] = 1; else {
       const base = prevVal + flowToday;
       twr[k] = twr[k - 1] * (base > 0 ? v / base : 1);
@@ -341,9 +356,9 @@ function runBT(D, i0, i1, p, wantLog) {
   }
   // liquidation
   const i = i1; let gainLiq = 0;
-  for (let a = 0; a < 2; a++) for (const [sh, ck] of lots[a]) gainLiq += sh * (px[a][i] * D.fx[i] * (1 - p.fee) - ck);
+  for (let a = 0; a < 3; a++) for (const [sh, ck] of lots[a]) gainLiq += sh * (px[a][i] * D.fx[i] * (1 - p.fee) - ck);
   const liqTax = Math.max(realized + gainLiq - p.deduct, 0) * p.taxRate + pending;
-  const finalAfter = (sharesOf(0) * LX[i] * (1 - p.fee) + sharesOf(1) * D.ix[i] * (1 - p.fee) + cash) * D.fx[i] - liqTax;
+  const finalAfter = (sharesOf(0) * LX[i] * (1 - p.fee) + sharesOf(1) * D.ix[i] * (1 - p.fee) + sharesOf(2) * D.lx3[i] * (1 - p.fee) + cash) * D.fx[i] - liqTax;
   flows.push([D.day[i], finalAfter]);
   const irr = xirr(flows);
   let pk = 0, mddV = 0, pkT = 0, mddT = 0, worst = 0;

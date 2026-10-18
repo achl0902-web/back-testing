@@ -44,12 +44,12 @@ ${stepRows.join('\n')}
 - 결선 검증: \`node lib/battery.js '<cfg>' --step Sxx --md steps/Sxx-battery.md\` (이웃값·비용2배·7월시작·1억거치·플라시보·연도기여·결정적 매매·자동판정, 약 30초)
 - 브리프 출력 한 줄 형식: 점수 | 세트별 챔피언 대비 Δ중앙/Δ최악 %p | 사례 최악 | 이탈수 | 이름. 점수 = min(발견세트 N10·N5, 확인세트 N10oos·S10·S5)의 평균(Δ중앙+0.5Δ최악)
 - 신호 모듈: \`module.exports = (D, p, H, L) => ({ extraVoteExit | extraVote | extraExit | reentryBlock | exitSig/enterSig })\` 0/1 배열, 인덱스 j는 j일 종가까지만 사용. 엔진이 j+1일 종가에 매매
-  - extraVoteExit: 이탈 표에만 +1 · extraVote: 이탈·복귀 모두 +1 (복귀 엄격) · extraExit: 켜진 날 이탈 · reentryBlock: 켜진 동안 복귀 금지 · exitSig/enterSig + params.rule "sig": 챔피언 대체 · slowSig: 보유 중 켜진 동안 QLD 대신 QQQ(1배) 보유 (S11)
+  - extraVoteExit: 이탈 표에만 +1 · extraVote: 이탈·복귀 모두 +1 (복귀 엄격) · extraExit: 켜진 날 이탈 · reentryBlock: 켜진 동안 복귀 금지 · exitSig/enterSig + params.rule "sig": 챔피언 대체 · slowSig: 보유 중 켜진 동안 QLD 대신 QQQ(1배) 보유 (S11) · boostSig: 보유 중 켜진 동안 QLD 대신 합성 3배 보유(적립금도 3배, 이탈 때 함께 매도; params.boostName 로그 이름, S16)
   - 카탈로그 지표 재사용: \`require('../lib/catalog.js').zOf(D, key)\` → {raw, z} (발표 시차·z점수 적용됨). 새 지표는 catalog.js에 한 줄 추가(가족, 시작연도, 근거, 시차)
   - 원자료: \`require('../lib/macro.js').series(D, 'FRED이름 또는 Y_이름', 발표시차일)\`. 시차: 일간 1, 주간 5~6, 월간 CPI/PPI 50, 실업률 40, M2 55. 같은 시각 종가 비율은 0
   - D: px(지수), lx(QLD), ma[20|50|100|200], vols.{rv20,down20,up20,rv10}, v60, r10, rsiw(주봉 RSI), ms(매크로 경보 비율), day(일수)
 - 엔진의 다른 구조: rule "kelly"(변동성 비례 노출, sizing steps/kelly, maxLev), rule "vol"(이전 방어형), parkQQQ(이탈 시 QQQ로 감속)
-- 챔피언 행동 파라미터 (기본값이면 챔피언과 동일): fExit1(일반 이탈 때 파는 비율, 강신호 때 나머지), fCore(이탈해도 남기는 코어 비율), contribOut(이탈 중에도 QLD로 사는 적립금 비율), ddRe(252일 고점 대비 낙폭 이상 + 20일선 위면 역발상 복귀), maxOut(이탈 N거래일 경과 + 20일선 위면 복귀), slowMA·slowBand(보유 중 지수가 N일선 −band 아래면 QLD 대신 QQQ 1배로 감속, +band 위면 QLD 복귀; 훅 slowSig 0/1 배열로 직접 지정 가능, slowName 로그 이름), votes·strongVotes·hold·reMaxVotes·dnHi·upHi·crash·rsiW·expand·macroTh
+- 챔피언 행동 파라미터 (기본값이면 챔피언과 동일): fExit1(일반 이탈 때 파는 비율, 강신호 때 나머지), fCore(이탈해도 남기는 코어 비율), contribOut(이탈 중에도 QLD로 사는 적립금 비율), ddRe(252일 고점 대비 낙폭 이상 + 20일선 위면 역발상 복귀), maxOut(이탈 N거래일 경과 + 20일선 위면 복귀), slowMA·slowBand(보유 중 지수가 N일선 −band 아래면 QLD 대신 QQQ 1배로 감속, +band 위면 QLD 복귀; 훅 slowSig 0/1 배열로 직접 지정 가능, slowName 로그 이름), capQ(보유 중 QLD 비중 상한, 매월 첫 거래일 리밸런싱·나머지 SGOV; 0=끔), parkMacro(매크로 경보 단독 이탈 때만 매도대금 중 이 비율을 QQQ로 대기; 0=끔), votes·strongVotes·hold·reMaxVotes·dnHi·upHi·crash·rsiW·expand·macroTh
 
 ## 채택 기준 (자동 판정은 battery.js가 함)
 A1 표본 밖(N10oos·S10·S5) 중앙 −1%p·최악 −2%p 이내 · A2 최악 +2%p 또는 N10·N10oos 중앙 +1%p (시도 30회 초과 시 2배) · A3 사례 6개 중 −5%p 초과 악화 없음, 4개 이상 비악화 · A4 이웃값(±20%) 유지 · A5 비용2배·7월시작 유지 · A6 새 파라미터 2개 이하, 근거 선기록 · A7 1999~ 이탈 40회 이하 · A8 미래 정보 없음 · A10 플라시보 95% 이상

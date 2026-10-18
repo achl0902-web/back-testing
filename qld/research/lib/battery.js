@@ -82,7 +82,7 @@ if (cfg.signals === 'lib/catsig.js') {
   const marg = dset.map(d => { const j = ND.day.findIndex(v => v >= d) - 1; return j > 0 ? Math.abs(z[j] - cfg.params.z) : NaN; }).filter(v => !isNaN(v));
   if (marg.length) P(`문턱 여유 (다른 매매 직전 신호일의 |z − 문턱|): 최소 ${Math.min(...marg).toFixed(2)} · 중앙 ${C.med(marg).toFixed(2)} (0.05 미만이면 경계값 우연 의심)`);
 }
-const longestOut = r => { let m = 0, c = 0; for (const e of r.expo) { if (e < 0.02) { c++; m = Math.max(m, c); } else c = 0; } return m; };
+const longestOut = r => { let m = 0, c = 0; for (const e of (r.expoTot || r.expo)) { if (e < 0.02) { c++; m = Math.max(m, c); } else c = 0; } return m; };
 const r99c = C.runner(champCfg)(ND, i99, ND.n - 1, true), r99x = C.runner(cfg)(ND, i99, ND.n - 1, true);
 P(`\n**실행** (1999~ 주 70만): 이탈 ${r99x.exits}회 (챔피언 ${r99c.exits}) · 납부 양도세 ${(r99x.taxesPaid / 1e8).toFixed(0)}억 (챔피언 ${(r99c.taxesPaid / 1e8).toFixed(0)}억) · 최장 시장 밖 ${longestOut(r99x)}거래일 (챔피언 ${longestOut(r99c)}) · 세후 최종 ${(r99x.finalAfter / 1e8).toFixed(0)}억 (챔피언 ${(r99c.finalAfter / 1e8).toFixed(0)}억)`);
 
