@@ -55,7 +55,7 @@ A1 표본 밖(N10oos·S10·S5) 중앙 −1%p·최악 −2%p 이내 · A2 최악 
 ## 카탈로그 커버리지 (가족: 지표(최고 점수))
 - price: p_ret21(0.0) p_ret63(-0.4) p_ret126(-1.1) p_ret252(0.2) p_ma50(0.3) p_ma200(-0.7) p_ma200slope(-0.5) p_dd252(-0.3) p_low63(0.0) p_rsi14(0.0) p_rsiw(-0.2) p_macdw(-0.1)
 - vol: v_rv20(-0.8) v_down20(-0.4) v_up20(-1.0) v_ratio(0.0) v_volvol(-0.1) v_vix(-0.1) v_vixterm(0.1) v_vxn(-0.4) v_move(-1.0)
-- xasset: x_ndxspx(-0.0) x_small(-0.2) x_rsp(-0.5) x_semis(-0.0) x_xlyxlp(-0.9) x_fin(-0.6) x_kre(0.1) x_cugold(0.0) x_gold(-1.5) x_dxy(1.1) x_oil(0.5) x_tlt(0.3) x_breadth(미시험) x_sbcorr(-0.2)
+- xasset: x_ndxspx(-0.0) x_small(-0.2) x_rsp(-0.5) x_semis(-0.0) x_xlyxlp(-0.9) x_fin(-0.6) x_kre(0.1) x_cugold(0.0) x_gold(-1.5) x_dxy(1.1) x_oil(0.5) x_tlt(0.3) x_breadth(-1.7) x_sbcorr(-0.2)
 - credit: c_baa(-0.5) c_baa63(-0.3) c_dflt(-0.2) c_hyg(-3.1) c_lqd(-0.3)
 - rates: r_tnx63(-0.1) r_tnx126(0.0) r_dgs2(0.2) r_hike(-1.4) r_cut(-1.9) r_inv(-2.4) r_steep(-0.6) r_real(-0.0)
 - inflation: i_cpi(-0.6) i_core(-0.4) i_cpiacc(-0.8) i_ppi(1.0) i_be(0.2)
