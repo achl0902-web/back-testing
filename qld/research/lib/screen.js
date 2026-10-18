@@ -54,7 +54,9 @@ if (!opt('--pairs') && (!fams || fams.includes('action'))) {
     // action types (S09): staged exit, core holding, buying while out, contrarian re-entry, cap on time out
     ...[0.33, 0.5, 0.67].map(v => [`fExit1_${v}`, { fExit1: v }]), ...[0.2, 0.33, 0.5].map(v => [`fCore_${v}`, { fCore: v }]),
     ...[0.25, 0.5, 1].map(v => [`contribOut_${v}`, { contribOut: v }]), ...[0.2, 0.3, 0.4].map(v => [`ddRe_${v}`, { ddRe: v }]),
-    ...[60, 120, 250].map(v => [`maxOut_${v}`, { maxOut: v }])])
+    ...[60, 120, 250].map(v => [`maxOut_${v}`, { maxOut: v }]),
+    // in-market leverage choice (S11): hold QQQ instead of QLD while the index is below its N-day average (band = hysteresis)
+    ...[50, 100, 200].flatMap(m => [0, 0.03].map(b => [`slow${m}_b${b}`, { slowMA: m, slowBand: b }]))])
     list.push({ name: `action·${nm}`, step, by: 'screen', fam: 'action', label: '구조 변형', params: Object.assign({ strategy: true }, p) });
 }
 // structural action variants (no indicator): de-lever to QQQ instead of SGOV when out
