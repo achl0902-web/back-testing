@@ -1,0 +1,206 @@
+[
+ {
+  "name": "S11_er_0.1",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_er.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_er",
+   "th": 0.1,
+   "volTh": 0.2
+  }
+ },
+ {
+  "name": "S11_er_0.15",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_er.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_er",
+   "th": 0.15,
+   "volTh": 0.2
+  }
+ },
+ {
+  "name": "S11_er_0.2",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_er.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_er",
+   "th": 0.2,
+   "volTh": 0.2
+  }
+ },
+ {
+  "name": "S11_drag_0.5",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_drag.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_drag",
+   "k": 0.5
+  }
+ },
+ {
+  "name": "S11_drag_1",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_drag.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_drag",
+   "k": 1
+  }
+ },
+ {
+  "name": "S11_drag_2",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_drag.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_drag",
+   "k": 2
+  }
+ },
+ {
+  "name": "S11_cushion_5",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_cushion.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_cushion",
+   "N": 5
+  }
+ },
+ {
+  "name": "S11_cushion_10",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_cushion.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_cushion",
+   "N": 10
+  }
+ },
+ {
+  "name": "S11_cushion_20",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_cushion.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_cushion",
+   "N": 20
+  }
+ },
+ {
+  "name": "S11_corr_20",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_corr.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_corr",
+   "fast": 20
+  }
+ },
+ {
+  "name": "S11_corr_50",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_corr.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_corr",
+   "fast": 50
+  }
+ },
+ {
+  "name": "S11_corr_100",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_corr.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_corr",
+   "fast": 100
+  }
+ },
+ {
+  "name": "S11_sub_3",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_sub.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_sub",
+   "strong": 3,
+   "rule": "sig"
+  }
+ },
+ {
+  "name": "S11_sub_4",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_sub.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_sub",
+   "strong": 4,
+   "rule": "sig"
+  }
+ },
+ {
+  "name": "S11_sub_5",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_sub.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_sub",
+   "strong": 5,
+   "rule": "sig"
+  }
+ },
+ {
+  "name": "S11_warn_0",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_warn.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_warn",
+   "gate": 0
+  }
+ },
+ {
+  "name": "S11_warn_20",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_warn.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_warn",
+   "gate": 20
+  }
+ },
+ {
+  "name": "S11_warn_50",
+  "step": "S11",
+  "by": "strategist",
+  "signals": "candidates/S11_warn.js",
+  "params": {
+   "strategy": true,
+   "slowName": "S11_warn",
+   "gate": 50
+  }
+ }
+]
