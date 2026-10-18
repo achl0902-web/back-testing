@@ -1,0 +1,8 @@
+{
+  "name": "최종 전략 v1 · 기술 4축 + 매크로 이탈 경보",
+  "adopted": "2026-10-17",
+  "step": "S04",
+  "sim": "engine",
+  "params": { "strategy": true, "rule": "final" },
+  "note": "src/engine.js DEFAULTS의 final 규칙. 파라미터를 바꾸면 이 파일과 DEFAULTS를 함께 바꾼다."
+}
