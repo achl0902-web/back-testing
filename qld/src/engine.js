@@ -126,7 +126,7 @@ function runBT(D, i0, i1, p, wantLog) {
   const LX = KELLY ? D.lx3 : D.lx, LV = KELLY ? 3 : 2;
   const px = [LX, D.ix];
   let cash = 0, realized = 0, pending = 0, contributed = 0, taxesPaid = 0, fees = 0;
-  let tgtE = 2, nReb = 0, lastTgt = NaN, regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9;
+  let tgtE = 2, nReb = 0, lastTgt = NaN, regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9, outSince = 0, fKeep = 1;
   const log = [];
   const L = (i, type, msg) => { if (wantLog) log.push({ d: D.day[i], type, msg }); };
   const n1 = i1 - i0 + 1;
@@ -208,17 +208,35 @@ function runBT(D, i0, i1, p, wantLog) {
       const xv = p.extraVote && p.extraVote[j] ? 1 : 0, xOn = !!(p.extraExit && p.extraExit[j]);
       const xe = p.extraVoteExit && p.extraVoteExit[j] ? 1 : 0;
       const ax = axesAt(D, p, j), c = ax[0] + ax[1] + ax[2] + ax[3] + xv, mOn = macroOnset(D, p, j) || xOn;
+      // action-type research params (defaults keep the champion unchanged):
+      //   fExit1  share of QLD sold on an ordinary exit (rest sold when votes reach strongVotes or the macro alarm fires)
+      //   fCore   share of QLD never sold on exits (core holding)      contribOut  share of contributions still bought while out
+      //   ddRe    re-enter when the index is this far below its 252-day high and above its 20-day average (contrarian)
+      //   maxOut  re-enter after this many trading days out if above the 20-day average
+      const strong = c + xe >= p.strongVotes || mOn, fCore = p.fCore || 0;
       if (regime === 'in') {
         if ((c + xe >= p.votes || mOn) && (i - lastEntry >= p.hold || c + xe >= p.strongVotes)) {
-          regime = 'out'; exits++; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i], i); buy(1, pr * p.parkQQQ, i);
+          const keep = fCore + (1 - fCore) * (strong ? 0 : 1 - (p.fExit1 ?? 1));
+          regime = 'out'; exits++; outSince = i; fKeep = keep; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i] * (1 - keep), i); buy(1, pr * p.parkQQQ, i);
           const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]); if (xv) nm.push(p.extraName || '추가 축');
           const why = (c >= p.votes ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}${xOn && !macroOnset(D, p, j) ? (p.extraName || '추가 경보') : `매크로 경보 ${Math.round(D.ms[j] * 100)}%`}` : '');
-          L(i, 'exit', `${why} → QLD 전량 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
+          L(i, 'exit', `${why} → QLD ${keep > 0 ? Math.round((1 - keep) * 100) + '%' : '전량'} 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
         }
-      } else if (reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) {
-        const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q, i);
-        const amt = buy(0, cash, i); regime = 'in'; lastEntry = i;
-        L(i, 'reentry', `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정 → 전량 QLD ${fmt(amt * D.fx[i])}`);
+      } else {
+        if (strong && fKeep > fCore + 1e-9) { // escalate a partial exit
+          const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i] * (1 - fCore / fKeep), i); buy(1, pr * p.parkQQQ, i); fKeep = fCore;
+          L(i, 'exit', `강한 신호 → 남은 QLD ${fCore > 0 ? '(코어 제외) ' : ''}매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
+        }
+        const above20 = D.px[j] > D.ma[20][j];
+        let why = null;
+        if (reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) why = `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정`;
+        else if (p.ddRe > 0 && above20) { if (!D._mx252) { D._mx252 = new Float64Array(D.n); for (let k = 0; k < D.n; k++) { let m = 0; for (let q = Math.max(0, k - 251); q <= k; q++) if (D.px[q] > m) m = D.px[q]; D._mx252[k] = m; } } if (D.px[j] <= D._mx252[j] * (1 - p.ddRe)) why = `고점 대비 ${Math.round(p.ddRe * 100)}% 이상 하락 후 20일선 회복 (역발상)`; }
+        if (!why && p.maxOut > 0 && above20 && i - outSince >= p.maxOut) why = `이탈 ${p.maxOut}거래일 경과 · 20일선 위`;
+        if (why) {
+          const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q, i);
+          const amt = buy(0, cash, i); regime = 'in'; lastEntry = i; fKeep = 1;
+          L(i, 'reentry', `${why} → 전량 QLD ${fmt(amt * D.fx[i])}`);
+        }
       }
     } else if (p.strategy && check && p.exitSig) {
       if (regime === 'in' && p.exitSig[j]) {
@@ -272,6 +290,7 @@ function runBT(D, i0, i1, p, wantLog) {
       let toQ = 1, toP = 0;
       if (KELLY) { const [wa, wb] = mixOf(tgtE); toQ = wa; toP = wb; }
       else if (p.strategy && p.contribAlways) { toQ = 1; toP = 0; }
+      else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'out') { toQ = p.contribOut || 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'out') { toQ = partial ? 1 - p.exitFrac : 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'staged') { toQ = p.reentryFrac; toP = (1 - p.reentryFrac) * p.parkQQQ; }
       buy(0, usd * toQ, i); if (toP > 0) buy(1, usd * toP, i);
