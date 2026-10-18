@@ -126,7 +126,7 @@ function runBT(D, i0, i1, p, wantLog) {
   const LX = KELLY ? D.lx3 : D.lx, LV = KELLY ? 3 : 2;
   const px = [LX, D.ix];
   let cash = 0, realized = 0, pending = 0, contributed = 0, taxesPaid = 0, fees = 0;
-  let tgtE = 2, nReb = 0, lastTgt = NaN, regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9, outSince = 0, fKeep = 1;
+  let tgtE = 2, nReb = 0, lastTgt = NaN, regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9, outSince = 0, fKeep = 1, halfPending = false;
   const log = [];
   const L = (i, type, msg) => { if (wantLog) log.push({ d: D.day[i], type, msg }); };
   const n1 = i1 - i0 + 1;
@@ -214,10 +214,14 @@ function runBT(D, i0, i1, p, wantLog) {
       //   ddRe    re-enter when the index is this far below its 252-day high and above its 20-day average (contrarian)
       //   maxOut  re-enter after this many trading days out if above the 20-day average
       const strong = c + xe >= p.strongVotes || mOn, fCore = p.fCore || 0;
+      if (regime === 'in' && halfPending && reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) {
+        const amt = buy(0, cash, i); halfPending = false;
+        L(i, 'reentry', `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정 → 나머지 QLD ${fmt(amt * D.fx[i])}`);
+      }
       if (regime === 'in') {
         if ((c + xe >= p.votes || mOn) && (i - lastEntry >= p.hold || c + xe >= p.strongVotes)) {
           const keep = fCore + (1 - fCore) * (strong ? 0 : 1 - (p.fExit1 ?? 1));
-          regime = 'out'; exits++; outSince = i; fKeep = keep; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i] * (1 - keep), i); buy(1, pr * p.parkQQQ, i);
+          regime = 'out'; exits++; outSince = i; fKeep = keep; halfPending = false; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i] * (1 - keep), i); buy(1, pr * p.parkQQQ, i);
           const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]); if (xv) nm.push(p.extraName || '추가 축');
           const why = (c >= p.votes ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}${xOn && !macroOnset(D, p, j) ? (p.extraName || '추가 경보') : `매크로 경보 ${Math.round(D.ms[j] * 100)}%`}` : '');
           L(i, 'exit', `${why} → QLD ${keep > 0 ? Math.round((1 - keep) * 100) + '%' : '전량'} 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
@@ -231,11 +235,16 @@ function runBT(D, i0, i1, p, wantLog) {
         let why = null;
         if (reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) why = `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정`;
         else if (p.ddRe > 0 && above20) { if (!D._mx252) { D._mx252 = new Float64Array(D.n); for (let k = 0; k < D.n; k++) { let m = 0; for (let q = Math.max(0, k - 251); q <= k; q++) if (D.px[q] > m) m = D.px[q]; D._mx252[k] = m; } } if (D.px[j] <= D._mx252[j] * (1 - p.ddRe)) why = `고점 대비 ${Math.round(p.ddRe * 100)}% 이상 하락 후 20일선 회복 (역발상)`; }
-        if (!why && p.maxOut > 0 && above20 && i - outSince >= p.maxOut) why = `이탈 ${p.maxOut}거래일 경과 · 20일선 위`;
+        let viaTimeout = false;
+        if (!why && p.maxOut > 0 && above20 && i - outSince >= p.maxOut) { why = `이탈 ${p.maxOut}거래일 경과 · 20일선 위`; viaTimeout = true; }
         if (why) {
+          // timeout re-entry options: holdTimeout = hold days after a timeout re-entry (default p.hold);
+          // reFracTimeout = share of cash put back on a timeout re-entry, rest when the normal re-entry condition is met
+          const fr = viaTimeout ? (p.reFracTimeout ?? 1) : 1;
           const q = sharesOf(1) * D.ix[i]; if (q > 0) sell(1, q, i);
-          const amt = buy(0, cash, i); regime = 'in'; lastEntry = i; fKeep = 1;
-          L(i, 'reentry', `${why} → 전량 QLD ${fmt(amt * D.fx[i])}`);
+          const amt = buy(0, cash * fr, i); regime = 'in'; fKeep = 1; halfPending = fr < 1;
+          lastEntry = viaTimeout && p.holdTimeout != null ? i - (p.hold - p.holdTimeout) : i;
+          L(i, 'reentry', `${why} → ${fr < 1 ? Math.round(fr * 100) + '% ' : '전량 '}QLD ${fmt(amt * D.fx[i])}`);
         }
       }
     } else if (p.strategy && check && p.exitSig) {
