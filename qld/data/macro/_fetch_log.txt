@@ -1,4 +1,4 @@
-fetched 2026-10-18 06:07 UTC
+fetched 2026-10-18 07:18 UTC
 FRED BAA10Y: skipped after 3 consecutive failures
 FRED AAA10Y: skipped after 3 consecutive failures
 FRED BAMLH0A0HYM2: skipped after 3 consecutive failures
@@ -23,6 +23,18 @@ FRED UNRATE: skipped after 3 consecutive failures
 FRED DTWEXBGS: skipped after 3 consecutive failures
 FRED DCOILWTICO: skipped after 3 consecutive failures
 FRED TEDRATE: skipped after 3 consecutive failures
+FRED CPIAUCSL: skipped after 3 consecutive failures
+FRED CPILFESL: skipped after 3 consecutive failures
+FRED PPIACO: skipped after 3 consecutive failures
+FRED DFII10: skipped after 3 consecutive failures
+FRED T10YIE: skipped after 3 consecutive failures
+FRED T5YIFR: skipped after 3 consecutive failures
+FRED GS10: skipped after 3 consecutive failures
+FRED GS2: skipped after 3 consecutive failures
+FRED TB3MS: skipped after 3 consecutive failures
+FRED FEDFUNDS: skipped after 3 consecutive failures
+FRED M2SL: skipped after 3 consecutive failures
+FRED WALCL: skipped after 3 consecutive failures
 DIRECT CHICAGOFED_nfci.csv: ok 147619 bytes head='Friday_of_Week,NFCI,ANFCI,Risk,Credit,Leverage,Nonfinancial_Leverage\r\n01/08/1971,0.594,0.588,0.622,-'
 FRED API probe: reachable 200
 FRED-API BAA10Y: ok 10641 rows 1986-01-02..2026-10-15
@@ -49,6 +61,21 @@ FRED-API UNRATE: ok 945 rows 1948-01-01..2026-09-01
 FRED-API DTWEXBGS: ok 5420 rows 2006-01-02..2026-10-09
 FRED-API DCOILWTICO: ok 10640 rows 1986-01-02..2026-10-14
 FRED-API TEDRATE: ok 9407 rows 1986-01-02..2022-01-21
+FRED-API CPIAUCSL: ok 957 rows 1947-01-01..2026-09-01
+FRED-API CPILFESL: ok 837 rows 1957-01-01..2026-09-01
+FRED-API PPIACO: ok 1365 rows 1913-01-01..2026-09-01
+FRED-API DFII10: ok 6206 rows 2003-01-02..2026-10-15
+FRED-API T10YIE: ok 6207 rows 2003-01-02..2026-10-16
+FRED-API T5YIFR: ok 6207 rows 2003-01-02..2026-10-16
+FRED-API GS10: ok 882 rows 1953-04-01..2026-09-01
+FRED-API GS2: ok 604 rows 1976-06-01..2026-09-01
+FRED-API TB3MS: ok 1113 rows 1934-01-01..2026-09-01
+FRED-API FEDFUNDS: ok 867 rows 1954-07-01..2026-09-01
+FRED-API M2SL: ok 812 rows 1959-01-01..2026-08-01
+FRED-API WALCL: ok 1244 rows 2002-12-18..2026-10-14
+YAHOO MOVE ^MOVE: ok 5917 rows 2002-11-12..2026-10-16 (Adj Close)
+YAHOO TNX ^TNX: ok 11730 rows 1980-01-02..2026-10-16 (Adj Close)
+YAHOO TLT TLT: ok 6094 rows 2002-07-30..2026-10-16 (Adj Close)
 YAHOO SOX ^SOX: ok 8169 rows 1994-05-04..2026-10-16 (Adj Close)
 YAHOO VIX3M ^VIX3M: ok 5096 rows 2006-07-17..2026-10-16 (Adj Close)
 YAHOO DXY DX-Y.NYB: ok 11923 rows 1980-01-02..2026-10-16 (Adj Close)
