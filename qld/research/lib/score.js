@@ -12,6 +12,10 @@ const opt = f => { const k = args.indexOf(f); return k >= 0 ? args[k + 1] : null
 const src = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--grid');
 if (!src) { console.error('config required'); process.exit(1); }
 const cfg0 = src.trim().startsWith('{') ? JSON.parse(src) : JSON.parse(fs.readFileSync(src));
+// reject unknown top-level keys: a parameter placed outside "params" would silently run the champion (S11 critic)
+const KNOWN = ['name', 'step', 'by', 'sim', 'params', 'signals', 'money', 'costMult', 'startMonth', 'fam', 'label'];
+const bad = Object.keys(cfg0).filter(k => !KNOWN.includes(k));
+if (bad.length) { console.error(`알 수 없는 설정 키: ${bad.join(', ')} — 파라미터는 "params" 안에 넣는다`); process.exit(1); }
 const grid = opt('--grid') ? JSON.parse(opt('--grid')) : null;
 const combos = [{}];
 if (grid) for (const [k, vs] of Object.entries(grid)) { const nx = []; for (const c of combos) for (const v of vs) nx.push(Object.assign({}, c, { [k]: v })); combos.splice(0, combos.length, ...nx); }
