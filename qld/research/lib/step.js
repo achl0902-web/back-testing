@@ -107,7 +107,7 @@ else if (cmd === 'run') {
       const r2 = x => Number.isInteger(v) ? Math.max(1, Math.round(x)) : +x.toPrecision(3); const a = r2(v * 0.8), b = r2(v * 1.2); nb[k] = [...new Set([a, b])].filter(x => x !== v);
     }
     const jf = path.join(require('os').tmpdir(), `bat-${step}-${d.id}.json`);
-    const bat = n => sh(`node lib/battery.js '${JSON.stringify(strip(cfg)).replace(/'/g, "'\\''")}' --step ${step} --dir ${d.id} --md steps/${step}-battery.md --json ${jf} --quiet` + (n ? ` --neighbors '${JSON.stringify(n)}'` : ''), { timeout: 600000 });
+    const bat = n => sh(`node lib/battery.js '${JSON.stringify(strip(cfg)).replace(/'/g, "'\\''")}' --step ${step} --dir ${d.id} --md steps/${step}-battery.md --json ${jf} --quiet` + (P.k2 ? ` --k2 ${P.k2}` : '') + (n ? ` --neighbors '${JSON.stringify(n)}'` : ''), { timeout: 600000 });
     let nbErr = false;
     try { bat(Object.keys(nb).length ? nb : null); } catch (e) { nbErr = true; bat(null); } // e.g. a discrete parameter without that neighbour value
     const B = JSON.parse(fs.readFileSync(jf)); if (nbErr) { B.gates.A4 = false; B.pass = false; B.hold = false; } res.push([d, B]);

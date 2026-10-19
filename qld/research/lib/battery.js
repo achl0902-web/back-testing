@@ -97,7 +97,7 @@ if (args.includes('--intl')) try {
 // multiple testing (A9): with --dir <id>, count only this direction's trials (configs named "<id>:..."), see PROTOCOL v3
 const dir = opt('--dir', null);
 const trials = fs.readFileSync(path.join(C.R, 'trials.jsonl'), 'utf8').split('\n').filter(l => l.includes(`"step":"${step}"`) && (!dir || l.includes(`"name":"${dir}:`))).length;
-const k2 = trials > 30 ? 2 : 1;
+const k2 = Math.max(trials > 30 ? 2 : 1, +opt('--k2', 1)); // --k2: forced multiplier for follow-ups of an earlier direction (plan field k2)
 const A1raw = ['N10oos', 'S10', 'S5'].every(k => s.sets[k].dMed >= -0.01 && s.sets[k].dMin >= -0.02);
 const untouched = ['S10', 'S5'].every(k => Math.abs(s.sets[k].dMed) < 1e-6 && Math.abs(s.sets[k].dMin) < 1e-6);
 const A1 = A1raw && !untouched;
