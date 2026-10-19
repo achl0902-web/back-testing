@@ -1,10 +1,10 @@
-<title>QLD 노출 조절 백테스터</title>
+<title>QLD 방어 적립</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: a trading-desk rulebook. Status strip, control sheet, result ledger, three stacked charts, event log. */
+/* Layout: one strategy (최종 전략 v1). Today strip, rules, validation, then the interactive backtest. */
 :root {
   --bg: #f3f5f8; --surface: #ffffff; --sunken: #eef1f5; --fg: #121820; --muted: #59616f; --faint: #8a919d; --line: #dfe3e9;
   --accent: #1f5fc4; --accent-ink: #ffffff;
@@ -83,6 +83,7 @@ th:first-child, td:first-child { text-align: left; color: var(--muted); font-wei
 thead th { font-size: 0.75rem; letter-spacing: 0.04em; color: var(--faint); font-weight: 600; }
 td.num { font-family: var(--f-num); }
 @media (max-width: 520px) { th, td { padding: 7px 6px; } table { font-size: 0.82rem; } }
+@media (max-width: 430px) { th, td { padding: 6px 4px; } table { font-size: 0.76rem; } #kpi th[scope=row], #cmp th[scope=row] { white-space: normal; min-width: 64px; } #cmp th:nth-child(5), #cmp td:nth-child(5) { display: none; } #valTable td small { font-size: 0.7rem; } }
 .pos { color: var(--good); } .neg { color: var(--bad); }
 .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 8px; }
@@ -110,9 +111,6 @@ td.num { font-family: var(--f-num); }
 .t.down { color: var(--bad); background: var(--bad-bg); } .t.up { color: var(--good); background: var(--good-bg); }
 .how { margin: 0 0 12px; padding-left: 1.4em; display: grid; gap: 8px; max-width: 80ch; color: var(--muted); }
 .how b { color: var(--fg); font-weight: 600; }
-#kTable td:last-child, #kTable th.lefthead { text-align: left; white-space: normal; min-width: 200px; color: var(--muted); font-size: 0.82rem; }
-.pill.lo { color: var(--bad); background: var(--bad-bg); } .pill.mid { color: var(--warn); background: var(--warn-bg); } .pill.hi { color: var(--good); background: var(--good-bg); }
-#aux td:last-child, #aux th.lefthead { text-align: left; white-space: normal; min-width: 220px; color: var(--muted); font-size: 0.82rem; }
 .fn { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--sunken); }
 .fn summary { cursor: pointer; font-weight: 600; }
 .fn h3 { font-size: 0.9rem; margin: 14px 0 6px; }
@@ -133,79 +131,107 @@ td.num { font-family: var(--f-num); }
 @media (max-width: 520px) { .ev { grid-template-columns: 84px 1fr; } .ev .m { grid-column: 1 / -1; } }
 details summary { cursor: pointer; font-weight: 600; }
 details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
+.now { display: grid; gap: 14px; }
+.next { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--sunken); border-left: 3px solid var(--accent); }
+.next b { display: block; margin-bottom: 2px; }
+.gauge { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.85rem; color: var(--muted); }
+.gauge .bar { flex: 1 1 120px; min-width: 120px; height: 8px; border-radius: 999px; background: var(--sunken); position: relative; overflow: hidden; max-width: 260px; }
+.gauge .bar i { position: absolute; inset: 0 auto 0 0; background: var(--s-dca); border-radius: 999px; }
+.gauge .bar s { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--bad); }
+.rules { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 860px) { .rules { grid-template-columns: 1fr; } }
+.rules h3 { font-size: 0.92rem; margin: 0 0 8px; }
+.rules ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; color: var(--muted); }
+.rules ol b { color: var(--fg); font-weight: 600; }
+#valTable td { white-space: nowrap; } #valTable td small { color: var(--faint); font-size: 0.78rem; }
+@media (max-width: 600px) { #valTable td small { display: block; } #valTable th[scope=row] { white-space: normal; min-width: 76px; } #valTable { font-size: 0.76rem; } #valTable th, #valTable td { padding: 7px 4px; } }
+.win { font-weight: 600; color: var(--good); }
+details.adv { border-top: 1px solid var(--line); padding-top: 10px; }
+details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
+
 <div class="wrap">
   <header>
-    <div class="eyebrow">나스닥100 0~2.5배 · TQQQ·QQQ·SGOV · 세후 원화 기준</div>
-    <h1>QLD 노출 조절 백테스터</h1>
-    <p class="sub" style="margin-top:2px"><a href="hold.html" style="color:var(--accent)">별도 비교: TQQQ·QQQ 반반 적립 vs QLD 적립 (매수만, 리밸런싱 없음) →</a></p>
-    <p class="sub">방향은 예측하지 않고, 예측이 되는 변동성만 봅니다. 나스닥100의 20일 변동성을 계단표에 넣어 노출(0~2.5배)을 정하고 TQQQ·QQQ·SGOV를 섞어 맞춥니다. 잔잔할 때는 QLD보다 조금 많이, 요동칠 때는 적게 들고 가는 구조를 매주 QLD 적립과 비교합니다. 해외주식 양도세(선입선출, 연 250만원 공제, 22%), 원/달러 환율, 수수료, 연말 하베스팅을 모두 반영합니다.</p>
+    <div class="eyebrow">나스닥100 2배(QLD) 적립 · 위험 신호 이탈 · 세후 원화 기준</div>
+    <h1>QLD 방어 적립</h1>
+    <p class="sub">평소에는 매주 QLD를 삽니다. 시장이 거칠어지는 신호가 둘 이상 겹치거나 신용·경기 경보가 켜지면 QLD를 모두 팔아 SGOV(단기 국채)로 피했다가, 진정되면 전부 다시 QLD로 돌아갑니다. 연구에서 채택한 <b>최종 전략 v1</b>이며, 해외주식 양도세(선입선출, 연 250만원 공제, 22%), 원/달러 환율, 수수료, 연말 하베스팅을 모두 반영합니다.</p>
+    <p class="sub" style="margin-top:4px"><a href="hold.html" style="color:var(--accent)">별도 비교: TQQQ·QQQ 반반 적립 vs QLD 적립 →</a></p>
   </header>
 
-  <section class="panel nowpanel" aria-live="polite">
+  <section class="panel now" aria-live="polite">
+    <div class="chart-head"><h2>지금</h2><span class="hint">데이터 __LASTDATE__ 종가까지 · 페이지 갱신 __BUILT__</span></div>
     <div class="status">
-      <span id="nowPill" class="pill in">보유</span>
+      <span id="nowPill" class="pill in">QLD 보유</span>
       <p id="nowText">계산 중…</p>
     </div>
-    <div class="chart-head" style="margin:14px 0 4px"><h2>최근 6개월 일별 추이</h2><span class="hint">데이터 __LASTDATE__ 종가까지 · 페이지 갱신 __BUILT__</span></div>
-    <div class="chips" id="sparkPick" style="margin-bottom:6px">
-      <button type="button" class="chip" data-k="kelly" aria-pressed="true">목표 노출</button>
-      <button type="button" class="chip" data-k="axes" aria-pressed="false">기술 축</button>
-      <button type="button" class="chip" data-k="macro" aria-pressed="false">매크로 경보</button>
-      <button type="button" class="chip" data-k="vol" aria-pressed="false">하방·상방 변동성</button>
-      <button type="button" class="chip" data-k="ma200" aria-pressed="false">200일선 대비</button>
-      <button type="button" class="chip" data-k="rsi" aria-pressed="false">RSI</button>
-      <button type="button" class="chip" data-k="macd" aria-pressed="false">MACD</button>
-      <button type="button" class="chip" data-k="vix" aria-pressed="false">VIX</button>
-      <button type="button" class="chip" data-k="mom" aria-pressed="false">모멘텀</button>
-    </div>
-    <div class="cv spark" id="cvSpark"><canvas aria-label="최근 6개월 일별 지표 차트" role="img"></canvas></div>
-  </section>
-
-  <section class="panel" id="howPanel">
-    <div class="chart-head"><h2>비중을 정하는 방법</h2><span class="hint" id="howNote"></span></div>
-    <ol class="how">
-      <li><b>변동성 하나만 본다.</b> 나스닥100 최근 20거래일 변동성(연 환산)입니다. 방향과 달리 변동성은 다음 한 달을 꽤 잘 예측하고(순위상관 0.57~0.76), 레버리지 상품은 변동성이 클수록 깎이는 폭이 커서(변동성의 제곱에 비례) 노출을 줄일 근거가 됩니다. 이 페이지가 매일 종가로 계산합니다.</li>
-      <li><b>아래 표에서 노출을 찾는다.</b> 평소(25% 미만)엔 QLD보다 조금 많은 2.5배, 출렁이면 2배·1배, 45%를 넘는 폭풍(2000·2008·2020년 같은)엔 0배입니다.</li>
-      <li><b>세 종목으로 바꾼다.</b> 2.5배 = TQQQ 75% + QQQ 25%, 2배 = TQQQ 50% + QQQ 50%(QLD와 같은 노출), 1배 = QQQ 100%, 0배 = SGOV 100%. TQQQ 올인은 하지 않습니다.</li>
-      <li><b>줄일 땐 바로, 늘릴 땐 한 박자 늦게.</b> 변동성이 경계를 넘으면 바로 한 칸 내리고, 다시 올릴 때는 경계보다 3%p 더 내려와야 올립니다(예: 35%를 넘어 1배로 내렸으면 32% 아래에서 2배로). 경계 근처에서 하루걸러 사고파는 것을 막습니다.</li>
-      <li><b>크게 어긋날 때만 산다·판다.</b> 보유 노출이 목표와 조정 폭(기본 0.5배) 이상 다르면 다음 거래일 종가에 맞춥니다. 그 사이 적립금은 마지막으로 맞춘 비중대로 삽니다. 매매는 1년에 2~4번입니다. 가격이 움직이면 TQQQ와 QQQ 비율이 저절로 변해서, 보유 노출은 다음 매매 전까지 목표에서 조금씩 벗어납니다.</li>
-    </ol>
-    <div class="tablewrap"><table id="howTable">
-      <thead><tr><th scope="col">20일 변동성</th><th scope="col">노출</th><th scope="col">TQQQ</th><th scope="col">QQQ</th><th scope="col">SGOV</th></tr></thead>
-      <tbody></tbody></table></div>
-    <p class="hint" style="margin-top:8px" id="howHint"></p>
-  </section>
-
-  <section class="panel">
-    <div class="chart-head"><h2>오늘의 신호</h2><span class="hint" id="sigNote"></span></div>
-    <div class="tablewrap" id="kellyWrap" style="margin-bottom:14px"><table id="kTable">
-      <thead><tr><th scope="col">노출 계산</th><th scope="col">현재</th><th scope="col" class="lefthead">뜻</th></tr></thead>
-      <tbody></tbody></table></div>
-    <p class="hint" id="oldSigHint" style="margin:0 0 8px">아래 기술 축과 매크로 지표는 이전 규칙(위험신호 이탈)과 상한 옵션에 쓰는 참고 지표입니다.</p>
+    <p class="next" id="nextBox"></p>
     <div class="sigs">
       <div class="tablewrap"><table id="axTable">
-        <thead><tr><th scope="col">기술 축</th><th scope="col">현재</th><th scope="col">기준</th><th scope="col">상태</th></tr></thead>
+        <thead><tr><th scope="col">기술 축</th><th scope="col">현재</th><th scope="col">켜지는 기준</th><th scope="col">상태</th></tr></thead>
         <tbody></tbody></table></div>
-      <div class="tablewrap"><table id="mcTable">
-        <thead><tr><th scope="col">매크로 지표</th><th scope="col">z점수</th><th scope="col">상태</th></tr></thead>
-        <tbody></tbody></table></div>
+      <div>
+        <div class="gauge" id="macroGauge"></div>
+        <details style="margin-top:10px">
+          <summary>매크로 지표 14개 보기</summary>
+          <div class="tablewrap" style="margin-top:8px"><table id="mcTable">
+            <thead><tr><th scope="col">매크로 지표</th><th scope="col">z점수</th><th scope="col">상태</th></tr></thead>
+            <tbody></tbody></table></div>
+        </details>
+      </div>
     </div>
-    <details class="fn" id="fnBox">
-      <summary>각 신호의 뜻과 의미 (번호를 누르면 해당 설명으로 이동)</summary>
-      <div class="fn-body" id="fnBody"></div>
-    </details>
-    <p class="hint" style="margin-top:8px">기술 축은 4개 중 2개 이상이면 이탈 신호입니다. 매크로는 지표마다 자기 3년 평균 대비 표준편차(z점수)가 1을 넘으면 경보이고, 경보 비율이 기준을 새로 넘는 날 이탈 신호가 됩니다. 매크로는 이탈에만 쓰고 복귀는 기술 조건으로만 판단합니다<sup><a href="#fn-ax4" data-fn="fn-ax4">ⓘ</a></sup>. 각 지표는 발표 시차(시장 지표 1일, 주간 5~6일, 월간 36일)만큼 늦춰 반영합니다.</p>
+    <div>
+      <div class="chart-head" style="margin:6px 0 4px"><h2>최근 6개월</h2></div>
+      <div class="chips" id="sparkPick" style="margin-bottom:6px">
+        <button type="button" class="chip" data-k="axes" aria-pressed="true">켜진 기술 축</button>
+        <button type="button" class="chip" data-k="macro" aria-pressed="false">매크로 경보</button>
+        <button type="button" class="chip" data-k="vol" aria-pressed="false">하방·상방 변동성</button>
+        <button type="button" class="chip" data-k="px" aria-pressed="false">나스닥100·20일선</button>
+      </div>
+      <div class="cv spark" id="cvSpark"><canvas aria-label="최근 6개월 일별 신호 차트" role="img"></canvas></div>
+    </div>
   </section>
 
   <section class="panel">
-    <div class="chart-head"><h2>보조지표</h2><span class="hint">매매 규칙에는 쓰지 않고, 판단을 돕는 참고용</span></div>
-    <div class="tablewrap"><table id="aux">
-      <thead><tr><th scope="col">지표</th><th scope="col">현재</th><th scope="col">상태</th><th scope="col" class="lefthead">읽는 법 · 단독 규칙으로 썼을 때</th></tr></thead>
-      <tbody></tbody></table></div>
-    <p class="hint" style="margin-top:8px">단독 규칙 성적은 1986년 이후 나스닥100·S&P500의 모든 5·10년 적립 구간에서 그 지표만으로 이탈·복귀했을 때 단순 적립보다 수익률이 높았던 비율입니다(이전 최종 전략은 50%, 대신 최저 수익률이 크게 좋아짐). 노출 조절 전략은 이 지표들을 쓰지 않습니다. 신호가 자주 바뀌면 이탈할 때마다 양도세가 나가 성적이 떨어집니다.</p>
+    <div class="chart-head"><h2>규칙</h2><span class="hint">매일 종가로 판단하고 다음 거래일 종가에 매매</span></div>
+    <div class="rules">
+      <div>
+        <h3>QLD를 모두 파는 때 (이탈)</h3>
+        <ol>
+          <li><b>기술 4축 중 2개 이상이 켜질 때.</b> ① 변동성: 20일 하방 변동성 30% 초과 또는 상방 35% 초과 ② 급락: 10거래일 −8% 이하 ③ 추세: 주봉 RSI 45 미만 ④ 급팽창: 10일 변동성이 60일 변동성의 1.6배 초과</li>
+          <li><b>또는 매크로 경보가 50%를 새로 넘을 때.</b> 신용 스프레드·금융 스트레스·실업수당 등 14개 지표 중 평소(지난 3년)보다 확연히 나쁜 지표의 비율입니다.</li>
+          <li><b>파는 금액은 전량</b>이고, 이탈 중 적립금은 SGOV에 쌓습니다.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>다시 QLD로 돌아가는 때 (복귀)</h3>
+        <ol>
+          <li><b>세 조건이 모두 맞을 때.</b> 켜진 기술 축 1개 이하 · 나스닥100이 20일선 위 · 10일 변동성이 60일 변동성보다 낮음(진정).</li>
+          <li><b>쌓인 SGOV를 전부 QLD로</b> 옮깁니다. 매크로 경보는 바닥에서 늦게 풀려 복귀에는 쓰지 않습니다.</li>
+          <li><b>복귀 후 40거래일</b>은 3축 이상일 때만 다시 이탈합니다(들어가자마자 흔들려 나오는 것 방지).</li>
+        </ol>
+      </div>
+    </div>
+    <details class="fn" id="fnBox">
+      <summary>각 신호의 뜻과 의미</summary>
+      <div class="fn-body" id="fnBody"></div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <div class="chart-head"><h2>검증 성적</h2><span class="hint">주 100만원 · 세후 · 모든 적립 구간 · 2026-10-16 데이터</span></div>
+    <div class="tablewrap"><table id="valTable">
+      <thead><tr><th scope="col">구간</th><th scope="col">단순 적립</th><th scope="col">최종 전략 v1</th><th scope="col">노출 조절<br><small>(참고)</small></th></tr></thead>
+      <tbody>
+        <tr><th scope="row">나스닥 10년<br><small>1999~2016 시작</small></th><td class="num">23.3% <small>최악 −19.3</small></td><td class="num win">26.2% <small>최악 13.2</small></td><td class="num">28.4% <small>최악 −1.7</small></td></tr>
+        <tr><th scope="row">나스닥 10년<br><small>1986~1998 시작</small></th><td class="num">17.4% <small>최악 −7.9</small></td><td class="num win">30.0% <small>최악 13.3</small></td><td class="num">26.4% <small>최악 4.6</small></td></tr>
+        <tr><th scope="row">나스닥 5년</th><td class="num">25.0% <small>최악 −56.6</small></td><td class="num win">27.9% <small>최악 5.1</small></td><td class="num">27.7% <small>최악 −21.2</small></td></tr>
+        <tr><th scope="row">S&amp;P 2배 10년</th><td class="num">15.5% <small>최악 −14.8</small></td><td class="num">14.7% <small>최악 −0.7</small></td><td class="num win">17.9% <small>최악 −4.8</small></td></tr>
+        <tr><th scope="row">S&amp;P 2배 5년</th><td class="num">16.4% <small>최악 −29.9</small></td><td class="num win">15.5% <small>최악 −30.6</small></td><td class="num">17.8% <small>최악 −46.1</small></td></tr>
+        <tr><th scope="row">1999년~ 한 번에<br><small>세후 IRR · MDD</small></th><td class="num">21.6% <small>−87%</small></td><td class="num win">25.4% <small>−45%</small></td><td class="num">23.9% <small>−61%</small></td></tr>
+      </tbody></table></div>
+    <p class="hint" style="margin-top:8px">숫자는 연환산 수익률(IRR) 중앙값, 작은 글씨는 가장 나빴던 구간의 IRR입니다. 초록은 ‘중앙 + 0.5 × 최악’이 더 높은 쪽으로, 계산 전에 정한 판정 규칙입니다(최종 전략 v1이 5개 중 4개 우세). 노출 조절(변동성 계단표, TQQQ·QQQ·SGOV)은 중앙값은 비슷하거나 높지만 최악 구간이 크게 나빠 기본 전략에서 내렸습니다. 사례 구간 IRR(단순 적립 / 최종 v1): 2000년 −14.5 / 22.4 · 2008년 12.6 / 37.8 · 2022년 18.8 / 29.0 · 2020년 62.1 / 53.9 · 2025년 33.4 / 30.3. 첫 하락(고점 대비 −8~−17%)은 막지 못하고, 2020·2025년처럼 빠르게 회복하는 장에서는 단순 적립보다 못합니다.</p>
   </section>
 
   <div class="layout">
@@ -218,10 +244,8 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
           <input type="range" id="rStart" aria-label="시작 월">
           <input type="range" id="rEnd" aria-label="종료 월">
         </div>
-        <p class="hint">뒤 배경은 나스닥100(로그). 양끝 손잡이를 끌어 기간을 고르세요.</p>
         <div class="chips" id="presets">
           <button type="button" class="chip" data-p="1986-01">1986~</button>
-          <button type="button" class="chip" data-p="1995-01">1995~</button>
           <button type="button" class="chip" data-p="1999-03">1999~</button>
           <button type="button" class="chip" data-p="2009-01">2009~</button>
           <button type="button" class="chip" data-p="-10">최근 10년</button>
@@ -231,145 +255,109 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
 
       <fieldset>
         <legend><h2>투자금</h2></legend>
-        <div class="field"><label for="initial">처음 한 번에 넣는 거치금 (만원) <b id="lblInitial"></b></label>
+        <div class="field"><label for="weekly">주간 적립액 <b id="lblWeekly"></b></label>
+          <input type="range" id="weekly" min="0" max="300" step="5" value="100"></div>
+        <div class="field"><label for="initial">처음 거치금 (만원) <b id="lblInitial"></b></label>
           <input type="number" id="initial" min="0" step="100" value="0" inputmode="numeric"></div>
         <div class="chips" id="initChips">
-          <button type="button" class="chip" data-v="0">없음</button><button type="button" class="chip" data-v="1000">1천만</button><button type="button" class="chip" data-v="5000">5천만</button><button type="button" class="chip" data-v="10000">1억</button><button type="button" class="chip" data-v="50000">5억</button>
+          <button type="button" class="chip" data-v="0">없음</button><button type="button" class="chip" data-v="1000">1천만</button><button type="button" class="chip" data-v="10000">1억</button><button type="button" class="chip" data-v="50000">5억</button>
         </div>
-        <div class="field"><label for="weekly">주간 적립액 <b id="lblWeekly"></b></label>
-          <input type="range" id="weekly" min="0" max="300" step="5" value="70"></div>
         <p class="hint" id="zeroNote" hidden style="color:var(--bad)">거치금이나 주간 적립액 중 하나는 0보다 커야 계산합니다.</p>
-        <p class="hint">적립액을 0으로 두면 거치금만 넣고 그대로 두는 거치식이 됩니다. 비교 기준도 적립이 없으면 ‘단순 보유’(처음 산 QLD를 끝까지 보유)로 바뀝니다.</p>
       </fieldset>
 
       <fieldset>
         <legend><h2>전략</h2></legend>
-        <label class="toggle" for="strategy">규칙 사용 (끄면 비교 기준과 동일) <input type="checkbox" id="strategy" checked></label>
-        <div class="field"><label for="rule">전략</label>
+        <div class="field"><label for="rule">비교할 전략</label>
           <select id="rule">
-            <option value="kelly">노출 조절 · 변동성 계단표, TQQQ·QQQ·SGOV (기본)</option>
-            <option value="final">이전 · 기술 4축 + 매크로 이탈 경보</option>
-            <option value="tech">이전 · 기술 4축만</option>
-            <option value="vol">이전 방어형 · 변동성 35% 이탈, 단계 복귀</option>
+            <option value="final">최종 전략 v1 · 기술 4축 + 매크로 경보 (기본)</option>
+            <option value="tech">기술 4축만 (매크로 없이)</option>
+            <option value="kelly">노출 조절 · 변동성 계단표 (참고)</option>
+            <option value="off">규칙 없음 (단순 적립과 같음)</option>
           </select></div>
-        <div id="kellyBox" style="display:grid;gap:10px">
-          <div class="field"><label for="sizing">비중 규칙</label>
-            <select id="sizing">
-              <option value="bal">균형 · 25/35/45% → 2.5/2/1/0배 (기본)</option>
-              <option value="agg">상승장 우선 · 25/35/45% → 2.5/2/1/0.5배</option>
-              <option value="def">낙폭 우선 · 20/30/40% → 2.5/2/1/0배</option>
-              <option value="kelly">켈리 · 기대수익 ÷ 변동성², 최대 3배</option>
-            </select></div>
-          <div id="kellyOnly" style="display:grid;gap:10px">
-            <div class="field"><label for="maxLev">최대 노출 <b id="lblMaxLev"></b></label>
-              <input type="range" id="maxLev" min="2" max="3" step="0.25" value="3"></div>
-            <div class="field"><label for="kellyFrac">켈리 비율 (1 = μ÷σ² 그대로) <b id="lblKellyFrac"></b></label>
-              <input type="range" id="kellyFrac" min="0.5" max="1" step="0.05" value="1"></div>
-          </div>
-          <div class="field"><label for="check">확인 주기</label>
-            <select id="check">
-              <option value="d">매일 (기본)</option>
-              <option value="w">매주 첫 거래일</option>
-              <option value="m1">매달 첫 거래일</option>
-              <option value="m3">3개월마다</option>
-              <option value="m6">6개월마다</option>
-            </select></div>
-          <div class="field"><label for="band">조정 폭: 목표와 이만큼 어긋나면 매매 <b id="lblBand"></b></label>
-            <input type="range" id="band" min="0.25" max="1.5" step="0.25" value="0.5"></div>
-          <div class="field"><label for="capRule">추가 상한</label>
-            <select id="capRule">
-              <option value="none">없음 (기본)</option>
-              <option value="macro">매크로 경보 50% 이상일 때</option>
-              <option value="ma200">나스닥100이 200일선 아래일 때</option>
-            </select></div>
-          <div class="field"><label for="capLev">상한 배수 <b id="lblCapLev"></b></label>
-            <input type="range" id="capLev" min="0" max="2" step="0.25" value="1.5"></div>
-          <p class="hint">확인일마다 전날 종가의 20일 변동성으로 목표를 정하고, 보유 노출이 목표와 조정 폭 이상 다르면 그날 종가에 TQQQ·QQQ·SGOV를 목표 비중으로 맞춥니다. 규칙을 바꾸면 조정 폭도 그 규칙의 기본값(균형·상승장 0.5배, 낙폭 0.75배, 켈리 1배)으로 바뀝니다. 계단표 규칙은 노출을 올릴 때만 변동성이 경계보다 3%p(낙폭 우선은 5%p) 더 내려와야 올립니다.</p>
-        </div>
-        <div id="techBox" style="display:grid;gap:10px">
-        <div class="field"><label for="votes">이탈: 켜진 기술 축 <b id="lblVotes"></b></label>
-          <input type="range" id="votes" min="1" max="4" step="1" value="2"></div>
-        <div class="field"><label for="dnHi">① 변동성 축: 20일 하방 변동성 <b id="lblDnHi"></b></label>
-          <input type="range" id="dnHi" min="20" max="45" step="1" value="30"></div>
-        <div class="field"><label for="upHi">① 변동성 축: 또는 20일 상방 변동성 <b id="lblUpHi"></b></label>
-          <input type="range" id="upHi" min="25" max="55" step="1" value="35"></div>
-        <div class="field"><label for="crash">② 급락 축: 10거래일 하락폭 <b id="lblCrash"></b></label>
-          <input type="range" id="crash" min="4" max="15" step="0.5" value="8"></div>
-        <div class="field"><label for="rsiW">③ 추세 축: 주봉 RSI 미만 <b id="lblRsiW"></b></label>
-          <input type="range" id="rsiW" min="35" max="55" step="1" value="45"></div>
-        <div class="field"><label for="expand">④ 급팽창 축: 10일/60일 변동성 <b id="lblExpand"></b></label>
-          <input type="range" id="expand" min="1.2" max="2.4" step="0.1" value="1.6"></div>
-        <div class="field"><label for="hold">복귀 후 최소 유지 <b id="lblHold"></b></label>
-          <input type="range" id="hold" min="0" max="80" step="5" value="40"></div>
-        <label class="toggle" for="useMacro">매크로 이탈 경보 사용 <input type="checkbox" id="useMacro" checked></label>
-        <div class="field"><label for="macroTh">매크로 경보 비율이 새로 넘을 때 <b id="lblMacroTh"></b></label>
-          <input type="range" id="macroTh" min="30" max="80" step="1" value="50"></div>
-        <p class="hint">복귀: 켜진 기술 축 1개 이하 · 지수가 20일선 위 · 10일 변동성이 60일 변동성보다 낮음. 복귀 후 유지 기간에는 3축 이상일 때만 다시 이탈합니다. 신호는 매일 종가로 확인하고 다음 거래일에 실행합니다.</p>
-        </div>
         <label class="toggle" for="harvest">연말 비과세 한도 하베스팅 <input type="checkbox" id="harvest" checked></label>
+        <details class="adv" id="techBox">
+          <summary>문턱 바꿔 보기</summary>
+          <div>
+            <div class="field"><label for="votes">이탈: 켜진 기술 축 <b id="lblVotes"></b></label>
+              <input type="range" id="votes" min="1" max="4" step="1" value="2"></div>
+            <div class="field"><label for="dnHi">① 20일 하방 변동성 <b id="lblDnHi"></b></label>
+              <input type="range" id="dnHi" min="20" max="45" step="1" value="30"></div>
+            <div class="field"><label for="upHi">① 또는 20일 상방 변동성 <b id="lblUpHi"></b></label>
+              <input type="range" id="upHi" min="25" max="55" step="1" value="35"></div>
+            <div class="field"><label for="crash">② 10거래일 하락폭 <b id="lblCrash"></b></label>
+              <input type="range" id="crash" min="4" max="15" step="0.5" value="8"></div>
+            <div class="field"><label for="rsiW">③ 주봉 RSI 미만 <b id="lblRsiW"></b></label>
+              <input type="range" id="rsiW" min="35" max="55" step="1" value="45"></div>
+            <div class="field"><label for="expand">④ 10일/60일 변동성 <b id="lblExpand"></b></label>
+              <input type="range" id="expand" min="1.2" max="2.4" step="0.1" value="1.6"></div>
+            <div class="field"><label for="hold">복귀 후 보호 기간 <b id="lblHold"></b></label>
+              <input type="range" id="hold" min="0" max="80" step="5" value="40"></div>
+            <div class="field"><label for="macroTh">매크로 경보 이탈 기준 <b id="lblMacroTh"></b></label>
+              <input type="range" id="macroTh" min="30" max="80" step="1" value="50"></div>
+            <p class="hint">연구 기준값이 기본입니다. 값을 바꿔 좋아 보이는 결과는 과거에 맞춘 것일 수 있습니다.</p>
+          </div>
+        </details>
       </fieldset>
 
-      <fieldset>
-        <legend><h2>비용·세금</h2></legend>
-        <div class="field"><label for="fee">매매 수수료 (편도) <b id="lblFee"></b></label>
-          <input type="range" id="fee" min="0" max="0.5" step="0.01" value="0.1"></div>
-        <div class="field"><label for="fxs">환전 스프레드 <b id="lblFxs"></b></label>
-          <input type="range" id="fxs" min="0" max="1" step="0.05" value="0.1"></div>
-        <div class="field"><label for="taxRate">양도세율 (지방세 포함) <b id="lblTax"></b></label>
-          <input type="range" id="taxRate" min="0" max="33" step="0.5" value="22"></div>
-        <div class="field"><label for="deduct">연 기본공제 (만원)</label>
-          <input type="number" id="deduct" min="0" step="50" value="250"></div>
-      </fieldset>
-      <button type="button" class="btn" id="reset">추천 설정으로 되돌리기</button>
-      <p class="hint">추천 설정: 노출 조절 · 균형 계단표(25/35/45% → 2.5/2/1/0배, 올릴 땐 3%p 여유) · 매일 확인 · 조정 폭 0.5배 · 추가 상한 없음 · 하베스팅. 이전 규칙의 기본값(2축 이탈, 하방 30%/상방 35%, 급락 8%, 주봉 RSI 45, 급팽창 1.6배, 40일 유지, 매크로 50%)도 함께 복원됩니다.</p>
+      <details class="adv">
+        <summary>비용·세금</summary>
+        <div>
+          <div class="field"><label for="fee">매매 수수료 (편도) <b id="lblFee"></b></label>
+            <input type="range" id="fee" min="0" max="0.5" step="0.01" value="0.1"></div>
+          <div class="field"><label for="fxs">환전 스프레드 <b id="lblFxs"></b></label>
+            <input type="range" id="fxs" min="0" max="1" step="0.05" value="0.1"></div>
+          <div class="field"><label for="taxRate">양도세율 (지방세 포함) <b id="lblTax"></b></label>
+            <input type="range" id="taxRate" min="0" max="33" step="0.5" value="22"></div>
+          <div class="field"><label for="deduct">연 기본공제 (만원)</label>
+            <input type="number" id="deduct" min="0" step="50" value="250"></div>
+        </div>
+      </details>
+      <button type="button" class="btn" id="reset">기본값으로 되돌리기</button>
     </form>
 
     <div class="results">
       <section class="panel">
-        <div class="chart-head"><h2>결과 비교</h2><span class="hint" id="periodNote"></span></div>
+        <div class="chart-head"><h2>결과</h2><span class="hint" id="periodNote"></span></div>
         <div class="tablewrap"><table id="kpi">
-          <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span>선택 전략</th><th scope="col"><span class="key" style="background:var(--s-dca)"></span><span class="bname">단순 적립</span></th><th scope="col">차이</th></tr></thead>
+          <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span><span id="sName">최종 전략 v1</span></th><th scope="col"><span class="key" style="background:var(--s-dca)"></span><span class="bname">단순 적립</span></th><th scope="col">차이</th></tr></thead>
           <tbody></tbody></table></div>
-        <p class="hint" style="margin-top:8px">연환산 수익률은 적립 시점과 금액을 반영한 내부수익률(IRR)입니다. CAGR과 MDD는 입출금 영향을 뺀 시간가중 수익률 지수 기준이고, 평가액 낙폭은 원화 평가금액 기준입니다. 세후 청산가치는 마지막 날 전량 매도 후 세금까지 뺀 금액입니다.</p>
+        <p class="hint" style="margin-top:8px">연환산 수익률은 적립 시점과 금액을 반영한 내부수익률(IRR)입니다. MDD는 입출금 영향을 뺀 시간가중 기준, 세후 청산가치는 마지막 날 전량 매도 후 세금까지 뺀 금액입니다.</p>
       </section>
 
       <section class="panel">
-        <div class="chart-head"><h2>전략 비교</h2><span class="hint">같은 기간·적립액·비용 기준</span></div>
+        <div class="chart-head"><h2>전략 비교</h2><span class="hint">같은 기간·적립액·비용</span></div>
         <div class="tablewrap"><table id="cmp">
-          <thead><tr><th scope="col">전략</th><th scope="col">연환산(IRR)</th><th scope="col">세후 청산</th><th scope="col">MDD</th><th scope="col">원금 대비 최악</th><th scope="col">매매</th></tr></thead>
+          <thead><tr><th scope="col">전략</th><th scope="col">IRR</th><th scope="col">세후 청산</th><th scope="col">MDD</th><th scope="col">원금 대비 최악</th><th scope="col">매매</th></tr></thead>
           <tbody></tbody></table></div>
-        <p class="hint" style="margin-top:8px">검증 기준(세후, 주 70만원, 10년 적립 구간, 미리 고정): 나스닥100과 S&amp;P500 각각 1987~95년 시작·2006~16년 시작 구간에서 ① 최저 IRR이 단순 적립보다 높고 ② 단순 적립 대비 중앙 격차가 0 이상. 노출 조절(기본값, 균형 계단표)은 나스닥100 두 기간 통과(중앙 +17.9%p·+3.0%p, 최저 IRR 11.0% 대 -9.8%, 21.8% 대 19.2%), S&amp;P500 2006~ 통과(+2.5%p, 15.1% 대 12.7%), S&amp;P500 1987~95년 시작은 중앙은 +2.4%p지만 최저 IRR이 -5.0%로 단순 적립 3.0%보다 낮아 실패(2000~02년처럼 변동성이 낮은 채 천천히 빠지는 하락장). 이전 최종 규칙은 S&amp;P500 두 기간 모두 실패했습니다. '매매'는 이전 규칙은 이탈 횟수, 노출 조절은 비중 조정 횟수입니다.</p>
       </section>
 
       <section class="panel">
         <div class="chart-head"><h2>평가액</h2>
           <div class="chips"><button type="button" class="chip" id="logBtn" aria-pressed="true">로그 축</button></div></div>
-        <div class="legend"><span><i style="background:var(--s-strat)"></i>선택 전략</span><span><i style="background:var(--s-dca)"></i><span class="bname">단순 적립</span></span><span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span></div>
+        <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="sname">최종 전략 v1</span></span><span><i style="background:var(--s-dca)"></i><span class="bname">단순 적립</span></span><span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span></div>
         <div class="cv" id="cvValue"><canvas aria-label="평가액 추이 차트" role="img"></canvas></div>
       </section>
 
       <section class="panel">
-        <div class="chart-head"><h2>낙폭 (시간가중)</h2></div>
-        <div class="legend"><span><i style="background:var(--s-strat)"></i>선택 전략</span><span><i style="background:var(--s-dca)"></i><span class="bname">단순 적립</span></span></div>
+        <div class="chart-head"><h2>낙폭</h2><span class="hint">시간가중</span></div>
+        <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="sname">최종 전략 v1</span></span><span><i style="background:var(--s-dca)"></i><span class="bname">단순 적립</span></span></div>
         <div class="cv short" id="cvDD"><canvas aria-label="낙폭 차트" role="img"></canvas></div>
       </section>
 
       <section class="panel">
-        <div class="chart-head"><h2 id="volTitle">위험 신호와 이탈 구간</h2></div>
-        <div class="legend" id="volLegend"><span><i style="background:var(--fg)"></i>켜진 기술 축 (0~4)</span><span><i class="box" style="background:var(--band-out);outline:1px solid var(--bad)"></i>이탈 (SGOV)</span></div>
+        <div class="chart-head"><h2 id="volTitle">신호와 이탈 구간</h2></div>
+        <div class="legend" id="volLegend"></div>
         <div class="cv short" id="cvVol"><canvas aria-label="켜진 기술 축 수와 이탈 구간 차트" role="img"></canvas></div>
         <div class="legend" style="margin-top:10px"><span><i style="background:var(--s-dca)"></i>매크로 경보 비율</span></div>
         <div class="cv short" id="cvMacro"><canvas aria-label="매크로 경보 비율 차트" role="img"></canvas></div>
       </section>
 
       <section class="panel">
-        <div class="chart-head"><h2>이벤트 로그</h2><span class="hint" id="logCount"></span></div>
+        <div class="chart-head"><h2>매매 기록</h2><span class="hint" id="logCount"></span></div>
         <div class="chips" id="logFilter" style="margin-bottom:10px">
-          <button type="button" class="chip" data-t="down" aria-pressed="true">노출 축소</button>
-          <button type="button" class="chip" data-t="up" aria-pressed="true">노출 확대</button>
           <button type="button" class="chip" data-t="exit" aria-pressed="true">이탈</button>
-          <button type="button" class="chip" data-t="staged" aria-pressed="true">단계 복귀</button>
           <button type="button" class="chip" data-t="reentry" aria-pressed="true">복귀</button>
+          <button type="button" class="chip" data-t="adj" aria-pressed="true">비중 조정</button>
           <button type="button" class="chip" data-t="tax" aria-pressed="true">세금 납부</button>
           <button type="button" class="chip" data-t="harvest" aria-pressed="false">하베스팅</button>
           <button type="button" class="chip" data-t="year" aria-pressed="false">연간 정산</button>
@@ -380,18 +368,13 @@ details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display:
       <details class="panel">
         <summary>데이터와 가정</summary>
         <ul>
-          <li>데이터: 1985년 10월 ~ __LASTDATE__ 나스닥100 일간 종가, QQQ 배당 포함 수익률(1999년 3월 이전은 지수 + 연 0.3%로 근사), 미국 3개월 국채금리, 원/달러 일간 환율(FRED H.10).</li>
-          <li>QLD 수익률: QQQ 일간 수익률의 2배 − (3개월 금리 + 0.5%)의 차입비용 − 연 0.95% 보수. 같은 방식의 3배 버전은 2010~2026년 실제 TQQQ와 연복리 42.4% 대 42.5%로 맞습니다. QLD 상장(2006년) 이전 구간은 이 합성값입니다.</li>
-          <li>TQQQ 수익률: QQQ 일간 수익률의 3배 − 2 × (3개월 금리 + 0.5%) − 연 0.84% 보수. TQQQ 상장(2010년) 이전은 합성값이고, 1987년 10월 19일 같은 하루 폭락은 3배로 그대로 맞습니다(나스닥100 기준 하루 약 -44%).</li>
-          <li>노출 조절(기본, 균형): 나스닥100 20일 변동성 25% 미만 2.5배, 35% 미만 2배, 45% 미만 1배, 그 이상 0배. 낮출 때는 즉시, 올릴 때는 변동성이 경계보다 3%p 더 낮아야 올립니다. 켈리 규칙(선택): 목표 노출 = μ ÷ σ², 0~3배. σ는 나스닥100 20거래일 변동성(연환산), μ는 1985년 10월부터 그날까지 나스닥100의 단기국채 대비 초과수익 평균(연환산, 2년 이상 쌓인 뒤부터 사용). 목표 1배 이상이면 TQQQ (목표−1)/2 + QQQ 나머지, 1배 미만이면 QQQ 목표만큼 + SGOV 나머지. 전날 종가로 계산해 확인일 종가에 실행합니다.</li>
-          <li>확인 주기를 매달·3개월·6개월로 두면 결과가 확인하는 날짜에 크게 좌우됩니다(같은 '4주마다'라도 시작 주에 따라 2006년 이후 중앙 격차가 -6.9%p~+3.1%p). 그래서 기본값은 날짜 운이 없는 '매일 확인 + 넓은 조정 폭'입니다.</li>
-          <li>SGOV: 3개월 국채금리 − 0.1%, 분배금에 배당소득세 15.4%를 뗀 뒤 재투자.</li>
-          <li>매매: 신호는 종가 기준, 체결은 다음 거래일 종가. 적립은 매주 첫 거래일, 원화를 환전 스프레드를 내고 달러로 바꿔 매수합니다(노출 조절은 마지막 목표 비중대로 나눠 매수).</li>
-          <li>세금: 종목별 선입선출로 원화 취득가 대비 양도차익 계산, QLD(또는 TQQQ)와 QQQ 손익 통산, 연 기본공제 차감 후 세율 적용, 다음 해 6월 계좌의 SGOV(부족하면 QQQ, QLD 순서로 매도)에서 납부.</li>
-          <li>하베스팅: 12월 마지막 거래일에 남은 공제 한도만큼 차익이 나도록 오래된 물량부터 팔고 즉시 재매수. 손실만 실현돼 공제가 낭비되는 경우는 건너뜁니다.</li>
-          <li>기술 4축: ① 20일 하방 변동성 30% 초과 또는 상방 변동성 35% 초과 ② 10거래일 -8% 이상 하락 ③ 주봉 RSI(14) 45 미만 ④ 10일 변동성이 60일 변동성의 1.6배 초과. 33개 지표 중 겹치지 않는 대표만 남긴 것입니다.</li>
-          <li>매크로 14개: BAA 회사채 스프레드(수준·3개월 확대), BAA-AAA 부도 스프레드, 장단기차 3개월 재가팽창, 기준금리 6개월 인하폭, 세인트루이스 금융스트레스, NFCI 위험 하위지수, TED 스프레드(2022년 종료), VIX/3개월 VIX, 실업수당 4주평균 전년비, 실시간 삼의 법칙, 달러 6개월 상승, 소형주/대형주 6개월 부진, 구리/금 6개월 하락. 위험 방향은 수익률에 맞추지 않고 경제적 의미로 정했습니다. 자료: FRED, Yahoo Finance.</li>
-          <li>자동 갱신: GitHub Actions가 평일 아침(한국시간 07:30 무렵) 전날 미국 종가와 매크로 지표를 받아 이 페이지를 다시 만듭니다. 상태가 바뀌거나 이탈 신호가 켜지면 저장소에 알림 이슈를 엽니다.</li>
+          <li>데이터: 1985년 10월 ~ __LASTDATE__ 나스닥100 일간 종가, QQQ 배당 포함 수익률(1999년 3월 이전은 지수 + 연 0.3%로 근사), 미국 3개월 국채금리, 원/달러 일간 환율.</li>
+          <li>QLD 수익률: QQQ 일간 수익률의 2배 − (3개월 금리 + 0.5%) 차입비용 − 연 0.95% 보수. QLD 상장(2006년) 이전은 이 합성값입니다. SGOV: 3개월 국채금리 − 0.1%, 분배금에 배당소득세 15.4% 차감 후 재투자.</li>
+          <li>매매: 신호는 종가 기준, 체결은 다음 거래일 종가. 적립은 매주 첫 거래일에 원화를 환전 스프레드를 내고 달러로 바꿔 매수합니다.</li>
+          <li>세금: 종목별 선입선출로 원화 취득가 대비 양도차익을 계산하고, 연 기본공제 차감 후 세율 적용, 다음 해 6월에 SGOV(부족하면 QLD)를 팔아 납부합니다. 하베스팅: 12월 마지막 거래일에 남은 공제 한도만큼 차익을 실현하고 즉시 재매수합니다.</li>
+          <li>매크로 14개: BAA 회사채 스프레드(수준·3개월 확대), BAA-AAA 부도 스프레드, 장단기차 3개월 재가팽창, 기준금리 6개월 인하폭, 세인트루이스 금융스트레스, NFCI 위험 하위지수, TED 스프레드(2022년 종료), VIX/3개월 VIX, 실업수당 4주평균 전년비, 실시간 삼의 법칙, 달러 6개월 상승, 소형주/대형주 6개월 부진, 구리/금 6개월 하락. 지표마다 발표 시차(시장 1일, 주간 5~6일, 월간 36일)만큼 늦춰 반영합니다.</li>
+          <li>노출 조절(참고): 나스닥100 20일 변동성 25% 미만 2.5배, 35% 미만 2배, 45% 미만 1배, 그 이상 0배를 TQQQ·QQQ·SGOV로 맞춥니다. 2026-10-19 비교에서 최악 구간이 크게 나빠 기본 전략에서 내렸습니다.</li>
+          <li>자동 갱신: 평일 아침(한국시간 07:30 무렵) 전날 미국 종가와 매크로 지표로 이 페이지를 다시 만들고, 다음 거래일에 이탈·복귀가 있으면 저장소에 알림 이슈를 엽니다. 연구 기록은 저장소의 qld/research에 있습니다.</li>
           <li>과거 수익률은 미래를 보장하지 않습니다. 결과는 큰 하락장이 기간 안에 있는지에 따라 크게 달라집니다.</li>
         </ul>
       </details>
@@ -409,15 +392,13 @@ __ENGINE__
   const $ = id => document.getElementById(id);
   const toDate = d => new Date(d * 86400000);
   const ymd = d => { const t = toDate(d); return `${t.getUTCFullYear()}.${String(t.getUTCMonth() + 1).padStart(2, '0')}.${String(t.getUTCDate()).padStart(2, '0')}`; };
-  const ym = d => { const t = toDate(d); return `${t.getUTCFullYear()}.${String(t.getUTCMonth() + 1).padStart(2, '0')}`; };
   const krw = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; if (a >= 1e8) return s + (a / 1e8).toFixed(a >= 1e10 ? 0 : 2) + '억원'; return s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
   const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
-  const VNAME = { rv20: '20일 변동성', down20: '20일 하방 변동성', rv10: '10일 변동성' };
   const MNOW = RAW.macroNow || [];
   const axisKrw = v => { const t = v >= 1e8 ? v / 1e8 : v / 1e4; const s = Number.isInteger(Math.round(t * 100) / 100) ? Math.round(t).toLocaleString('ko-KR') : (Math.round(t * 10) / 10).toLocaleString('ko-KR'); return s + (v >= 1e8 ? '억' : '만'); };
 
   // month list
-  const months = []; // {y,m, i0, i1}
+  const months = [];
   { let cur = null;
     for (let i = 0; i < D.n; i++) { const t = toDate(D.day[i]); const key = t.getUTCFullYear() * 12 + t.getUTCMonth();
       if (!cur || cur.key !== key) { cur = { key, y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, i0: i, i1: i }; months.push(cur); } else cur.i1 = i; } }
@@ -425,65 +406,49 @@ __ENGINE__
   const rS = $('rStart'), rE = $('rEnd');
   [rS, rE].forEach(r => { r.min = 0; r.max = months.length - 1; r.step = 1; });
   const mIdx = s => { const [y, m] = s.split('-').map(Number); const k = months.findIndex(o => o.y === y && o.m === m); return k < 0 ? 0 : k; };
-  const DEF_UI = { start: '1999-03', initial: 0, weekly: 70, rule: 'kelly', sizing: 'bal', maxLev: 3, kellyFrac: 1, check: 'd', band: 0.5, capRule: 'none', capLev: 1.5, votes: 2, dnHi: 30, upHi: 35, crash: 8, rsiW: 45, expand: 1.6, hold: 40, useMacro: true, macroTh: 50, harvest: true, strategy: true, fee: 0.1, fxs: 0.1, taxRate: 22, deduct: 250 };
-  const RANGES = ['initial', 'weekly', 'maxLev', 'kellyFrac', 'band', 'capLev', 'votes', 'dnHi', 'upHi', 'crash', 'rsiW', 'expand', 'hold', 'macroTh', 'fee', 'fxs', 'taxRate', 'deduct'];
+
+  // ---------- settings ----------
+  const DEF_UI = { start: '1999-03', initial: 0, weekly: 100, rule: 'final', votes: 2, dnHi: 30, upHi: 35, crash: 8, rsiW: 45, expand: 1.6, hold: 40, macroTh: 50, harvest: true, fee: 0.1, fxs: 0.1, taxRate: 22, deduct: 250 };
+  const RANGES = ['initial', 'weekly', 'votes', 'dnHi', 'upHi', 'crash', 'rsiW', 'expand', 'hold', 'macroTh', 'fee', 'fxs', 'taxRate', 'deduct'];
   function setDefaults() {
     rS.value = mIdx(DEF_UI.start); rE.value = months.length - 1;
     for (const k of RANGES) $(k).value = DEF_UI[k];
-    $('rule').value = DEF_UI.rule; $('check').value = DEF_UI.check; $('sizing').value = DEF_UI.sizing; $('capRule').value = DEF_UI.capRule; $('useMacro').checked = DEF_UI.useMacro; $('harvest').checked = DEF_UI.harvest; $('strategy').checked = DEF_UI.strategy;
+    $('rule').value = DEF_UI.rule; $('harvest').checked = DEF_UI.harvest;
   }
   setDefaults();
-  const VOL_RULE = { rule: 'vol', volHi: 0.35, volLo: 0.25, peakRatio: 0.67, reentryFrac: 1 / 3, maGate: 0, volMeasure: 'rv20', exitFrac: 1, volHi2: null, parkQQQ: 0 };
+  const NAMES = { final: '최종 전략 v1', tech: '기술 4축만', kelly: '노출 조절', off: '규칙 없음' };
+  // reference exposure rule (the former page default): 20-day vol steps 25/35/45% -> 2.5/2/1/0x, raise only 3%p below a boundary
+  const KELLY_REF = { rule: 'kelly', sizing: 'steps', maxLev: 2.5, band: 0.5, hyst: 0.03, steps: [[0.25, 2.5], [0.35, 2], [0.45, 1], [Infinity, 0]], check: 'd', capRule: 'none' };
+  const CHAMP = { rule: 'final', votes: 2, dnHi: 0.30, upHi: 0.35, crash: -0.08, rsiW: 45, expand: 1.6, hold: 40, useMacro: true, macroTh: 0.5 };
   function techParams() {
     return { rule: 'final', votes: +$('votes').value, dnHi: +$('dnHi').value / 100, upHi: +$('upHi').value / 100, crash: -$('crash').value / 100,
-      rsiW: +$('rsiW').value, expand: +$('expand').value, hold: +$('hold').value, useMacro: $('useMacro').checked, macroTh: +$('macroTh').value / 100 };
+      rsiW: +$('rsiW').value, expand: +$('expand').value, hold: +$('hold').value, useMacro: true, macroTh: +$('macroTh').value / 100 };
   }
-  const SIZING = {
-    bal: { name: '균형', sizing: 'steps', maxLev: 2.5, band: 0.5, hyst: 0.03, steps: [[0.25, 2.5], [0.35, 2], [0.45, 1], [Infinity, 0]] },
-    agg: { name: '상승장 우선', sizing: 'steps', maxLev: 2.5, band: 0.5, hyst: 0.03, steps: [[0.25, 2.5], [0.35, 2], [0.45, 1], [Infinity, 0.5]] },
-    def: { name: '낙폭 우선', sizing: 'steps', maxLev: 2.5, band: 0.75, hyst: 0.05, steps: [[0.20, 2.5], [0.30, 2], [0.40, 1], [Infinity, 0]] },
-    kelly: { name: '켈리', sizing: 'kelly', band: 1, hyst: 0 },
-  };
-  function kellyParams() {
-    const z = SIZING[$('sizing').value] || SIZING.bal;
-    const o = { rule: 'kelly', sizing: z.sizing, hyst: z.hyst, check: $('check').value, band: +$('band').value, capRule: $('capRule').value, capLev: +$('capLev').value };
-    if (z.sizing === 'kelly') Object.assign(o, { maxLev: +$('maxLev').value, kellyFrac: +$('kellyFrac').value }); else Object.assign(o, { maxLev: z.maxLev, steps: z.steps });
-    return o;
-  }
-  $('sizing').addEventListener('change', () => { const z = SIZING[$('sizing').value]; if (z) $('band').value = z.band; });
   function baseParams() {
     return { initialKRW: Math.max(0, +$('initial').value || 0) * 10000, weeklyKRW: +$('weekly').value * 10000, harvest: $('harvest').checked, fee: +$('fee').value / 100, fxSpread: +$('fxs').value / 100,
       taxRate: +$('taxRate').value / 100, deduct: Math.max(0, +$('deduct').value || 0) * 10000, weeklyCheck: false };
   }
   const baseName = p => p.weeklyKRW > 0 ? (p.initialKRW > 0 ? '거치 + 단순 적립' : '단순 적립') : '단순 보유';
   function paramsFor(rule, base) {
-    if (rule === 'vol') return Object.assign({}, DEFAULTS, base, VOL_RULE, { strategy: true });
-    if (rule === 'kelly') return Object.assign({}, DEFAULTS, base, kellyParams(), { strategy: true });
+    if (rule === 'kelly') return Object.assign({}, DEFAULTS, base, KELLY_REF, { strategy: true });
+    if (rule === 'off') return Object.assign({}, DEFAULTS, base, { strategy: false });
     const t = techParams(); if (rule === 'tech') t.useMacro = false;
     return Object.assign({}, DEFAULTS, base, t, { strategy: true });
   }
-  function params() {
-    const base = baseParams(), rule = $('rule').value;
-    return Object.assign(paramsFor(rule, base), { strategy: $('strategy').checked, _rule: rule });
-  }
+  function params() { const rule = $('rule').value; return Object.assign(paramsFor(rule, baseParams()), { _rule: rule }); }
   function labels(p) {
     $('lblWeekly').textContent = p.weeklyKRW > 0 ? (p.weeklyKRW / 10000) + '만원 (연 ' + Math.round(p.weeklyKRW * 52 / 10000).toLocaleString('ko-KR') + '만원)' : '적립 안 함 (거치식)';
     $('lblInitial').textContent = p.initialKRW > 0 ? krw(p.initialKRW) : '없음';
     document.querySelectorAll('.bname').forEach(el => { el.textContent = baseName(p); });
+    document.querySelectorAll('.sname').forEach(el => { el.textContent = NAMES[p._rule]; }); $('sName').textContent = NAMES[p._rule];
     document.querySelectorAll('#initChips .chip').forEach(c => c.setAttribute('aria-pressed', String(+c.dataset.v * 10000 === p.initialKRW)));
     $('lblVotes').textContent = $('votes').value + '개 이상'; $('lblDnHi').textContent = $('dnHi').value + '% 초과'; $('lblUpHi').textContent = $('upHi').value + '% 초과';
-    $('lblCrash').textContent = '-' + (+$('crash').value).toFixed(1) + '% 이상'; $('lblRsiW').textContent = $('rsiW').value; $('lblExpand').textContent = (+$('expand').value).toFixed(1) + '배 초과';
+    $('lblCrash').textContent = '−' + (+$('crash').value).toFixed(1) + '% 이하'; $('lblRsiW').textContent = $('rsiW').value; $('lblExpand').textContent = (+$('expand').value).toFixed(1) + '배 초과';
     $('lblHold').textContent = $('hold').value + '거래일'; $('lblMacroTh').textContent = $('macroTh').value + '%';
-    const kel = p._rule === 'kelly';
-    $('kellyBox').style.display = kel ? 'grid' : 'none'; $('techBox').style.display = kel ? 'none' : 'grid'; $('kellyOnly').style.display = $('sizing').value === 'kelly' ? 'grid' : 'none';
-    $('lblMaxLev').textContent = (+$('maxLev').value).toFixed(2) + '배'; $('lblKellyFrac').textContent = (+$('kellyFrac').value).toFixed(2);
-    $('lblBand').textContent = (+$('band').value).toFixed(2) + '배'; $('lblCapLev').textContent = (+$('capLev').value).toFixed(2) + '배';
-    $('capLev').disabled = $('capRule').value === 'none';
-    const vol = p._rule === 'vol';
-    for (const id of ['votes', 'dnHi', 'upHi', 'crash', 'rsiW', 'expand', 'hold']) $(id).disabled = vol;
-    $('useMacro').disabled = p._rule !== 'final'; $('macroTh').disabled = p._rule !== 'final' || !$('useMacro').checked;
-    $('lblFee').textContent = (p.fee * 100).toFixed(2) + '%';
-    $('lblFxs').textContent = (p.fxSpread * 100).toFixed(2) + '%'; $('lblTax').textContent = (p.taxRate * 100).toFixed(1) + '%';
+    const tech = p._rule === 'final' || p._rule === 'tech';
+    for (const id of ['votes', 'dnHi', 'upHi', 'crash', 'rsiW', 'expand', 'hold', 'macroTh']) $(id).disabled = !tech;
+    $('macroTh').disabled = p._rule !== 'final';
+    $('lblFee').textContent = (p.fee * 100).toFixed(2) + '%'; $('lblFxs').textContent = (p.fxSpread * 100).toFixed(2) + '%'; $('lblTax').textContent = (p.taxRate * 100).toFixed(1) + '%';
     const a = +rS.value, b = +rE.value;
     $('lblStart').textContent = `${months[a].y}.${String(months[a].m).padStart(2, '0')}`;
     $('lblEnd').textContent = `${months[b].y}.${String(months[b].m).padStart(2, '0')}`;
@@ -573,7 +538,7 @@ __ENGINE__
     new ResizeObserver(() => draw()).observe(host);
     return { set(data) { st.data = data; st.hover = -1; draw(); }, draw };
   }
-  const chV = makeChart($('cvValue'), { padL: 64 }), chD = makeChart($('cvDD'), { padL: 52 }), chVol = makeChart($('cvVol'), { padL: 52 }), chMac = makeChart($('cvMacro'), { padL: 52 });
+  const chV = makeChart($('cvValue'), { padL: 64 }), chD = makeChart($('cvDD'), { padL: 52 }), chVol = makeChart($('cvVol'), { padL: 52 }), chMac = makeChart($('cvMacro'), { padL: 52 }), chSpark = makeChart($('cvSpark'), { padL: 48 });
   const votesAt = (p, i) => axesAt(D, p, i).reduce((s, v) => s + v, 0);
   let logScale = true;
   $('logBtn').addEventListener('click', e => { logScale = !logScale; e.currentTarget.setAttribute('aria-pressed', String(logScale)); render(); });
@@ -599,82 +564,7 @@ __ENGINE__
     months.forEach((o, k) => { if (o.m === 1 && o.y % step === 0) bctx.fillText(String(o.y), X(k), h - 3); });
   }
   new ResizeObserver(drawBrush).observe(brushHost);
-  const chSpark = makeChart($('cvSpark'), { padL: 48 });
-  // ---------- supporting indicators (computed from the index close) ----------
-  const IND = (() => {
-    const n = D.n, px = D.px;
-    const ema = (a, k) => { const o = new Float64Array(a.length), w = 2 / (k + 1); o[0] = a[0]; for (let i = 1; i < a.length; i++) o[i] = a[i] * w + o[i - 1] * (1 - w); return o; };
-    const rsi = (a, k) => { const o = new Float64Array(a.length).fill(NaN); let up = 0, dn = 0;
-      for (let i = 1; i < a.length; i++) { const d = a[i] - a[i - 1], u = Math.max(d, 0), w = Math.max(-d, 0);
-        if (i === 1) { up = u; dn = w; } else { up += (u - up) / k; dn += (w - dn) / k; } if (i >= k) o[i] = dn === 0 ? 100 : 100 - 100 / (1 + up / dn); } return o; };
-    const macd = a => { const f = ema(a, 12), s = ema(a, 26), m = Float64Array.from(f, (v, i) => v - s[i]), g = ema(m, 9); return { m, h: Float64Array.from(m, (v, i) => v - g[i]) }; };
-    const wkEnd = []; for (let i = 0; i < n; i++) if (i === n - 1 || D.week[i + 1] !== D.week[i]) wkEnd.push(i);
-    const toDaily = w => { const o = new Float64Array(n).fill(NaN); let k = -1; for (let i = 0; i < n; i++) { while (k + 1 < wkEnd.length && wkEnd[k + 1] <= i) k++; if (k >= 0) o[i] = w[k]; } return o; };
-    const wpx = Float64Array.from(wkEnd.map(i => px[i]));
-    const dM = macd(Float64Array.from(px)), wM = macd(wpx);
-    const mom = k => Float64Array.from({ length: n }, (_, i) => i >= k ? px[i] / px[i - k] - 1 : NaN);
-    return { rsi: rsi(Float64Array.from(px), 14), rsiw: toDaily(rsi(wpx, 14)), macd: dM.m, macdh: dM.h, macdw: toDaily(wM.m), macdhw: toDaily(wM.h),
-      mom126: mom(126), mom252: mom(252), vix: D.vix ? Float64Array.from(D.vix, v => v == null ? NaN : v) : null,
-      ma200d: Float64Array.from({ length: n }, (_, i) => px[i] / D.ma[200][i] - 1) };
-  })();
-  let sparkKey = 'kelly';
-  document.querySelectorAll('#sparkPick .chip').forEach(b => b.addEventListener('click', () => {
-    sparkKey = b.dataset.k; document.querySelectorAll('#sparkPick .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderSpark(params());
-  }));
-  function renderSpark(p) {
-    const tp = paramsFor('final', baseParams());
-    const n0 = Math.max(0, D.n - 126), x = []; for (let i = n0; i < D.n; i++) x.push(D.day[i]);
-    const sl = arr => Array.from(arr.slice(n0));
-    const f1 = v => v.toFixed(1), fp = v => pct(v, 1);
-    let cfg;
-    if (sparkKey === 'kelly') { const kp = paramsFor('kelly', baseParams()); const tv = [], sv = []; for (let i = n0; i < D.n; i++) { tv.push(kellyTarget(D, kp, i)); sv.push(D.rv[i] * 10); }
-      cfg = { yMin: 0, yMax: Math.max(3, kp.maxLev), yfmt: v => v.toFixed(1) + '배', tfmt: v => v.toFixed(2) + '배', hlines: [{ y: 2, label: 'QLD 2배', color: '--warn' }],
-        series: [{ name: '목표 노출', color: '--s-strat', v: tv, w: 2 }], extra: k => `<div class="r"><span>20일 변동성</span><b>${pct(D.rv[n0 + k], 0)}</b></div>` }; }
-    else if (sparkKey === 'rsi') cfg = { yMin: 0, yMax: 100, yfmt: v => Math.round(v), tfmt: f1, hlines: [{ y: 70, label: '과열 70', color: '--bad' }, { y: 30, label: '과매도 30', color: '--good', below: true }],
-      series: [{ name: 'RSI 주봉', color: '--s-dca', v: sl(IND.rsiw), w: 1.5 }, { name: 'RSI 일봉', color: '--fg', v: sl(IND.rsi), w: 1.75 }] };
-    else if (sparkKey === 'macd') cfg = { yfmt: v => Math.round(v), tfmt: v => v.toFixed(0), hlines: [],
-      series: [{ name: 'MACD 시그널차 (일봉)', color: '--s-dca', v: sl(IND.macdh), w: 1.5 }, { name: 'MACD (일봉)', color: '--fg', v: sl(IND.macd), w: 1.75 }] };
-    else if (sparkKey === 'vix') cfg = IND.vix ? { yMin: 0, yfmt: v => Math.round(v), tfmt: f1, hlines: [{ y: 30, label: '공포 30', color: '--bad' }, { y: 20, label: '경계 20', color: '--warn', below: true }],
-      series: [{ name: 'VIX', color: '--fg', v: sl(IND.vix), w: 1.75 }] } : null;
-    else if (sparkKey === 'ma200') cfg = { yfmt: v => Math.round(v * 100) + '%', tfmt: fp, hlines: [{ y: -0.04, label: '-4%', color: '--bad', below: true }],
-      series: [{ name: '200일선 대비', color: '--fg', v: sl(IND.ma200d), w: 1.75 }] };
-    else if (sparkKey === 'mom') cfg = { yfmt: v => Math.round(v * 100) + '%', tfmt: fp, hlines: [],
-      series: [{ name: '12개월 수익률', color: '--s-dca', v: sl(IND.mom252), w: 1.5 }, { name: '6개월 수익률', color: '--fg', v: sl(IND.mom126), w: 1.75 }] };
-    else if (sparkKey === 'macro') cfg = { yMin: 0, yMax: 1, yfmt: v => Math.round(v * 100) + '%', tfmt: fp, hlines: [{ y: tp.macroTh, label: `이탈 ${Math.round(tp.macroTh * 100)}%`, color: '--bad' }],
-      series: [{ name: '매크로 경보 비율', color: '--s-dca', v: sl(D.ms), w: 1.75 }] };
-    else if (sparkKey === 'vol') cfg = { yMin: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: fp,
-      hlines: [{ y: tp.dnHi, label: `하방 ${Math.round(tp.dnHi * 100)}%`, color: '--bad', below: true }, { y: tp.upHi, label: `상방 ${Math.round(tp.upHi * 100)}%`, color: '--warn' }],
-      series: [{ name: '20일 상방 변동성', color: '--s-dca', v: sl(D.vols.up20), w: 1.5 }, { name: '20일 하방 변동성', color: '--fg', v: sl(D.vols.down20), w: 1.75 }] };
-    if (!cfg) { const v = []; for (let i = n0; i < D.n; i++) v.push(votesAt(tp, i));
-      cfg = { yMin: 0, yMax: 4, yfmt: v => String(Math.round(v)), tfmt: v => v + '개', hlines: [{ y: tp.votes - 0.03, label: `이탈 ${tp.votes}축`, color: '--bad' }],
-        series: [{ name: '켜진 기술 축', color: '--fg', v, w: 1.75 }] }; }
-    chSpark.set(Object.assign({ x, log: false }, cfg));
-  }
-  function renderAux() {
-    const i = D.n - 1, S = (cls, txt) => `<span class="st ${cls}">${txt}</span>`;
-    const r = IND.rsi[i], rw = IND.rsiw[i], mh = IND.macdh[i], ml = IND.macd[i], wh = IND.macdhw[i], wl = IND.macdw[i], vx = IND.vix ? IND.vix[i] : NaN, m6 = IND.mom126[i], m12 = IND.mom252[i], d200 = IND.ma200d[i];
-    const rows = [
-      ['200일선 대비', pct(d200), d200 >= 0 ? S('good', '추세 위') : d200 > -0.04 ? S('warn', '살짝 아래') : S('bad', '추세 아래'), '장기 추세의 위치. 200일선 ±4% 단독 규칙 35%, 변동성과 또는(OR)로 묶으면 37%.'],
-      ['RSI 14 (일봉)', r.toFixed(1), r >= 70 ? S('warn', '과열') : r <= 30 ? S('good', '과매도') : S('mid', '중립'), '단기 과열·침체. 30 아래는 투매 구간이지만 더 빠지기도 함. 단독 규칙 20~27%.'],
-      ['RSI 14 (주봉)', rw.toFixed(1), rw >= 70 ? S('warn', '과열') : rw <= 35 ? S('good', '침체') : S('mid', '중립'), '중기 과열·침체. 단독 규칙 27~35%.'],
-      ['MACD (일봉)', `${ml.toFixed(0)} / ${mh >= 0 ? '+' : ''}${mh.toFixed(0)}`, mh >= 0 ? S('good', '상승 탄력') : S('bad', '하락 탄력'), 'MACD선 / 시그널선과의 차. 신호가 매우 자주 바뀜. 단독 규칙 6~22%.'],
-      ['MACD (주봉)', `${wl.toFixed(0)} / ${wh >= 0 ? '+' : ''}${wh.toFixed(0)}`, wl >= 0 ? (wh >= 0 ? S('good', '상승 추세') : S('warn', '상승 둔화')) : (wh >= 0 ? S('warn', '하락 둔화') : S('bad', '하락 추세')), '중기 추세. 0선 기준 단독 규칙 34%, 시그널 교차 20%.'],
-      ['VIX', isNaN(vx) ? '–' : vx.toFixed(1), isNaN(vx) ? S('mid', '자료 없음') : vx >= 30 ? S('bad', '공포') : vx >= 20 ? S('warn', '경계') : S('good', '안정'), 'S&P500 옵션의 예상 변동성. 바닥 뒤에도 높게 남아 반등을 놓치게 함. 단독 규칙은 시험한 지표 중 최하위권.'],
-      ['모멘텀 6·12개월', `${pct(m6, 0)} · ${pct(m12, 0)}`, (m6 >= 0 && m12 >= 0) ? S('good', '둘 다 플러스') : (m6 < 0 && m12 < 0) ? S('bad', '둘 다 마이너스') : S('warn', '엇갈림'), '지난 6·12개월 지수 수익률. 단독 규칙 22~34%.'],
-    ];
-    $('aux').querySelector('tbody').innerHTML = rows.map(([a, b, c, d]) => `<tr><th scope="row">${a}</th><td class="num">${b}</td><td>${c}</td><td>${d}</td></tr>`).join('');
-  }
-  renderAux();
 
-  // ---------- strategy comparison ----------
-  function renderCompare(p, i0, i1) {
-    const base = baseParams();
-    const rows = [['노출 조절 (TQQQ·QQQ·SGOV)', 'kelly'], ['이전 최종 (기술 + 매크로 이탈)', 'final'], ['이전 기술 4축만', 'tech'], ['이전 방어형 (변동성 35%)', 'vol']].map(([n, k]) => { const r = runBT(D, i0, i1, paramsFor(k, base), false); r.isKelly = k === 'kelly'; return [n, r]; });
-    rows.push([baseName(base), runBT(D, i0, i1, Object.assign({}, base, { strategy: false }), false)]);
-    const best = Math.max(...rows.map(r => r[1].irr));
-    $('cmp').querySelector('tbody').innerHTML = rows.map(([n, r]) => `<tr><th scope="row">${n}</th><td class="num${r.irr === best ? ' pos' : ''}">${pct(r.irr)}</td><td class="num">${krw(r.finalAfter)}</td><td class="num">${pct(r.mddTwr, 0)}</td><td class="num">${pct(r.worstVsPaid, 0)}</td><td class="num">${rowsTrades(r)}회</td></tr>`).join('');
-  }
-  function rowsTrades(r) { return r.isKelly ? r.nReb : r.exits; }
   // ---------- signal footnotes ----------
   const AX_NOTE = [
     ['① 변동성 (하방·상방)', '최근 20거래일 중 떨어진 날의 움직임만으로 잰 변동성(하방)과 오른 날만으로 잰 변동성(상방)을 연 단위로 환산한 값입니다. 평소 나스닥100은 둘 다 15~20% 안팎입니다.',
@@ -719,54 +609,87 @@ __ENGINE__
   document.addEventListener('click', e => { const a = e.target.closest('a[data-fn]'); if (!a) return; e.preventDefault(); $('fnBox').open = true;
     const el = $(a.dataset.fn); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); history.replaceState(null, '', '#' + a.dataset.fn);
       document.querySelectorAll('.fn li.on').forEach(x => x.classList.remove('on')); el.classList.add('on'); } });
-  // ---------- today's signals ----------
-  const stepRows = st => { let lo = 0; return st.map(([lim, lev]) => { const r = [lo, lim, lev]; lo = lim; return r; }); };
-  const rangeTxt = (lo, hi) => hi === Infinity ? `${Math.round(lo * 100)}% 이상` : lo === 0 ? `${Math.round(hi * 100)}% 미만` : `${Math.round(lo * 100)}~${Math.round(hi * 100)}%`;
-  const mixTxt = e => { const [x, y, z] = mixOf(e); return `TQQQ ${Math.round(x * 100)}% · QQQ ${Math.round(y * 100)}% · SGOV ${Math.round(z * 100)}%`; };
-  function renderKelly() {
-    const kp = paramsFor('kelly', baseParams()), j = D.n - 1, s = D.rv[j], mu = D.mu[j], e = kellyTarget(D, kp, j), [a, b, c] = mixOf(e), KEL = kp.sizing === 'kelly';
-    const capOn = kp.capRule === 'macro' ? D.ms[j] >= 0.5 : kp.capRule === 'ma200' ? D.px[j] < D.ma[200][j] : false;
-    let tier = '';
-    if (!KEL) for (const [lo, hi, lev] of stepRows(kp.steps)) if (s >= lo && s < hi) tier = `${rangeTxt(lo, hi)} 구간 → ${lev}배`;
-    const rows = [['20일 변동성', pct(s), '최근 20거래일 나스닥100 하루 등락의 표준편차를 연 단위로 환산. 평소 15~20%, 큰 하락장에선 40~80%.']];
-    if (KEL) rows.push(['기대수익 μ', pct(mu), '1985년 10월부터 오늘까지 나스닥100이 단기국채보다 해마다 평균 더 번 수익.'], ['μ ÷ σ²', (mu / (s * s)).toFixed(2) + '배', '장기 성장률을 최대로 하는 노출(켈리 기준).']);
-    else rows.push(['계단표', tier, '25% 미만 2.5배 · 35% 미만 2배 · 45% 미만 1배 · 그 이상 0배 (선택한 규칙 기준).']);
-    rows.push(['추가 상한', kp.capRule === 'none' ? '없음' : (capOn ? `켜짐 → ${kp.capLev.toFixed(2)}배` : '꺼짐'), kp.capRule === 'macro' ? `매크로 경보 ${isNaN(D.ms[j]) ? '–' : Math.round(D.ms[j] * 100) + '%'} (50% 이상이면 켜짐)` : kp.capRule === 'ma200' ? `나스닥100 200일선 대비 ${pct(D.px[j] / D.ma[200][j] - 1)}` : '기본값은 상한을 쓰지 않습니다.'],
-      ['목표 노출', e.toFixed(2) + '배', '나스닥100 기준 배수. QLD는 2배입니다.'],
-      ['목표 비중', `T ${Math.round(a * 100)} · Q ${Math.round(b * 100)} · S ${Math.round(c * 100)}`, 'TQQQ · QQQ · SGOV (%).']);
-    $('kTable').querySelector('tbody').innerHTML = rows.map(([x, y, z]) => `<tr><th scope="row">${x}</th><td class="num">${y}</td><td>${z}</td></tr>`).join('');
-    let ex;
-    if (KEL) ex = [0.12, 0.15, 0.20, 0.25, 0.30, 0.40, 0.60].map(v => { const t = Math.min(kp.maxLev, Math.max(0, kp.kellyFrac * mu / (v * v))); return [`${Math.round(v * 100)}%`, t]; });
-    else ex = stepRows(kp.steps).map(([lo, hi, lev]) => [rangeTxt(lo, hi), lev]);
-    $('howTable').querySelector('tbody').innerHTML = ex.map(([lab, t]) => { const [x, y, z] = mixOf(t); return `<tr><th scope="row">${lab}</th><td class="num">${KEL ? t.toFixed(2) : Math.round(t * 100) / 100}배</td><td class="num">${Math.round(x * 100)}%</td><td class="num">${Math.round(y * 100)}%</td><td class="num">${Math.round(z * 100)}%</td></tr>`; }).join('');
-    $('howNote').textContent = `${SIZING[$('sizing').value].name} 규칙` + (KEL ? ` · 오늘 μ ${pct(mu)} 기준` : '');
-    $('howHint').textContent = KEL ? '켈리 규칙은 기대수익 ÷ 변동성²으로 노출을 정합니다. 수익은 가장 높았지만 잔잔할 때 TQQQ 100%가 되고 최대 낙폭이 깊습니다.'
-      : '오늘 변동성이 어느 칸인지는 위 "오늘의 신호"와 상단 문장에 나옵니다. 2020년엔 3월 11일 변동성 50%에서 0배(SGOV 100%)로 피했다가, 5월 1일 1배, 5월 13일 2배로 돌아왔습니다. 1987년 10월 19일 같은 하루 폭락은 2.5배라면 하루 약 -37%입니다.';
-  }
-  function renderSignals() {
-    renderKelly();
-    const tp = paramsFor('final', baseParams()), j = D.n - 1, ax = axesAt(D, tp, j), S = (c, t) => `<span class="st ${c}">${t}</span>`;
+
+  // ---------- today (always the champion with research defaults, whatever the sliders say) ----------
+  const champP = () => Object.assign({}, DEFAULTS, baseParams(), CHAMP, { strategy: true });
+  function renderToday() {
+    const p = champP(), j = D.n - 1, S = (c, t) => `<span class="st ${c}">${t}</span>`;
+    let k0 = 0; while (isNaN(D.rv[k0])) k0++;
+    const R = runBT(D, k0, j, p, true), st = R.regime;
+    const ax = axesAt(D, p, j), c = ax.reduce((s, v) => s + v, 0), ms = D.ms[j], onset = macroOnset(D, p, j);
+    const lastEv = R.log.filter(e => e.type === 'exit' || e.type === 'reentry').pop();
+    const pill = $('nowPill'); pill.className = 'pill ' + st; pill.textContent = st === 'in' ? 'QLD 보유' : '이탈 중 (SGOV)';
+    const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]);
+    $('nowText').innerHTML = `<strong>${ymd(D.day[j])} 종가 기준</strong> 켜진 기술 축 <strong class="num">${c}/4</strong>${nm.length ? ` (${nm.join('·')})` : ''}, 매크로 경보 <strong class="num">${isNaN(ms) ? '–' : Math.round(ms * 100) + '%'}</strong>.`
+      + (lastEv ? ` 마지막 매매는 ${ymd(lastEv.d)} ${lastEv.type === 'exit' ? '이탈' : '복귀'}입니다.` : '');
+    // what happens at the next close: replay one more (copied) day so the engine applies today's signal
+    let next;
+    if (st === 'in') {
+      // engine rule: exit when (votes >= 2 or a new macro alarm) and (protection over or votes >= 3); protection counts from the re-entry day
+      const sinceEntry = (() => { const e = R.log.filter(x => x.type === 'reentry').pop(); if (!e) return Infinity; let k = j; while (k > 0 && D.day[k] > e.d) k--; return j + 1 - k; })();
+      const prot = sinceEntry < p.hold, need = prot ? p.strongVotes : p.votes;
+      if ((c >= p.votes || onset) && (!prot || c >= p.strongVotes)) next = `<b>다음 거래일 종가에 QLD를 모두 팔아 SGOV로 옮깁니다.</b>${onset ? '매크로 경보가 기준을 새로 넘었습니다.' : `기술 축 ${c}개가 켜졌습니다${need > p.votes ? '(복귀 후 보호 기간이라 3축 기준)' : ''}.`}`;
+      else next = prot ? `<b>할 일: 이번 주도 QLD를 삽니다.</b>복귀 후 보호 기간(${p.hold}거래일 중 ${sinceEntry}일째)이라 기술 축 ${p.strongVotes}개 이상일 때만 이탈합니다.`
+        : `<b>할 일: 이번 주도 QLD를 삽니다.</b>기술 축이 ${p.votes}개 이상 켜지거나 매크로 경보가 50%를 새로 넘으면 그다음 거래일에 전량 SGOV로 옮깁니다.`;
+    } else {
+      const okv = c <= p.reMaxVotes, okma = D.px[j] > D.ma[20][j], okc = D.vols.rv10[j] < D.v60[j];
+      next = okv && okma && okc ? `<b>다음 거래일 종가에 SGOV를 모두 QLD로 옮깁니다.</b>복귀 조건 세 가지가 모두 맞았습니다.`
+        : `<b>할 일: 적립금은 SGOV에 쌓아 둡니다.</b>복귀 조건 — 켜진 축 1개 이하 ${okv ? '✓' : '✗'} · 20일선 위 ${okma ? '✓' : '✗'} · 단기 변동성 진정 ${okc ? '✓' : '✗'}. 모두 맞으면 다음 거래일에 전량 QLD로 돌아갑니다.`;
+    }
+    $('nextBox').innerHTML = next;
     const rows = [
-      ['① 변동성', `↓${pct(D.vols.down20[j], 0)} · ↑${pct(D.vols.up20[j], 0)}`, `↓${Math.round(tp.dnHi * 100)}% · ↑${Math.round(tp.upHi * 100)}% 초과`, ax[0]],
-      ['② 급락', pct(D.r10[j]), `10일 ${pct(tp.crash, 0)}`, ax[1]],
-      ['③ 추세', `RSI ${D.rsiw[j].toFixed(1)}`, `주봉 ${tp.rsiW} 미만`, ax[2]],
-      ['④ 급팽창', `${(D.vols.rv10[j] / D.v60[j]).toFixed(2)}배`, `${tp.expand.toFixed(1)}배 초과`, ax[3]],
+      ['① 변동성', `↓${pct(D.vols.down20[j], 0)} · ↑${pct(D.vols.up20[j], 0)}`, `↓30% · ↑35% 초과`, ax[0]],
+      ['② 급락', pct(D.r10[j]), `10일 −8% 이하`, ax[1]],
+      ['③ 추세', `RSI ${D.rsiw[j].toFixed(1)}`, `주봉 45 미만`, ax[2]],
+      ['④ 급팽창', `${(D.vols.rv10[j] / D.v60[j]).toFixed(2)}배`, `1.6배 초과`, ax[3]],
     ];
-    $('axTable').querySelector('tbody').innerHTML = rows.map(([a, b, c, on], k) => `<tr><th scope="row">${a}${fnLink('fn-ax' + k)}</th><td class="num">${b}</td><td>${c}</td><td>${on ? S('bad', '켜짐') : S('good', '꺼짐')}</td></tr>`).join('');
-    const ms = D.ms[j], on = MNOW.filter(m => m.z != null && m.z > 1).length, avail = MNOW.filter(m => m.z != null).length;
+    $('axTable').querySelector('tbody').innerHTML = rows.map(([a, b, cc, on], k) => `<tr><th scope="row">${a}${fnLink('fn-ax' + k)}</th><td class="num">${b}</td><td>${cc}</td><td>${on ? S('bad', '켜짐') : S('good', '꺼짐')}</td></tr>`).join('');
+    const on = MNOW.filter(m => m.z != null && m.z > 1).length, avail = MNOW.filter(m => m.z != null).length, msv = isNaN(ms) ? 0 : ms;
+    $('macroGauge').innerHTML = `<span>매크로 경보</span><span class="bar"><i style="width:${Math.min(100, msv * 100)}%"></i><s style="left:50%"></s></span><b class="num">${isNaN(ms) ? '–' : Math.round(ms * 100) + '%'}</b><span>${on}/${avail}개 경보 · 50%를 새로 넘으면 이탈</span>`;
     $('mcTable').querySelector('tbody').innerHTML = MNOW.map((m, k) => `<tr><th scope="row" title="${m.h}">${m.l}${fnLink('fn-mc' + k)}</th><td class="num">${m.z == null ? '–' : (m.z >= 0 ? '+' : '') + m.z.toFixed(2)}</td><td>${m.z == null ? S('mid', '자료 없음') : m.z > 1 ? S('bad', '경보') : m.z > 0.5 ? S('warn', '주의') : S('good', '평온')}</td></tr>`).join('');
-    $('sigNote').textContent = `${ymd(D.day[j])} 종가 · 기술 ${ax.reduce((s, v) => s + v, 0)}/4축 · 매크로 경보 ${isNaN(ms) ? '–' : Math.round(ms * 100) + '%'} (${on}/${avail})`;
   }
 
-  // ---------- render ----------
+  // ---------- last 6 months ----------
+  let sparkKey = 'axes';
+  document.querySelectorAll('#sparkPick .chip').forEach(b => b.addEventListener('click', () => {
+    sparkKey = b.dataset.k; document.querySelectorAll('#sparkPick .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderSpark();
+  }));
+  function renderSpark() {
+    const tp = champP(), n0 = Math.max(0, D.n - 126), x = []; for (let i = n0; i < D.n; i++) x.push(D.day[i]);
+    const sl = arr => Array.from(arr.slice(n0)), fp = v => pct(v, 1);
+    let cfg;
+    if (sparkKey === 'macro') cfg = { yMin: 0, yMax: 1, yfmt: v => Math.round(v * 100) + '%', tfmt: fp, hlines: [{ y: 0.5, label: '이탈 50%', color: '--bad' }],
+      series: [{ name: '매크로 경보 비율', color: '--s-dca', v: sl(D.ms), w: 1.75 }] };
+    else if (sparkKey === 'vol') cfg = { yMin: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: fp,
+      hlines: [{ y: 0.30, label: '하방 30%', color: '--bad', below: true }, { y: 0.35, label: '상방 35%', color: '--warn' }],
+      series: [{ name: '20일 상방 변동성', color: '--s-dca', v: sl(D.vols.up20), w: 1.5 }, { name: '20일 하방 변동성', color: '--fg', v: sl(D.vols.down20), w: 1.75 }] };
+    else if (sparkKey === 'px') cfg = { yfmt: v => Math.round(v).toLocaleString('ko-KR'), tfmt: v => Math.round(v).toLocaleString('ko-KR'),
+      series: [{ name: '20일선', color: '--s-dca', v: sl(D.ma[20]), w: 1.5, dash: [5, 4] }, { name: '나스닥100', color: '--fg', v: sl(D.px), w: 1.75 }] };
+    else { const v = []; for (let i = n0; i < D.n; i++) v.push(votesAt(tp, i));
+      cfg = { yMin: 0, yMax: 4, yfmt: v => String(Math.round(v)), tfmt: v => v + '개', hlines: [{ y: 1.97, label: '이탈 2축', color: '--bad' }],
+        series: [{ name: '켜진 기술 축', color: '--fg', v, w: 1.75 }] }; }
+    chSpark.set(Object.assign({ x, log: false }, cfg));
+  }
+
+  // ---------- strategy comparison ----------
+  function renderCompare(i0, i1) {
+    const base = baseParams();
+    const rows = [['final', '최종 전략 v1'], ['tech', '기술 4축만'], ['kelly', '노출 조절 (참고)']].map(([k, n]) => { const r = runBT(D, i0, i1, k === 'final' ? Object.assign({}, DEFAULTS, base, CHAMP, { strategy: true }) : paramsFor(k, base), false); r.trades = k === 'kelly' ? r.nReb : r.exits; return [n, r]; });
+    const B = runBT(D, i0, i1, Object.assign({}, DEFAULTS, base, { strategy: false }), false); B.trades = 0; rows.push([baseName(base), B]);
+    const best = Math.max(...rows.map(r => r[1].irr));
+    $('cmp').querySelector('tbody').innerHTML = rows.map(([n, r]) => `<tr><th scope="row">${n}</th><td class="num${r.irr === best ? ' pos' : ''}">${pct(r.irr)}</td><td class="num">${krw(r.finalAfter)}</td><td class="num">${pct(r.mddTwr, 0)}</td><td class="num">${pct(r.worstVsPaid, 0)}</td><td class="num">${r.trades}회</td></tr>`).join('');
+  }
+
+  // ---------- log ----------
   let last = null;
-  const logOn = { down: true, up: true, exit: true, staged: true, reentry: true, tax: true, harvest: false, year: false };
+  const logOn = { exit: true, reentry: true, adj: true, tax: true, harvest: false, year: false };
+  const KIND = t => (t === 'down' || t === 'up') ? 'adj' : t;
   const TYPE = { down: '노출 축소', up: '노출 확대', exit: '이탈', staged: '단계 복귀', reentry: '복귀', tax: '세금 납부', harvest: '하베스팅', year: '연간 정산' };
   function renderLog() {
-    if (!last) return; const evs = last.S.log.filter(e => logOn[e.type]).slice().reverse();
-    $('logCount').textContent = `${evs.length}건 표시`;
-    $('log').innerHTML = evs.length ? evs.map(e => `<div class="ev"><span class="d">${ymd(e.d)}</span><span class="t ${e.type}">${TYPE[e.type]}</span><span class="m">${e.msg}</span></div>`).join('')
-      : '<p class="hint" style="padding:12px 2px">선택한 종류의 이벤트가 이 기간에 없어요.</p>';
+    if (!last) return; const evs = last.S.log.filter(e => logOn[KIND(e.type)]).slice().reverse();
+    $('logCount').textContent = `${evs.length}건`;
+    $('log').innerHTML = evs.length ? evs.map(e => `<div class="ev"><span class="d">${ymd(e.d)}</span><span class="t ${e.type}">${TYPE[e.type] || e.type}</span><span class="m">${e.msg}</span></div>`).join('')
+      : '<p class="hint" style="padding:12px 2px">이 기간에 해당 기록이 없어요.</p>';
   }
   document.querySelectorAll('#logFilter .chip').forEach(b => b.addEventListener('click', () => { const t = b.dataset.t; logOn[t] = !logOn[t]; b.setAttribute('aria-pressed', String(logOn[t])); renderLog(); }));
 
@@ -788,81 +711,43 @@ __ENGINE__
     if (!(p.initialKRW > 0 || p.weeklyKRW > 0)) return;
     const S = runBT(D, i0, i1, p, true), B = runBT(D, i0, i1, Object.assign({}, p, { strategy: false }), false);
     last = { S, B, i0, i1, p };
-    const yrs = (D.day[i1] - D.day[i0]) / 365.25;
+    const yrs = (D.day[i1] - D.day[i0]) / 365.25, KEL = p._rule === 'kelly';
     $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])} · ${yrs.toFixed(1)}년 · 납입 ${krw(S.contributed)}`;
-    const rows = [
+    $('kpi').querySelector('tbody').innerHTML = [
       row('세후 청산가치', S.finalAfter, B.finalAfter, krw, dKrw, 'up'),
       row('수익 배수 (세후 ÷ 납입)', S.finalAfter / S.contributed, B.finalAfter / B.contributed, v => v.toFixed(2) + '배', (x, y) => ({ v: x - y, txt: ((x - y) >= 0 ? '+' : '−') + Math.abs(x - y).toFixed(2) }), 'up'),
       row('연환산 수익률 (IRR)', S.irr, B.irr, v => pct(v), dPct, 'up'),
-      row('CAGR (시간가중)', S.twrCagr, B.twrCagr, v => pct(v), dPct, 'up'),
       row('MDD (시간가중)', S.mddTwr, B.mddTwr, v => pct(v, 0), dPct, 'up'),
       row('평가액 최대 낙폭', S.mddValue, B.mddValue, v => pct(v, 0), dPct, 'up'),
       row('원금 대비 최악', S.worstVsPaid, B.worstVsPaid, v => pct(v, 0), dPct, 'up'),
       row('기간 중 낸 양도세', S.taxesPaid, B.taxesPaid, krw, dKrw, 'down'),
-      row('청산 시 세금', S.liqTax, B.liqTax, krw, dKrw, 'down'),
-      p._rule === 'kelly' && p.strategy ? row('비중 조정 횟수', S.nReb, 0, v => v + '회', dInt, null) : row('이탈 횟수', S.exits, B.exits, v => v + '회', dInt, null),
-      p._rule === 'kelly' && p.strategy ? row('평균 노출 (나스닥100 배수)', avgOf(S.expoTot), 2, v => v.toFixed(2) + '배', (x, y) => ({ v: x - y, txt: ((x - y) >= 0 ? '+' : '−') + Math.abs(x - y).toFixed(2) }), null) : '',
-    ];
-    $('kpi').querySelector('tbody').innerHTML = rows.join('');
-    // weekly sample points
+      KEL ? row('비중 조정 횟수', S.nReb, 0, v => v + '회', dInt, null) : row('이탈 횟수', S.exits, B.exits, v => v + '회', dInt, null),
+    ].join('');
     const idx = []; for (let i = i0; i <= i1; i++) if (i === i1 || D.week[i + 1] !== D.week[i]) idx.push(i);
-    const x = idx.map(i => D.day[i]);
-    const pickA = arr => idx.map(i => arr[i - i0]);
+    const x = idx.map(i => D.day[i]), pickA = arr => idx.map(i => arr[i - i0]), nm = NAMES[p._rule];
     chV.set({ x, log: logScale, yfmt: axisKrw, tfmt: krw,
-      series: [{ name: '납입 원금', color: '--s-paid', v: pickA(S.contr), dash: [5, 4], w: 1.5 }, { name: baseName(p), color: '--s-dca', v: pickA(B.vals) }, { name: '선택 전략', color: '--s-strat', v: pickA(S.vals) }] });
+      series: [{ name: '납입 원금', color: '--s-paid', v: pickA(S.contr), dash: [5, 4], w: 1.5 }, { name: baseName(p), color: '--s-dca', v: pickA(B.vals) }, { name: nm, color: '--s-strat', v: pickA(S.vals) }] });
     const ddOf = tw => { let pk = 0; return Array.from(tw, v => { pk = Math.max(pk, v); return v / pk - 1; }); };
-    const ddS = ddOf(S.twr), ddB = ddOf(B.twr);
     chD.set({ x, log: false, yMax: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1),
-      series: [{ name: baseName(p), color: '--s-dca', v: pickA(ddB) }, { name: '선택 전략', color: '--s-strat', v: pickA(ddS) }] });
-    // bands from exposure
+      series: [{ name: baseName(p), color: '--s-dca', v: pickA(ddOf(B.twr)) }, { name: nm, color: '--s-strat', v: pickA(ddOf(S.twr)) }] });
     const bands = []; let cur = null;
-    for (const i of idx) { const e = S.expo[i - i0]; const kind = !p.strategy || p._rule === 'kelly' ? null : e < 0.02 ? '--band-out' : e < 0.98 ? '--band-staged' : null;
+    for (const i of idx) { const e = S.expo[i - i0]; const kind = !p.strategy || KEL ? null : e < 0.02 ? '--band-out' : null;
       if (kind && cur && cur.color === kind) cur.to = D.day[i]; else { if (cur) bands.push(cur); cur = kind ? { from: D.day[i], to: D.day[i], color: kind } : null; } }
     if (cur) bands.push(cur);
-    const tp = paramsFor('final', baseParams());
-    const KEL = p._rule === 'kelly' && p.strategy;
-    $('volTitle').textContent = KEL ? '노출 (나스닥100 배수)' : '위험 신호와 이탈 구간';
-    $('volLegend').innerHTML = KEL ? '<span><i style="background:var(--s-strat)"></i>보유 노출</span><span><i style="background:var(--fg)"></i>목표 노출</span><span><i style="background:var(--warn)"></i>QLD 2배</span>'
+    const tp = p._rule === 'final' || p._rule === 'tech' ? p : champP();
+    $('volTitle').textContent = KEL ? '노출 (나스닥100 배수)' : '신호와 이탈 구간';
+    $('volLegend').innerHTML = KEL ? '<span><i style="background:var(--s-strat)"></i>보유 노출</span><span><i style="background:var(--warn)"></i>QLD 2배</span>'
       : '<span><i style="background:var(--fg)"></i>켜진 기술 축 (0~4)</span><span><i class="box" style="background:var(--band-out);outline:1px solid var(--bad)"></i>이탈 (SGOV)</span>';
-    const expoTip = k => { const e = S.expo[idx[k] - i0]; return `<div class="r"><span>QLD 비중</span><b>${pct(e, 0)}</b></div>`; };
-    if (KEL) chVol.set({ x, log: false, yMin: 0, yMax: Math.max(3, p.maxLev), yfmt: v => v.toFixed(1) + '배', tfmt: v => isFinite(v) ? v.toFixed(2) + '배' : '–',
-      hlines: [{ y: 2, label: 'QLD 2배', color: '--warn' }],
-      series: [{ name: '목표 노출', color: '--fg', v: pickA(S.tgtS), w: 1 }, { name: '보유 노출', color: '--s-strat', v: pickA(S.expoTot), w: 1.75 }],
-      extra: k => { const [a, b2, c] = mixOf(S.expoTot[idx[k] - i0]); return `<div class="r"><span>근사 비중</span><b>T${Math.round(a * 100)}·Q${Math.round(b2 * 100)}·S${Math.round(c * 100)}</b></div>`; } });
+    const expoTip = k => `<div class="r"><span>QLD 비중</span><b>${pct(S.expo[idx[k] - i0], 0)}</b></div>`;
+    if (KEL) chVol.set({ x, log: false, yMin: 0, yMax: 3, yfmt: v => v.toFixed(1) + '배', tfmt: v => isFinite(v) ? v.toFixed(2) + '배' : '–',
+      hlines: [{ y: 2, label: 'QLD 2배', color: '--warn' }], series: [{ name: '보유 노출', color: '--s-strat', v: pickA(S.expoTot), w: 1.75 }] });
     else chVol.set({ x, log: false, yMin: 0, yMax: 4, yfmt: v => String(Math.round(v)), tfmt: v => v + '개', bands,
       hlines: [{ y: tp.votes - 0.03, label: `이탈 ${tp.votes}축`, color: '--bad' }],
-      series: [{ name: '켜진 기술 축', color: '--fg', v: idx.map(i => votesAt(tp, i)), w: 1.25 }], extra: expoTip });
+      series: [{ name: '켜진 기술 축', color: '--fg', v: idx.map(i => votesAt(tp, i)), w: 1.25 }], extra: p.strategy ? expoTip : null });
     chMac.set({ x, log: false, yMin: 0, yMax: 1, yfmt: v => Math.round(v * 100) + '%', tfmt: v => isFinite(v) ? pct(v, 0) : '–', bands,
-      hlines: [KEL ? { y: 0.5, label: '경보 50%', color: '--bad' } : { y: tp.macroTh, label: `이탈 ${Math.round(tp.macroTh * 100)}%`, color: '--bad' }],
-      series: [{ name: '매크로 경보 비율', color: '--s-dca', v: idx.map(i => D.ms[i]), w: 1.5 }], extra: KEL ? null : expoTip });
-    renderLog();
-    renderNow(p); renderSpark(p); renderCompare(p, i0, i1); renderSignals();
-  }
-  function renderNow(p) {
-    const iL = D.n - 1, rule = p._rule;
-    const R = runBT(D, months[0].i0, iL, Object.assign({}, p, { strategy: true }), false);
-    const pill = $('nowPill'); const st = R.regime;
-    if (rule === 'kelly') {
-      const e = targetFrom(D, p, iL, R.tgtE), cur = R.expoTot[R.expoTot.length - 1], [a, b, c] = mixOf(e), [ha, hb, hc] = mixOf(cur);
-      pill.className = 'pill ' + (e < 1 ? 'lo' : e < 2 ? 'mid' : 'hi'); pill.textContent = `목표 ${e.toFixed(2)}배`;
-      const nd = new Date((D.day[iL] + 1) * 86400000), act = Math.abs(e - cur) > p.band;
-      const chkTxt = { d: '매일', w: '매주 첫 거래일', m1: '매달 첫 거래일', m3: '3개월마다', m6: '6개월마다' }[p.check] || '';
-      $('nowText').innerHTML = `<strong>${ymd(D.day[iL])} 종가 기준</strong> 20일 변동성 <strong class="num">${pct(D.rv[iL])}</strong>${p.sizing === 'kelly' ? `, 기대수익 <strong class="num">${pct(D.mu[iL])}</strong>` : ''} → 목표 노출 <strong class="num">${e.toFixed(2)}배</strong> = TQQQ <strong class="num">${Math.round(a * 100)}%</strong> · QQQ <strong class="num">${Math.round(b * 100)}%</strong> · SGOV <strong class="num">${Math.round(c * 100)}%</strong>. `
-        + `규칙대로 들고 왔다면 지금 노출은 <span class="num">${cur.toFixed(2)}배</span>(TQQQ ${Math.round(ha * 100)}% · QQQ ${Math.round(hb * 100)}% · SGOV ${Math.round(hc * 100)}%)이고, 차이 ${Math.abs(e - cur).toFixed(2)}배는 조정 폭 ${p.band.toFixed(2)}배${act ? `보다 커서 <strong>다음 ${chkTxt === '매일' ? '거래일' : '확인일(' + chkTxt + ')'} 종가에 목표 비중으로 맞춥니다.</strong>` : ' 안이라 매매하지 않습니다.'} 새 적립금은 TQQQ ${Math.round(mixOf(R.tgtE)[0] * 100)}% · QQQ ${Math.round(mixOf(R.tgtE)[1] * 100)}% · SGOV ${Math.round(mixOf(R.tgtE)[2] * 100)}%로 삽니다. <span class="hint">(현재 설정으로 1985년부터 규칙을 적용했을 때의 상태)</span>`;
-      return;
-    }
-    pill.className = 'pill ' + st; pill.textContent = st === 'in' ? 'QLD 보유' : st === 'out' ? '이탈 중' : '단계 복귀 중';
-    if (rule === 'vol') {
-      $('nowText').innerHTML = `<strong>${ymd(D.day[iL])} 종가 기준</strong> 20일 변동성 <strong class="num">${pct(D.rv[iL])}</strong>. 이전 방어형은 35%를 넘으면 이탈, 25% 아래로 내려오면 전량 복귀합니다.`; return;
-    }
-    const ax = axesAt(D, p, iL), c = ax.reduce((s, v) => s + v, 0), ms = D.ms[iL], nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]);
-    const mTxt = rule === 'final' ? ` 매크로 경보는 <strong class="num">${isNaN(ms) ? '–' : Math.round(ms * 100) + '%'}</strong>(이탈 기준 ${Math.round(p.macroTh * 100)}%)입니다.` : '';
-    let next;
-    if (st === 'in') next = c >= p.votes ? ` <strong>오늘 이탈 조건(${p.votes}축)이 켜졌습니다.</strong> 복귀 후 유지 기간이 지났다면 다음 거래일에 QLD를 SGOV로 옮깁니다.`
-      : ` 기술 축이 ${p.votes}개 이상 켜지거나${rule === 'final' ? ' 매크로 경보가 기준을 새로 넘으면' : ''} 다음 거래일에 QLD를 SGOV로 옮깁니다.`;
-    else { const okv = c <= p.reMaxVotes, okma = D.px[iL] > D.ma[20][iL], okc = D.vols.rv10[iL] < D.v60[iL];
-      next = ` 복귀 조건: 켜진 축 1개 이하 ${okv ? '✓' : '✗'} · 20일선 위 ${okma ? '✓' : '✗'} · 단기 변동성 진정 ${okc ? '✓' : '✗'}. 모두 충족하면 다음 거래일에 전량 QLD로 돌아갑니다.`; }
-    $('nowText').innerHTML = `<strong>${ymd(D.day[iL])} 종가 기준</strong> 켜진 기술 축 <strong class="num">${c}/4</strong>${nm.length ? ` (${nm.join('·')})` : ''}.${mTxt}${next} <span class="hint">(현재 설정으로 1985년부터 규칙을 적용했을 때의 상태)</span>`;
+      hlines: [{ y: p._rule === 'final' ? p.macroTh : 0.5, label: `이탈 ${Math.round((p._rule === 'final' ? p.macroTh : 0.5) * 100)}%`, color: '--bad' }],
+      series: [{ name: '매크로 경보 비율', color: '--s-dca', v: idx.map(i => D.ms[i]), w: 1.5 }] });
+    renderLog(); renderCompare(i0, i1);
   }
 
   let timer = 0; const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 60); };
@@ -880,6 +765,7 @@ __ENGINE__
   new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
   renderFootnotes();
+  renderToday(); renderSpark();
   render();
 })();
 </script>

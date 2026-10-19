@@ -59,7 +59,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TITLE="[QLD 노출] $(python3 -c 'import json;s=json.load(open("qld/data/status.json"));k=s["kelly"];m=k["mix"];print(s["date"], "목표", str(k["target"])+"배 · TQQQ", str(round(m[0]*100))+"% · QQQ", str(round(m[1]*100))+"% · SGOV", str(round(m[2]*100))+"%")')"
+          TITLE="$(python3 -c 'import json;print(json.load(open("qld/data/status.json"))["title"])')"
           gh issue create --title "$TITLE" --body-file qld/alert.md || echo "issue skipped"
 
       - name: Assemble site (existing pages at root, QLD page under /qld/)

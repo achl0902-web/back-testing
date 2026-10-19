@@ -184,27 +184,32 @@ hold = (open(P('src', 'hold_tpl.html')).read().replace('__DATA__', hold_js).repl
         .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built))
 open(P('site', 'hold.html'), 'w').write(html.replace(page, hold))
 
-# ---------- daily signal: final strategy (and the two references) ----------
+# ---------- daily signal: 최종 전략 v1 (page default since 2026-10-19; exposure-step rule kept as a reference) ----------
 RULES = {
-    'kelly': ('변동성 계단 (TQQQ·QQQ·SGOV)', "{rule:'kelly'}"),
-    'final': ('이전 최종 (기술 + 매크로 이탈)', "{}"),
+    'final': ('최종 전략 v1 (기술 4축 + 매크로 경보)', "{}"),
     'tech': ('기술 4축만', "{useMacro:false}"),
-    'vol': ('이전 방어형', "{rule:'vol',peakRatio:0.67}"),
+    'kelly': ('노출 조절 (참고)', "{rule:'kelly'}"),
 }
 js = os.path.join(tempfile.mkdtemp(), 'status.js')
 open(js, 'w').write(f"""
 const E=require({json.dumps(P('src','engine.js'))});
-const D=E.prepData({data_js});
+const RAW={data_js};
+const D=E.prepData(RAW);
 const j=D.n-1; let i0=0; while(isNaN(D.rv[i0])) i0++;
 const P=Object.assign({{}},E.DEFAULTS,{{strategy:true}});
-const ax=E.axesAt(D,P,j), axp=E.axesAt(D,P,j-1);
+const ax=E.axesAt(D,P,j);
 const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j],rsiw:D.rsiw[j],expand:D.vols.rv10[j]/D.v60[j],
-  axes:ax,votes:ax.reduce((a,b)=>a+b,0),votesPrev:axp.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],msPrev:isNaN(D.ms[j-1])?null:D.ms[j-1],
+  axes:ax,votes:ax.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],
   macroOnset:E.macroOnset(D,P,j),reentry:ax.reduce((a,b)=>a+b,0)<=P.reMaxVotes&&D.px[j]>D.ma[20][j]&&D.vols.rv10[j]<D.v60[j],
   px:D.px[j],ma20:D.ma[20][j],rules:{{}}}};
-{{const K=Object.assign({{}},E.DEFAULTS,{{strategy:true,rule:'kelly'}});const R=E.runBT(D,i0,j,K,true);const e=E.targetFrom(D,K,j,R.tgtE),cur=R.expoTot[R.expoTot.length-1];
-  const lastEv=R.log.filter(x=>x.type==='down'||x.type==='up').pop()||null;
-  out.kelly={{target:e,mix:E.mixOf(e),hold:cur,holdMix:E.mixOf(cur),band:K.band,act:Math.abs(e-cur)>K.band,sigma:D.rv[j],mu:D.mu[j],lastTrade:lastEv?{{d:lastEv.d,msg:lastEv.msg}}:null,contribMix:E.mixOf(R.tgtE)}};}}
+// today's regime, and tomorrow's: replay one copied day so the engine executes today's signal at the next close
+const R=E.runBT(D,i0,j,P,true);
+const R2raw=Object.assign({{}},RAW,{{dd:RAW.dd.concat([1]),px:RAW.px.concat([RAW.px[j]]),rq:RAW.rq.concat([0]),tb:RAW.tb.concat([RAW.tb[j]]),fx:RAW.fx.concat([RAW.fx[j]]),
+  vix:RAW.vix?RAW.vix.concat([RAW.vix[j]]):RAW.vix,ms:RAW.ms?RAW.ms.concat([RAW.ms[j]]):RAW.ms}});
+const D2=E.prepData(R2raw), R2=E.runBT(D2,i0,D2.n-1,P,true);
+const ev=R2.log.filter(x=>(x.type==='exit'||x.type==='reentry')&&x.d===D2.day[D2.n-1]).pop()||null;
+const lastEv=R.log.filter(x=>x.type==='exit'||x.type==='reentry').pop()||null;
+out.regime=R.regime; out.next=R2.regime; out.action=ev?{{type:ev.type,msg:ev.msg}}:null; out.lastTrade=lastEv?{{d:lastEv.d,type:lastEv.type}}:null;
 """ + ''.join(f"{{const R=E.runBT(D,i0,j,Object.assign({{strategy:true}},{cfg}),false);out.rules[{json.dumps(k)}]={{regime:R.regime}};}}\n" for k, (_, cfg) in RULES.items())
  + "console.log(JSON.stringify(out));\n")
 st = subprocess.run(['node', js], capture_output=True, text=True, timeout=600)
@@ -212,18 +217,20 @@ if st.returncode != 0:
     print(st.stderr, file=sys.stderr); sys.exit(1)
 s = json.loads(st.stdout.strip().splitlines()[-1])
 r4 = lambda x: None if x is None else round(x, 4)
-K = s['kelly']
-r2 = lambda x: None if x is None else round(x, 2)
-kelly = dict(target=r2(K['target']), mix=[round(x, 3) for x in K['mix']], hold=r2(K['hold']), holdMix=[round(x, 3) for x in K['holdMix']],
-             band=K['band'], act=bool(K['act']), sigma=r4(K['sigma']), mu=r4(K['mu']), contribMix=[round(x, 3) for x in K['contribMix']],
-             lastTrade=None if not K['lastTrade'] else dict(date=iso(K['lastTrade']['d']), msg=K['lastTrade']['msg']))
-status = dict(date=last, kelly=kelly, regime=s['rules']['final']['regime'], votes=s['votes'], axes=s['axes'],
+NAME = {'in': 'QLD 보유', 'out': '이탈 중 (SGOV)', 'staged': '단계 복귀 중'}
+action = s['action']
+status = dict(date=last, strategy='final', regime=s['regime'], next=s['next'],
+              action=None if not action else dict(type=action['type'], msg=action['msg']),
+              lastTrade=None if not s['lastTrade'] else dict(date=iso(s['lastTrade']['d']), type=s['lastTrade']['type']),
+              votes=s['votes'], axes=s['axes'],
               down20=r4(s['down20']), up20=r4(s['up20']), r10=r4(s['r10']), rsiw=round(s['rsiw'], 1), expand=round(s['expand'], 2),
               macro=r4(s['ms']), macroOnset=s['macroOnset'], reentryOK=s['reentry'], rv20=r4(s['rv20']),
               ndx=round(s['px'], 2), ma20=round(s['ma20'], 2),
               rules={k: dict(name=RULES[k][0], regime=v['regime']) for k, v in s['rules'].items()},
               macroNow={m['k']: m['z'] for m in macro_now}, macro_ok=macro_ok,
               built=built, sources=used, added_rows=added)
+status['title'] = (f"[QLD] {last} 다음 거래일 " + ('이탈: QLD 전량 매도 → SGOV' if action and action['type'] == 'exit' else '복귀: SGOV 전량 → QLD')
+                   if action else f"[QLD] {last} {NAME[status['regime']]}")
 
 prev = {}
 try: prev = json.load(open(P('data', 'status.json')))
@@ -231,22 +238,25 @@ except Exception: pass
 json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, indent=1)
 json.dump(status, open(P('site', 'status.json'), 'w'), ensure_ascii=False, indent=1)
 
-# ---------- alert ----------
-NAME = {'in': 'QLD 보유', 'out': '이탈 중 (SGOV)', 'staged': '단계 복귀 중'}
-mixtxt = lambda m: f"TQQQ {round(m[0]*100)}% · QQQ {round(m[1]*100)}% · SGOV {round(m[2]*100)}%"
+# ---------- alert: only when the next close brings a trade (or once, when the alert strategy changed) ----------
 AX = ['변동성', '급락', '추세', '급팽창']
 pv = lambda x: '–' if x is None else f'{x*100:.1f}%'
 msgs = []
-if prev.get('date') != last and kelly['act']:
-    msgs.append(f"노출 조절: 목표 **{kelly['target']:.2f}배** ({mixtxt(kelly['mix'])})가 규칙상 보유 {kelly['hold']:.2f}배와 조정 폭 {kelly['band']}배 이상 차이 납니다. "
-                f"**다음 거래일 종가에 목표 비중으로 맞춥니다.**")
+if prev.get('date') != last and action:
+    msgs.append(('**다음 거래일 종가에 QLD를 모두 팔아 SGOV로 옮깁니다.**' if action['type'] == 'exit' else '**다음 거래일 종가에 SGOV를 모두 QLD로 옮깁니다.**')
+                + f" 사유: {action['msg'].split(' → ')[0]}")
+if prev.get('strategy') != 'final':
+    msgs.append(f"알림 기준이 **최종 전략 v1**(기술 4축 + 매크로 경보 이탈)로 바뀌었습니다(2026-10-19 비교: 5개 검증 세트 중 4개에서 노출 조절보다 우세). "
+                f"현재 상태: **{NAME[status['regime']]}**. 노출 조절(TQQQ·QQQ·SGOV)로 들고 있었다면 QLD 보유로 맞추는 것을 검토하세요.")
 if msgs:
+    if prev.get('strategy') != 'final' and not action:
+        status['title'] = f"[QLD] {last} 알림 기준 변경: 최종 전략 v1 · {NAME[status['regime']]}"
+        json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, indent=1)
     lines = [f"- {m}" for m in msgs]
-    lines.append(f"\n노출 계산: 나스닥100 20일 변동성 {pv(kelly['sigma'])} → 계단표(25% 미만 2.5배 · 35% 미만 2배 · 45% 미만 1배 · 그 이상 0배, 올릴 땐 경계보다 3%p 낮아야) → 목표 {kelly['target']:.2f}배")
-    lines.append(f"참고(이전 규칙): 기술 {status['votes']}/4축 · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · "
-                 f"주봉 RSI {status['rsiw']} · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}")
-    lines.append('이전 규칙 상태: ' + ' · '.join(f"{v['name']} {NAME[v['regime']]}" for k, v in status['rules'].items() if k != 'kelly'))
-    lines.append('실행: 전날 종가로 계산한 목표 비중으로 다음 거래일 종가에 TQQQ·QQQ·SGOV를 맞춥니다. 이전 규칙 상태는 참고용입니다.')
+    lines.append(f"\n신호: 기술 {status['votes']}/4축" + (f" ({'·'.join(a for a, on in zip(AX, status['axes']) if on)})" if status['votes'] else '')
+                 + f" · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · 주봉 RSI {status['rsiw']}"
+                 + f" · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}")
+    lines.append('규칙: 기술 4축 중 2개 이상(복귀 후 40거래일은 3개) 또는 매크로 경보 50% 신규 돌파 → 전량 SGOV. 축 1개 이하 · 20일선 위 · 10일 변동성 < 60일 변동성 → 전량 QLD.')
     lines.append(f"데이터 출처: {', '.join(used)}")
     open(P('alert.md'), 'w').write(f"**{last} 종가 기준**\n\n" + '\n'.join(lines) + '\n')
 print(json.dumps(status, ensure_ascii=False))
