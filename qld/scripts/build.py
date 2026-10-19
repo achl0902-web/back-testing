@@ -26,7 +26,7 @@ start = (dt.date.fromisoformat(base_last) - dt.timedelta(days=20)).isoformat()
 ndx, qqq, tb, fx, vix = {}, {}, {}, {}, {}
 used = []
 
-# ---------- fallback mirrors first, Yahoo overrides ----------
+# ---------- Yahoo first; public GitHub mirrors only when Yahoo misses a series (Yahoo wins where both have data) ----------
 def num(s):
     return float(str(s).replace(',', '').strip())
 
@@ -73,7 +73,7 @@ def yahoo():
         import yfinance as yf
         import pandas as pd
     except Exception as e:
-        print('yfinance unavailable:', e, file=sys.stderr); return
+        print('yfinance unavailable:', e, file=sys.stderr); return []
     def col(ticker, name):
         try:
             df = yf.download(ticker, start=start, auto_adjust=False, progress=False, threads=False)
@@ -84,19 +84,23 @@ def yahoo():
             return {d.strftime('%Y-%m-%d'): float(v) for d, v in s.items()}
         except Exception as e:
             print(f'yahoo {ticker} failed:', e, file=sys.stderr); return {}
-    got = 0
+    got = []
     for target, ticker, name, scale in [(ndx, '^NDX', 'Close', 1), (qqq, 'QQQ', 'Adj Close', 1),
                                         (fx, 'KRW=X', 'Close', 1), (tb, '^IRX', 'Close', 0.01), (vix, '^VIX', 'Close', 1)]:
         d = col(ticker, name)
         if d:
-            got += 1
-            # QQQ adjusted prices are rescaled after each dividend: only ratios matter, keep the series self-consistent
-            if target is qqq: qqq.clear()
-            target.update({k: v * scale for k, v in d.items()})
-    if got: used.append(f'yahoo({got}/5)')
+            got.append((target, {k: v * scale for k, v in d.items()}))
+    if got: used.append(f'yahoo({len(got)}/5)')
+    return got
 
-mirrors()
-yahoo()
+if '--offline' not in sys.argv:  # --offline: 저장된 데이터만으로 페이지를 만든다 (로컬 미리보기·비교용)
+    got = yahoo()
+    if len(got) < 5:  # 야후가 하나라도 비었을 때만 미러 3곳을 클론한다 (클론은 몇 분 걸림)
+        mirrors()
+    for target, d in got:  # 야후 값이 미러보다 우선
+        # QQQ adjusted prices are rescaled after each dividend: only ratios matter, keep the series self-consistent
+        if target is qqq: qqq.clear()
+        target.update(d)
 
 # ---------- append new rows ----------
 def ffill(series, date, prev):
@@ -168,11 +172,17 @@ hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow
 last = iso(days[-1])
 y, m, d_ = last.split('-')
 built = dt.datetime.now(KST).strftime('%Y-%m-%d %H:%M KST')
-tpl = open(P('src', 'page_tpl.html')).read()
 eng = open(P('src', 'engine.js')).read()
-assert '</script' not in data_js and '</script' not in eng
-page = (tpl.replace('__DATA__', data_js).replace('__ENGINE__', eng)
-           .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built))
+ui_js, ui_css = open(P('src', 'ui.js')).read(), open(P('src', 'ui.css')).read()  # 두 페이지 공통 화면 코드
+assert '</script' not in data_js and '</script' not in eng and '</script' not in ui_js
+
+
+def fill(tpl, data):
+    return (tpl.replace('__UI_CSS__', ui_css).replace('__DATA__', data).replace('__ENGINE__', eng).replace('__UI_JS__', ui_js)
+               .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built))
+
+
+page = fill(open(P('src', 'page_tpl.html')).read(), data_js)
 html = ('<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
         '<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}'
@@ -180,8 +190,7 @@ html = ('<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '</head><body>' + page + '</body></html>')
 os.makedirs(P('site'), exist_ok=True)
 open(P('site', 'index.html'), 'w').write(html)
-hold = (open(P('src', 'hold_tpl.html')).read().replace('__DATA__', hold_js).replace('__ENGINE__', eng)
-        .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built))
+hold = fill(open(P('src', 'hold_tpl.html')).read(), hold_js)
 open(P('site', 'hold.html'), 'w').write(html.replace(page, hold))
 
 # ---------- daily signal: 최종 전략 v1 (page default since 2026-10-19; exposure-step rule kept as a reference) ----------

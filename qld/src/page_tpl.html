@@ -5,132 +5,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: one strategy (최종 전략 v1). Today strip, rules, validation, then the interactive backtest. */
-:root {
-  --bg: #f3f5f8; --surface: #ffffff; --sunken: #eef1f5; --fg: #121820; --muted: #59616f; --faint: #8a919d; --line: #dfe3e9;
-  --accent: #1f5fc4; --accent-ink: #ffffff;
-  --s-strat: #2a78d6; --s-dca: #eb6834; --s-paid: #8a919d;
-  --good: #16794a; --good-bg: #e3f3ea; --warn: #9a6400; --warn-bg: #fbf0d9; --bad: #c2312f; --bad-bg: #fbe6e5;
-  --band-out: rgba(194, 49, 47, 0.10); --band-staged: rgba(201, 133, 0, 0.12); --sel-fill: rgba(31, 95, 196, 0.12);
-  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0e1116; --surface: #161b22; --sunken: #1c222b; --fg: #e7eaef; --muted: #a3abb8; --faint: #747d8b; --line: #2a313b;
-  --accent: #5b93ea; --accent-ink: #0e1116;
-  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695;
-  --good: #4cc48a; --good-bg: #13291f; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #ef6b68; --bad-bg: #2d1717;
-  --band-out: rgba(239, 107, 104, 0.13); --band-staged: rgba(226, 166, 59, 0.14); --sel-fill: rgba(91, 147, 234, 0.16);
-  color-scheme: dark; } }
-:root[data-theme="dark"] {
-  --bg: #0e1116; --surface: #161b22; --sunken: #1c222b; --fg: #e7eaef; --muted: #a3abb8; --faint: #747d8b; --line: #2a313b;
-  --accent: #5b93ea; --accent-ink: #0e1116;
-  --s-strat: #3987e5; --s-dca: #d95926; --s-paid: #7d8695;
-  --good: #4cc48a; --good-bg: #13291f; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #ef6b68; --bad-bg: #2d1717;
-  --band-out: rgba(239, 107, 104, 0.13); --band-staged: rgba(226, 166, 59, 0.14); --sel-fill: rgba(91, 147, 234, 0.16);
-  color-scheme: dark; }
-* { box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.55; }
-.wrap { max-width: 1120px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
-h1 { font-size: 1.55rem; font-weight: 700; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-h2 { font-size: 1.02rem; font-weight: 600; margin: 0; text-wrap: balance; }
-.sub { color: var(--muted); margin: 4px 0 0; max-width: 68ch; }
-.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
-.eyebrow { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
-.status { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
-.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
-.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.pill.in { color: var(--good); background: var(--good-bg); }
-.pill.out { color: var(--bad); background: var(--bad-bg); }
-.pill.staged { color: var(--warn); background: var(--warn-bg); }
-.status p { margin: 0; color: var(--muted); }
-.status strong { color: var(--fg); }
-.layout { display: grid; grid-template-columns: 330px 1fr; gap: 18px; align-items: start; }
-@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
-.controls { display: grid; gap: 16px; }
-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
-legend { padding: 0; margin-bottom: 4px; }
-.field { display: grid; gap: 4px; }
-.field label, .rowlab { font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
-.field label b, .rowlab b { color: var(--fg); font-weight: 500; font-family: var(--f-num); }
-input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
-select { width: 100%; font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); color: var(--fg); }
-input[type=number] { width: 100%; font: inherit; font-family: var(--f-num); padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); color: var(--fg); }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.brush { position: relative; height: 88px; border-radius: 8px; background: var(--sunken); overflow: hidden; }
-.brush canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.brush input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none; }
-.brush input::-webkit-slider-runnable-track { background: transparent; height: 88px; }
-.brush input::-moz-range-track { background: transparent; }
-.brush input::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 20px; height: 88px; cursor: ew-resize; border: 0; background: linear-gradient(90deg, transparent 7px, var(--accent) 7px 13px, transparent 13px); }
-.brush input::-moz-range-thumb { pointer-events: auto; width: 20px; height: 88px; cursor: ew-resize; border: 0; border-radius: 0; background: linear-gradient(90deg, transparent 7px, var(--accent) 7px 13px, transparent 13px); }
-.brush input:focus-visible { outline: none; }
-.brush input:focus-visible::-webkit-slider-thumb { box-shadow: inset 0 0 0 2px var(--fg); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font: inherit; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
-.chip:hover { border-color: var(--accent); color: var(--fg); }
-.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
-.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
-.btn { font: inherit; font-weight: 600; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--sunken); color: var(--fg); cursor: pointer; }
-.btn:hover { border-color: var(--accent); }
-.hint { font-size: 0.78rem; color: var(--faint); margin: 0; }
-.results { display: grid; gap: 18px; min-width: 0; }
-.tablewrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; color: var(--muted); font-weight: 400; }
-thead th { font-size: 0.75rem; letter-spacing: 0.04em; color: var(--faint); font-weight: 600; }
-td.num { font-family: var(--f-num); }
-@media (max-width: 520px) { th, td { padding: 7px 6px; } table { font-size: 0.82rem; } }
+__UI_CSS__
 @media (max-width: 430px) { th, td { padding: 6px 4px; } table { font-size: 0.76rem; } #kpi th[scope=row], #cmp th[scope=row] { white-space: normal; min-width: 64px; } #cmp th:nth-child(5), #cmp td:nth-child(5) { display: none; } #valTable td small { font-size: 0.7rem; } }
-.pos { color: var(--good); } .neg { color: var(--bad); }
-.key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-.chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 8px; }
-.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i { width: 14px; height: 2px; display: inline-block; }
-.legend i.box { height: 10px; width: 12px; border-radius: 2px; }
-.cv { position: relative; width: 100%; height: 260px; }
-.cv.short { height: 180px; }
-.cv.spark { height: 150px; }
-.cv canvas { width: 100%; height: 100%; display: block; touch-action: pan-y; }
-.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 0.78rem; box-shadow: 0 4px 14px rgba(0,0,0,0.12); white-space: nowrap; z-index: 3; }
-.tip .d { color: var(--faint); font-family: var(--f-num); margin-bottom: 2px; }
-.tip .r { display: flex; justify-content: space-between; gap: 12px; }
-.tip .r b { font-family: var(--f-num); font-weight: 500; }
-.log { max-height: 420px; overflow-y: auto; border-top: 1px solid var(--line); }
-.ev { display: grid; grid-template-columns: 92px 78px 1fr; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: 0.85rem; align-items: baseline; }
-.ev .d { font-family: var(--f-num); color: var(--muted); }
-.ev .t { font-size: 0.72rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; justify-self: start; }
-.t.exit { color: var(--bad); background: var(--bad-bg); }
-.t.reentry { color: var(--good); background: var(--good-bg); }
-.t.staged { color: var(--warn); background: var(--warn-bg); }
-.t.tax, .t.year, .t.harvest { color: var(--muted); background: var(--sunken); }
-.ev .m { min-width: 0; overflow-wrap: anywhere; }
-.t.down { color: var(--bad); background: var(--bad-bg); } .t.up { color: var(--good); background: var(--good-bg); }
-.how { margin: 0 0 12px; padding-left: 1.4em; display: grid; gap: 8px; max-width: 80ch; color: var(--muted); }
-.how b { color: var(--fg); font-weight: 600; }
-.fn { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--sunken); }
-.fn summary { cursor: pointer; font-weight: 600; }
-.fn h3 { font-size: 0.9rem; margin: 14px 0 6px; }
-.fn ol { margin: 0; padding-left: 1.6em; }
-.fn li { margin: 0 0 10px; line-height: 1.55; scroll-margin-top: 16px; }
-.fn li.on, .fn li:target { background: var(--warn-bg); border-radius: 4px; }
-.fn li b { display: block; }
-.fn li span { display: block; color: var(--muted); font-size: 0.86rem; }
-.fn li span em { font-style: normal; font-weight: 600; color: var(--fg); }
-.sigs sup a { text-decoration: none; font-size: 0.7rem; margin-left: 2px; color: var(--accent, var(--fg)); }
-.sigs th[scope=row] { text-align: left; white-space: normal; font-weight: 500; } .sigs td:nth-child(3) { color: var(--muted); } #axTable th[scope=row] { white-space: nowrap; }
-.sigs th { text-align: left; }
-.sigs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-@media (max-width: 860px) { .sigs { grid-template-columns: 1fr; } }
-@media (max-width: 520px) { #axTable th:nth-child(3), #axTable td:nth-child(3) { display: none; } }
-.st { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
-.st.good { color: var(--good); background: var(--good-bg); } .st.warn { color: var(--warn); background: var(--warn-bg); } .st.bad { color: var(--bad); background: var(--bad-bg); } .st.mid { color: var(--muted); background: var(--sunken); }
-@media (max-width: 520px) { .ev { grid-template-columns: 84px 1fr; } .ev .m { grid-column: 1 / -1; } }
-details summary { cursor: pointer; font-weight: 600; }
-details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
 .now { display: grid; gap: 14px; }
 .next { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--sunken); border-left: 3px solid var(--accent); }
 .next b { display: block; margin-bottom: 2px; }
@@ -159,8 +35,9 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
     <p class="sub">평소에는 매주 QLD를 삽니다. 시장이 거칠어지는 신호가 둘 이상 겹치거나 신용·경기 경보가 켜지면 QLD를 모두 팔아 SGOV(단기 국채)로 피했다가, 진정되면 전부 다시 QLD로 돌아갑니다. 연구에서 채택한 <b>최종 전략 v1</b>이며, 해외주식 양도세(선입선출, 연 250만원 공제, 22%), 원/달러 환율, 수수료, 연말 하베스팅을 모두 반영합니다.</p>
     <p class="sub" style="margin-top:4px"><a href="hold.html" style="color:var(--accent)">별도 비교: TQQQ·QQQ 반반 적립 vs QLD 적립 →</a></p>
   </header>
+  <nav class="jump" aria-label="바로 가기"><a href="#sNow">지금</a><a href="#sRules">규칙</a><a href="#sVal">검증</a><a href="#ctl">설정</a><a href="#sRes">결과</a><a href="#sCmp">전략 비교</a><a href="#sChart">차트</a><a href="#sLog">매매 기록</a></nav>
 
-  <section class="panel now" aria-live="polite">
+  <section class="panel now" id="sNow" aria-live="polite">
     <div class="chart-head"><h2>지금</h2><span class="hint">데이터 __LASTDATE__ 종가까지 · 페이지 갱신 __BUILT__</span></div>
     <div class="status">
       <span id="nowPill" class="pill in">QLD 보유</span>
@@ -193,7 +70,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel" id="sRules">
     <div class="chart-head"><h2>규칙</h2><span class="hint">매일 종가로 판단하고 다음 거래일 종가에 매매</span></div>
     <div class="rules">
       <div>
@@ -219,7 +96,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
     </details>
   </section>
 
-  <section class="panel">
+  <section class="panel" id="sVal">
     <div class="chart-head"><h2>검증 성적</h2><span class="hint">주 100만원 · 세후 · 모든 적립 구간 · 2026-10-16 데이터</span></div>
     <div class="tablewrap"><table id="valTable">
       <thead><tr><th scope="col">구간</th><th scope="col">단순 적립</th><th scope="col">최종 전략 v1</th><th scope="col">노출 조절<br><small>(참고)</small></th></tr></thead>
@@ -316,7 +193,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
     </form>
 
     <div class="results">
-      <section class="panel">
+      <section class="panel" id="sRes">
         <div class="chart-head"><h2>결과</h2><span class="hint" id="periodNote"></span></div>
         <div class="tablewrap"><table id="kpi">
           <thead><tr><th scope="col">지표</th><th scope="col"><span class="key" style="background:var(--s-strat)"></span><span id="sName">최종 전략 v1</span></th><th scope="col"><span class="key" style="background:var(--s-dca)"></span><span class="bname">단순 적립</span></th><th scope="col">차이</th></tr></thead>
@@ -324,14 +201,14 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
         <p class="hint" style="margin-top:8px">연환산 수익률은 적립 시점과 금액을 반영한 내부수익률(IRR)입니다. MDD는 입출금 영향을 뺀 시간가중 기준, 세후 청산가치는 마지막 날 전량 매도 후 세금까지 뺀 금액입니다.</p>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="sCmp">
         <div class="chart-head"><h2>전략 비교</h2><span class="hint">같은 기간·적립액·비용</span></div>
         <div class="tablewrap"><table id="cmp">
           <thead><tr><th scope="col">전략</th><th scope="col">IRR</th><th scope="col">세후 청산</th><th scope="col">MDD</th><th scope="col">원금 대비 최악</th><th scope="col">매매</th></tr></thead>
           <tbody></tbody></table></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="sChart">
         <div class="chart-head"><h2>평가액</h2>
           <div class="chips"><button type="button" class="chip" id="logBtn" aria-pressed="true">로그 축</button></div></div>
         <div class="legend"><span><i style="background:var(--s-strat)"></i><span class="sname">최종 전략 v1</span></span><span><i style="background:var(--s-dca)"></i><span class="bname">단순 적립</span></span><span><i style="background:repeating-linear-gradient(90deg,var(--s-paid) 0 4px,transparent 4px 7px)"></i>납입 원금</span></div>
@@ -352,7 +229,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
         <div class="cv short" id="cvMacro"><canvas aria-label="매크로 경보 비율 차트" role="img"></canvas></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="sLog">
         <div class="chart-head"><h2>매매 기록</h2><span class="hint" id="logCount"></span></div>
         <div class="chips" id="logFilter" style="margin-bottom:10px">
           <button type="button" class="chip" data-t="exit" aria-pressed="true">이탈</button>
@@ -382,20 +259,17 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
   </div>
 </div>
 
+<a class="mini" id="mini" href="#sRes" hidden></a>
 <script>
 const RAW = __DATA__;
 __ENGINE__
+__UI_JS__
 </script>
 <script>
 (function () {
   const D = prepData(RAW);
-  const $ = id => document.getElementById(id);
-  const toDate = d => new Date(d * 86400000);
-  const ymd = d => { const t = toDate(d); return `${t.getUTCFullYear()}.${String(t.getUTCMonth() + 1).padStart(2, '0')}.${String(t.getUTCDate()).padStart(2, '0')}`; };
-  const krw = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; if (a >= 1e8) return s + (a / 1e8).toFixed(a >= 1e10 ? 0 : 2) + '억원'; return s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
-  const pct = (x, d = 1) => (x * 100).toFixed(d) + '%';
+  const { $, toDate, ymd, krw, pct, axisKrw, css, makeChart, makeBrush, subLabel, watchMini } = UI;
   const MNOW = RAW.macroNow || [];
-  const axisKrw = v => { const t = v >= 1e8 ? v / 1e8 : v / 1e4; const s = Number.isInteger(Math.round(t * 100) / 100) ? Math.round(t).toLocaleString('ko-KR') : (Math.round(t * 10) / 10).toLocaleString('ko-KR'); return s + (v >= 1e8 ? '억' : '만'); };
 
   // month list
   const months = [];
@@ -456,114 +330,14 @@ __ENGINE__
   }
 
   // ---------- canvas chart ----------
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  function makeChart(host, opts) {
-    const cv = host.querySelector('canvas'); const ctx = cv.getContext('2d');
-    const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; host.appendChild(tip);
-    const st = { data: null, hover: -1 };
-    function geom() {
-      const w = host.clientWidth, h = host.clientHeight;
-      return { w, h, l: opts.padL || 58, r: 10, t: 10, b: 24 };
-    }
-    function draw() {
-      const g = geom(); const dpr = window.devicePixelRatio || 1;
-      cv.width = Math.round(g.w * dpr); cv.height = Math.round(g.h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, g.w, g.h);
-      const d = st.data; if (!d || d.x.length < 2) return;
-      const pw = g.w - g.l - g.r, ph = g.h - g.t - g.b;
-      const x0 = d.x[0], x1 = d.x[d.x.length - 1];
-      const X = v => g.l + (v - x0) / (x1 - x0) * pw;
-      let lo = Infinity, hi = -Infinity;
-      for (const s of d.series) for (const v of s.v) if (isFinite(v) && (!d.log || v > 0)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-      if (d.yMin != null) lo = d.yMin; if (d.yMax != null) hi = Math.max(hi, d.yMax);
-      for (const hl of d.hlines || []) hi = Math.max(hi, hl.y * 1.08);
-      if (!(hi > lo)) { hi = lo + 1; }
-      const tf = d.log ? Math.log10 : (v => v);
-      const L0 = tf(lo), L1 = tf(hi) + (d.log ? 0.04 : (hi - lo) * 0.04);
-      const Y = v => g.t + ph - (tf(v) - L0) / (L1 - L0) * ph;
-      const cFaint = css('--faint'), cLine = css('--line'), cMuted = css('--muted');
-      // bands
-      for (const b of d.bands || []) { ctx.fillStyle = css(b.color); ctx.fillRect(X(b.from), g.t, Math.max(1, X(b.to) - X(b.from)), ph); }
-      // y grid
-      ctx.font = '11px ' + css('--f-num'); ctx.fillStyle = cFaint; ctx.strokeStyle = cLine; ctx.lineWidth = 1; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-      let ticks = [];
-      if (d.log) { const e0 = Math.floor(L0), e1 = Math.ceil(L1); for (let e = e0; e <= e1; e++) for (const m of [1, 2, 5]) { const v = m * Math.pow(10, e); if (tf(v) >= L0 && tf(v) <= L1) ticks.push(v); }
-        if (ticks.length > 7) ticks = ticks.filter(v => Math.abs(Math.log10(v) % 1) < 1e-9 || Math.abs(Math.log10(v) % 1 - Math.log10(3)) < 0.0); if (ticks.length < 2) ticks = [lo, hi]; }
-      else { const span = hi - lo, raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(k => k * mag).find(s => span / s <= 5);
-        for (let v = Math.ceil(lo / step) * step; v <= L1 + 1e-12; v += step) ticks.push(v); }
-      for (const v of ticks) { const y = Y(v); ctx.beginPath(); ctx.moveTo(g.l, y + 0.5); ctx.lineTo(g.w - g.r, y + 0.5); ctx.stroke(); ctx.fillText(d.yfmt(v), g.l - 6, y); }
-      // x ticks: years
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      const ys = toDate(x0).getUTCFullYear(), ye = toDate(x1).getUTCFullYear(); const span = ye - ys;
-      const maxLab = Math.max(2, Math.floor(pw / 44));
-      const ticksX = [];
-      if ((x1 - x0) < 600) { const nm = Math.round((x1 - x0) / 30.4); const stepM = [1, 2, 3, 6].find(s => nm / s <= maxLab) || 6;
-        const t0 = toDate(x0); for (let k = 1; k <= nm + 1; k++) { const y = t0.getUTCFullYear(), mo = t0.getUTCMonth() + k; const dd = Date.UTC(y, mo, 1) / 86400000; const tm = toDate(dd).getUTCMonth(); if (tm % stepM) continue; if (dd < x0 || dd > x1) continue; ticksX.push([dd, tm === 0 ? String(toDate(dd).getUTCFullYear()) : (tm + 1) + '월']); } }
-      else { const stepY = [1, 2, 5, 10].find(s => span / s <= maxLab) || 10;
-        for (let y = Math.ceil(ys / stepY) * stepY; y <= ye; y += stepY) { const dd = Date.UTC(y, 0, 1) / 86400000; if (dd < x0 || dd > x1) continue; ticksX.push([dd, String(y)]); } }
-      for (const [dd, lab] of ticksX) { const x = X(dd); ctx.fillStyle = cFaint; ctx.fillText(lab, x, g.t + ph + 6); ctx.strokeStyle = cLine; ctx.beginPath(); ctx.moveTo(x + 0.5, g.t + ph); ctx.lineTo(x + 0.5, g.t + ph + 4); ctx.stroke(); }
-      // hlines
-      for (const hl of d.hlines || []) { const y = Y(hl.y); ctx.strokeStyle = css(hl.color); ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(g.l, y); ctx.lineTo(g.w - g.r, y); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = css(hl.color); ctx.textAlign = 'right'; ctx.textBaseline = hl.below ? 'top' : 'bottom'; ctx.fillText(hl.label, g.w - g.r - 2, hl.below ? y + 2 : y - 2); }
-      // zero/baseline
-      if (!d.log && lo <= 0 && hi >= 0) { ctx.strokeStyle = cMuted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(g.l, Y(0) + 0.5); ctx.lineTo(g.w - g.r, Y(0) + 0.5); ctx.stroke(); }
-      // series
-      ctx.save(); ctx.beginPath(); ctx.rect(g.l, g.t, pw, ph); ctx.clip();
-      for (const s of d.series) {
-        ctx.strokeStyle = css(s.color); ctx.lineWidth = s.w || 2; ctx.lineJoin = 'round'; ctx.setLineDash(s.dash || []);
-        ctx.beginPath(); let started = false;
-        for (let k = 0; k < d.x.length; k++) { const v = s.v[k]; if (!isFinite(v) || (d.log && v <= 0)) { started = false; continue; } const px = X(d.x[k]), py = Y(v); if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py); }
-        ctx.stroke(); ctx.setLineDash([]);
-      }
-      ctx.restore();
-      // hover
-      if (st.hover >= 0) { const k = st.hover, px = X(d.x[k]);
-        ctx.strokeStyle = cMuted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px + 0.5, g.t); ctx.lineTo(px + 0.5, g.t + ph); ctx.stroke();
-        for (const s of d.series) { const v = s.v[k]; if (!isFinite(v) || (d.log && v <= 0)) continue; ctx.fillStyle = css(s.color); ctx.strokeStyle = css('--surface'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, Y(v), 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
-        tip.innerHTML = `<div class="d">${ymd(d.x[k])}</div>` + d.series.filter(s => s.name).map(s => `<div class="r"><span><span class="key" style="background:${css(s.color)}"></span>${s.name}</span><b>${d.tfmt(s.v[k])}</b></div>`).join('') + (d.extra ? d.extra(k) : '');
-        tip.hidden = false; const tw = tip.offsetWidth; let left = px + 12; if (left + tw > g.w) left = px - tw - 12; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = (g.t + 4) + 'px';
-      } else tip.hidden = true;
-      st.geom = { g, X, x0, x1, pw };
-    }
-    function pick(ev) {
-      const d = st.data, gm = st.geom; if (!d || !gm) return;
-      const rect = cv.getBoundingClientRect(); const mx = ev.clientX - rect.left;
-      if (mx < gm.g.l || mx > gm.g.w - gm.g.r) { st.hover = -1; draw(); return; }
-      const xv = gm.x0 + (mx - gm.g.l) / gm.pw * (gm.x1 - gm.x0);
-      let lo = 0, hi = d.x.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (d.x[m] < xv) lo = m + 1; else hi = m; }
-      if (lo > 0 && Math.abs(d.x[lo - 1] - xv) < Math.abs(d.x[lo] - xv)) lo--;
-      st.hover = lo; draw();
-    }
-    cv.addEventListener('pointermove', pick); cv.addEventListener('pointerdown', pick);
-    cv.addEventListener('pointerleave', () => { st.hover = -1; draw(); });
-    new ResizeObserver(() => draw()).observe(host);
-    return { set(data) { st.data = data; st.hover = -1; draw(); }, draw };
-  }
   const chV = makeChart($('cvValue'), { padL: 64 }), chD = makeChart($('cvDD'), { padL: 52 }), chVol = makeChart($('cvVol'), { padL: 52 }), chMac = makeChart($('cvMacro'), { padL: 52 }), chSpark = makeChart($('cvSpark'), { padL: 48 });
   const votesAt = (p, i) => axesAt(D, p, i).reduce((s, v) => s + v, 0);
   let logScale = true;
-  $('logBtn').addEventListener('click', e => { logScale = !logScale; e.currentTarget.setAttribute('aria-pressed', String(logScale)); render(); });
+  let valCfg = null;
+  $('logBtn').addEventListener('click', e => { logScale = !logScale; e.currentTarget.setAttribute('aria-pressed', String(logScale)); if (valCfg) chV.set(Object.assign(valCfg, { log: logScale })); });
 
   // ---------- period brush ----------
-  const brushHost = $('brush'), bcv = brushHost.querySelector('canvas'), bctx = bcv.getContext('2d');
-  const mPx = months.map(o => D.px[o.i1]);
-  function drawBrush() {
-    const w = brushHost.clientWidth, h = brushHost.clientHeight, dpr = window.devicePixelRatio || 1; if (!w) return;
-    bcv.width = Math.round(w * dpr); bcv.height = Math.round(h * dpr); bctx.setTransform(dpr, 0, 0, dpr, 0, 0); bctx.clearRect(0, 0, w, h);
-    const M = months.length - 1, tw = 20, X = k => tw / 2 + k / M * (w - tw);
-    const lo = Math.log10(Math.min(...mPx)), hi = Math.log10(Math.max(...mPx)), Y = v => 8 + (1 - (Math.log10(v) - lo) / (hi - lo)) * (h - 26);
-    const a = +rS.value, b = +rE.value;
-    const path = (k0, k1) => { bctx.beginPath(); for (let k = k0; k <= k1; k++) { const x = X(k), y = Y(mPx[k]); k === k0 ? bctx.moveTo(x, y) : bctx.lineTo(x, y); } };
-    // full series faint
-    path(0, M); bctx.strokeStyle = css('--faint'); bctx.lineWidth = 1.25; bctx.stroke();
-    // selected area + line
-    path(a, b); bctx.lineTo(X(b), h - 18); bctx.lineTo(X(a), h - 18); bctx.closePath(); bctx.fillStyle = css('--sel-fill'); bctx.fill();
-    path(a, b); bctx.strokeStyle = css('--accent'); bctx.lineWidth = 2; bctx.stroke();
-    // year labels
-    bctx.font = '10px ' + css('--f-num'); bctx.fillStyle = css('--faint'); bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
-    const step = w < 360 ? 10 : 5;
-    months.forEach((o, k) => { if (o.m === 1 && o.y % step === 0) bctx.fillText(String(o.y), X(k), h - 3); });
-  }
-  new ResizeObserver(drawBrush).observe(brushHost);
+  const drawBrush = makeBrush($('brush'), months, months.map(o => D.px[o.i1]), rS, rE);
 
   // ---------- signal footnotes ----------
   const AX_NOTE = [
@@ -672,10 +446,16 @@ __ENGINE__
   }
 
   // ---------- strategy comparison ----------
-  function renderCompare(i0, i1) {
-    const base = baseParams();
-    const rows = [['final', '최종 전략 v1'], ['tech', '기술 4축만'], ['kelly', '노출 조절 (참고)']].map(([k, n]) => { const r = runBT(D, i0, i1, k === 'final' ? Object.assign({}, DEFAULTS, base, CHAMP, { strategy: true }) : paramsFor(k, base), false); r.trades = k === 'kelly' ? r.nReb : r.exits; return [n, r]; });
-    const B = runBT(D, i0, i1, Object.assign({}, DEFAULTS, base, { strategy: false }), false); B.trades = 0; rows.push([baseName(base), B]);
+  // 같은 설정인지: 키 순서와 상관없이 값으로 비교 (화면 계산 결과를 비교 표에 재사용할 때)
+  const sameParams = (a, b) => { const ks = new Set([...Object.keys(a), ...Object.keys(b)]); ks.delete('_rule');
+    for (const k of ks) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) return false; return true; };
+  let cmpKey = '';
+  function renderCompare(i0, i1, cur) {
+    const base = baseParams(), key = JSON.stringify([i0, i1, base, techParams()]);
+    if (key === cmpKey) return; cmpKey = key;
+    const run = q => sameParams(q, cur.p) ? Object.assign({}, cur.S) : runBT(D, i0, i1, q, false);
+    const rows = [['final', '최종 전략 v1'], ['tech', '기술 4축만'], ['kelly', '노출 조절 (참고)']].map(([k, n]) => { const r = run(k === 'final' ? Object.assign({}, DEFAULTS, base, CHAMP, { strategy: true }) : paramsFor(k, base)); r.trades = k === 'kelly' ? r.nReb : r.exits; return [n, r]; });
+    const B = Object.assign({}, cur.B); B.trades = 0; rows.push([baseName(base), B]);
     const best = Math.max(...rows.map(r => r[1].irr));
     $('cmp').querySelector('tbody').innerHTML = rows.map(([n, r]) => `<tr><th scope="row">${n}</th><td class="num${r.irr === best ? ' pos' : ''}">${pct(r.irr)}</td><td class="num">${krw(r.finalAfter)}</td><td class="num">${pct(r.mddTwr, 0)}</td><td class="num">${pct(r.worstVsPaid, 0)}</td><td class="num">${r.trades}회</td></tr>`).join('');
   }
@@ -696,7 +476,7 @@ __ENGINE__
   function row(name, a, b, fmt, diff, better) {
     let dtxt = '', cls = '';
     if (diff != null) { const dv = diff(a, b); dtxt = dv.txt; if (better) cls = dv.v === 0 ? '' : ((dv.v > 0) === (better === 'up') ? 'pos' : 'neg'); }
-    return `<tr><th scope="row">${name}</th><td class="num">${fmt(a)}</td><td class="num">${fmt(b)}</td><td class="num ${cls}">${dtxt}</td></tr>`;
+    return `<tr><th scope="row">${subLabel(name)}</th><td class="num">${fmt(a)}</td><td class="num">${fmt(b)}</td><td class="num ${cls}">${dtxt}</td></tr>`;
   }
   const dPct = (a, b) => ({ v: a - b, txt: ((a - b) >= 0 ? '+' : '−') + Math.abs((a - b) * 100).toFixed(1) + '%p' });
   const dKrw = (a, b) => ({ v: a - b, txt: ((a - b) >= 0 ? '+' : '') + krw(a - b) });
@@ -712,6 +492,8 @@ __ENGINE__
     const S = runBT(D, i0, i1, p, true), B = runBT(D, i0, i1, Object.assign({}, p, { strategy: false }), false);
     last = { S, B, i0, i1, p };
     const yrs = (D.day[i1] - D.day[i0]) / 365.25, KEL = p._rule === 'kelly';
+    $('mini').innerHTML = `<span><b>${NAMES[p._rule]}</b> <span class="num">연 ${pct(S.irr)} · MDD ${pct(S.mddTwr, 0)} · ${krw(S.finalAfter)}</span></span>`
+      + `<span><b>${baseName(p)}</b> <span class="num">연 ${pct(B.irr)} · MDD ${pct(B.mddTwr, 0)} · ${krw(B.finalAfter)}</span></span>`;
     $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])} · ${yrs.toFixed(1)}년 · 납입 ${krw(S.contributed)}`;
     $('kpi').querySelector('tbody').innerHTML = [
       row('세후 청산가치', S.finalAfter, B.finalAfter, krw, dKrw, 'up'),
@@ -725,8 +507,9 @@ __ENGINE__
     ].join('');
     const idx = []; for (let i = i0; i <= i1; i++) if (i === i1 || D.week[i + 1] !== D.week[i]) idx.push(i);
     const x = idx.map(i => D.day[i]), pickA = arr => idx.map(i => arr[i - i0]), nm = NAMES[p._rule];
-    chV.set({ x, log: logScale, yfmt: axisKrw, tfmt: krw,
-      series: [{ name: '납입 원금', color: '--s-paid', v: pickA(S.contr), dash: [5, 4], w: 1.5 }, { name: baseName(p), color: '--s-dca', v: pickA(B.vals) }, { name: nm, color: '--s-strat', v: pickA(S.vals) }] });
+    valCfg = { x, log: logScale, yfmt: axisKrw, tfmt: krw,
+      series: [{ name: '납입 원금', color: '--s-paid', v: pickA(S.contr), dash: [5, 4], w: 1.5 }, { name: baseName(p), color: '--s-dca', v: pickA(B.vals) }, { name: nm, color: '--s-strat', v: pickA(S.vals) }] };
+    chV.set(valCfg);
     const ddOf = tw => { let pk = 0; return Array.from(tw, v => { pk = Math.max(pk, v); return v / pk - 1; }); };
     chD.set({ x, log: false, yMax: 0, yfmt: v => Math.round(v * 100) + '%', tfmt: v => pct(v, 1),
       series: [{ name: baseName(p), color: '--s-dca', v: pickA(ddOf(B.twr)) }, { name: nm, color: '--s-strat', v: pickA(ddOf(S.twr)) }] });
@@ -747,8 +530,10 @@ __ENGINE__
     chMac.set({ x, log: false, yMin: 0, yMax: 1, yfmt: v => Math.round(v * 100) + '%', tfmt: v => isFinite(v) ? pct(v, 0) : '–', bands,
       hlines: [{ y: p._rule === 'final' ? p.macroTh : 0.5, label: `이탈 ${Math.round((p._rule === 'final' ? p.macroTh : 0.5) * 100)}%`, color: '--bad' }],
       series: [{ name: '매크로 경보 비율', color: '--s-dca', v: idx.map(i => D.ms[i]), w: 1.5 }] });
-    renderLog(); renderCompare(i0, i1);
+    clearTimeout(lateTimer); lateTimer = setTimeout(() => { renderLog(); renderCompare(i0, i1, last); }, 0);
   }
+  let lateTimer = 0;
+  watchMini($('ctl'), $('sRes'), $('mini'));
 
   let timer = 0; const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 60); };
   $('ctl').addEventListener('input', schedule); $('ctl').addEventListener('change', schedule);
