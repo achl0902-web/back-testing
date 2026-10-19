@@ -1,33 +1,13 @@
 {
  "date": "2026-10-16",
- "kelly": {
-  "target": 2.5,
-  "mix": [
-   0.75,
-   0.25,
-   0
-  ],
-  "hold": 2.34,
-  "holdMix": [
-   0.669,
-   0.331,
-   0
-  ],
-  "band": 0.5,
-  "act": false,
-  "sigma": 0.1858,
-  "mu": 0.1366,
-  "contribMix": [
-   0.5,
-   0.5,
-   0
-  ],
-  "lastTrade": {
-   "date": "2025-05-09",
-   "msg": "노출 0.00배 → 2.00배 (20일 변동성 29%) · TQQQ 50% · QQQ 50% · SGOV 0%"
-  }
- },
+ "strategy": "final",
  "regime": "in",
+ "next": "in",
+ "action": null,
+ "lastTrade": {
+  "date": "2025-04-28",
+  "type": "reentry"
+ },
  "votes": 0,
  "axes": [
   0,
@@ -47,20 +27,16 @@
  "ndx": 29187.55,
  "ma20": 30524.21,
  "rules": {
-  "kelly": {
-   "name": "변동성 계단 (TQQQ·QQQ·SGOV)",
-   "regime": "in"
-  },
   "final": {
-   "name": "이전 최종 (기술 + 매크로 이탈)",
+   "name": "최종 전략 v1 (기술 4축 + 매크로 경보)",
    "regime": "in"
   },
   "tech": {
    "name": "기술 4축만",
    "regime": "in"
   },
-  "vol": {
-   "name": "이전 방어형",
+  "kelly": {
+   "name": "노출 조절 (참고)",
    "regime": "in"
   }
  },
@@ -81,9 +57,11 @@
   "cugold": -1.9
  },
  "macro_ok": true,
- "built": "2026-10-19 09:12 KST",
+ "built": "2026-10-19 09:33 KST",
  "sources": [
-  "github-mirrors"
+  "github-mirrors",
+  "yahoo(5/5)"
  ],
- "added_rows": 1
+ "added_rows": 1,
+ "title": "[QLD] 2026-10-16 알림 기준 변경: 최종 전략 v1 · QLD 보유"
 }
