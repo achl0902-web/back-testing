@@ -1,0 +1,34 @@
+name: history-fetch
+
+# T08: one-off download of pre-1986 S&P 500 / Nasdaq Composite daily closes and Moody's yields for the research out-of-sample check.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: [".github/workflows/history-fetch.yml", "qld/scripts/fetch_history.py"]
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install data library
+        run: pip install --quiet yfinance pandas
+      - name: Download history
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python3 qld/scripts/fetch_history.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qld/research/data/hist
+          git diff --cached --quiet || git commit -m "history data: pre-1986 S&P 500, Nasdaq Composite, Moody's yields"
+          git pull --rebase -q origin main || true
+          git push || echo "push skipped"
