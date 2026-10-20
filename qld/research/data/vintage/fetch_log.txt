@@ -1,3 +1,6 @@
 ICSA: kept
 NFCIRISK: failed HTTPError HTTP Error 504: Gateway Time-out
 STLFSI4: kept
+NFCIRISK 2011: failed HTTPError HTTP Error 400: Bad Request
+NFCIRISK 2026: failed HTTPError HTTP Error 400: Bad Request
+NFCIRISK (by year): 704 rows 2012-07-06..2025-12-26 · first vintage 2012-07-11
