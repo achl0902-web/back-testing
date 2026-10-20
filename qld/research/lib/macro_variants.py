@@ -2,12 +2,13 @@
 """T09: macro alarm share under alternative data handling -> data/variants/T09_<v>.json ({"NDX": [...], "SPX2": [...]}).
   V0 same files (recomputed)   V1 fixed denominator (9 indicators present 1986~2026)   V2 without post-hoc indices (STLFSI4, NFCIRISK)
   V3 first releases (ALFRED) for ICSA, NFCIRISK, STLFSI4 from data/vintage/<S>_first.csv
+  R8 (S20) real-time macro: 8 indicators that existed in 1986 and are not back-filled indices (credit 3, curve, rate cuts, claims first releases, Sahm, dollar)
 Run from qld/research: python3 lib/macro_variants.py V1 [V2 ...]"""
 import json, os, shutil, sys, tempfile
 import numpy as np, pandas as pd
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__))); Q = os.path.dirname(R)
 sys.path.insert(0, os.path.join(Q, 'scripts')); import macro
-DROP = {'V0': [], 'V1': ['STLFSI4', 'TEDRATE', 'VXVCLS', 'Y_RUT', 'Y_COPPER', 'Y_GOLD'], 'V2': ['STLFSI4', 'NFCIRISK'], 'V3': []}
+DROP = {'R8': ['STLFSI4', 'NFCIRISK', 'TEDRATE', 'VIXCLS', 'VXVCLS', 'Y_RUT', 'Y_COPPER', 'Y_GOLD'], 'V0': [], 'V1': ['STLFSI4', 'TEDRATE', 'VXVCLS', 'Y_RUT', 'Y_COPPER', 'Y_GOLD'], 'V2': ['STLFSI4', 'NFCIRISK'], 'V3': []}
 def dates(f):
     r = json.load(open(os.path.join(R, 'data', f))); d = np.cumsum([r['d0']] + r['dd'])
     return pd.to_datetime(d, unit='D'), r
@@ -15,8 +16,8 @@ for v in sys.argv[1:]:
     tmp = tempfile.mkdtemp(prefix=f't09{v}-'); src = os.path.join(Q, 'data', 'macro')
     for fn in os.listdir(src):
         if fn.endswith('.csv') and fn[:-4] not in DROP[v]: shutil.copy(os.path.join(src, fn), os.path.join(tmp, fn))
-    if v == 'V3':
-        for s in ['ICSA', 'NFCIRISK', 'STLFSI4']:
+    if v in ('V3', 'R8'):
+        for s in (['ICSA'] if v == 'R8' else ['ICSA', 'NFCIRISK', 'STLFSI4']):
             p = os.path.join(R, 'data', 'vintage', f'{s}_first.csv')
             if not os.path.exists(p): sys.exit(f'{p} 없음 (history-fetch 워크플로 필요)')
             # splice: first releases where a vintage exists (ICSA 2009~, STLFSI4 2022~, ...), today's values before that
@@ -30,6 +31,8 @@ for v in sys.argv[1:]:
         idx, raw = dates(f)
         _, z, share = macro.compute(tmp, idx)
         out[name] = [None if np.isnan(x) else round(float(x), 3) for x in share.values]
+        if v == 'R8':  # S20: also the per-indicator z-scores (group rules, credit axis)
+            out[name + '_z'] = {k: [None if np.isnan(x) else round(float(x), 3) for x in z[k].values] for k in z.columns if z[k].notna().any()}
         base = np.array([np.nan if x is None else x for x in raw['ms']], dtype=float)
         both = ~np.isnan(base) & ~np.isnan(share.values)
         n = z.notna().sum(axis=1)
