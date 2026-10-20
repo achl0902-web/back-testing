@@ -192,9 +192,6 @@ try:
 except Exception as e:
     print('etf series unavailable:', type(e).__name__, e, file=sys.stderr)
 
-data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, macroNow=macro_now, etf=etf)
-data_js = json.dumps({k: v for k, v in data.items() if k != 'etf'}, separators=(',', ':'))
-hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix')}, separators=(',', ':'))
 last = iso(days[-1])
 y, m, d_ = last.split('-')
 
@@ -221,6 +218,13 @@ def expected_session(now_utc):
         d -= dt.timedelta(days=1)
         while not is_session(d): d -= dt.timedelta(days=1)
     return d
+# weekDone: no NYSE session follows the last close in its (Sat..Fri) week, so the weekly RSI bar may close on it
+nxt = dt.date.fromisoformat(last) + dt.timedelta(days=1)
+while not is_session(nxt): nxt += dt.timedelta(days=1)
+week_done = (days[-1] + 5) // 7 != ((nxt - dt.date(1970, 1, 1)).days + 5) // 7
+data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, weekDone=week_done, macroNow=macro_now, etf=etf)
+data_js = json.dumps({k: v for k, v in data.items() if k != 'etf'}, separators=(',', ':'))
+hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix')}, separators=(',', ':'))
 now_utc = dt.datetime.now(dt.timezone.utc)
 exp = expected_session(now_utc)
 missing = []
@@ -282,7 +286,7 @@ const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j
   px:D.px[j],ma20:D.ma[20][j],rules:{{}}}};
 // today's regime, and tomorrow's: replay one copied day so the engine executes today's signal at the next close
 const R=E.runBT(D,i0,j,P,true);
-const R2raw=Object.assign({{}},RAW,{{dd:RAW.dd.concat([1]),px:RAW.px.concat([RAW.px[j]]),rq:RAW.rq.concat([0]),tb:RAW.tb.concat([RAW.tb[j]]),fx:RAW.fx.concat([RAW.fx[j]]),
+const R2raw=Object.assign({{}},RAW,{{dd:RAW.dd.concat([RAW.weekDone===false?1:7]),weekDone:true,px:RAW.px.concat([RAW.px[j]]),rq:RAW.rq.concat([0]),tb:RAW.tb.concat([RAW.tb[j]]),fx:RAW.fx.concat([RAW.fx[j]]),
   vix:RAW.vix?RAW.vix.concat([RAW.vix[j]]):RAW.vix,ms:RAW.ms?RAW.ms.concat([RAW.ms[j]]):RAW.ms}});
 const D2=E.prepData(R2raw), R2=E.runBT(D2,i0,D2.n-1,P,true);
 const ev=R2.log.filter(x=>(x.type==='exit'||x.type==='reentry')&&x.d===D2.day[D2.n-1]).pop()||null;

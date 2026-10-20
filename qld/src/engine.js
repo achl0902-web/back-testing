@@ -43,7 +43,9 @@ function prepData(raw, lev, er, spread) {
   }
   const wkEnd = [];
   { const wk = new Int32Array(n); for (let i = 0; i < n; i++) wk[i] = Math.floor((day[i] + 5) / 7);
-    for (let i = 0; i < n; i++) if (i === n - 1 || wk[i + 1] !== wk[i]) wkEnd.push(i); }
+    // the last bar closes its week only if no session follows this week (raw.weekDone from the build); mid-week the live
+    // signal must use the last completed week, as the backtest does
+    for (let i = 0; i < n; i++) if (i === n - 1 ? raw.weekDone !== false : wk[i + 1] !== wk[i]) wkEnd.push(i); }
   const wpx = wkEnd.map(i => raw.px[i]), wr = new Float64Array(wpx.length).fill(NaN);
   { let u = 0, d = 0; for (let k = 1; k < wpx.length; k++) { const c = wpx[k] - wpx[k - 1], a = Math.max(c, 0), b = Math.max(-c, 0);
       if (k === 1) { u = a; d = b; } else { u += (a - u) / 14; d += (b - d) / 14; } if (k >= 14) wr[k] = d === 0 ? 100 : 100 - 100 / (1 + u / d); } }
