@@ -1,6 +1,7 @@
 // S09 공통: 챔피언(final) 규칙 복제 상태기계 + 행동 훅. 인덱스 j는 j일 종가까지만 사용.
 // opt: exitVotes(j,base)->필요 표수, extraExit(j)->bool, enterOk(j,st)->bool(추가 조건), timeout{N,ok(j,st),hold}
 // S10 추가(기본값이면 동작 동일): axes(j)->켜진 축 수 대체, timeout.hold===0 이면 타임아웃 복귀 뒤 40일 보유 없음
+// S19 추가(기본값이면 동작 동일): macro(j)->bool 매크로 경보 발동일 대체(복귀 후 보호기간 무시 규칙은 그대로 적용)
 const E = require('../../src/engine.js');
 const P0 = E.DEFAULTS;
 function axes(D, j) {
@@ -24,14 +25,14 @@ function run(D, opt = {}) {
   if (SH) {
     const sj = j => (((j - SH) % n) + n) % n, o = opt; opt = Object.assign({}, o);
     if (o.axes) opt.axes = j => axes(D, j) + (o.axes(sj(j)) - axes(D, sj(j)));
-    for (const k of ['exitVotes', 'exitVeto', 'extraExit', 'enterOk']) if (o[k]) opt[k] = (j, x) => o[k](sj(j), x);
+    for (const k of ['exitVotes', 'exitVeto', 'extraExit', 'enterOk', 'macro']) if (o[k]) opt[k] = (j, x) => o[k](sj(j), x);
     if (o.timeout) opt.timeout = Object.assign({}, o.timeout, { ok: (j, st) => o.timeout.ok(sj(j), st) });
   }
   let out = false, outSince = -1, inSince = -1e9;
   const HOLD = opt.hold || 39; // 엔진 final과 일치(검증: 점수 0.00, 이탈 32)
   for (let j = 1; j < n; j++) {
     const a = opt.axes ? opt.axes(j) : axes(D, j);
-    const macro = !!E.macroOnset(D, P0, j) && !(opt.macroHold !== false && j - inSince <= HOLD);
+    const macro = !!(opt.macro ? opt.macro(j) : E.macroOnset(D, P0, j)) && !(opt.macroHold !== false && j - inSince <= HOLD);
     if (!out) {
       let need = (j - inSince <= HOLD) ? 3 : 2;
       if (opt.exitVotes) need = opt.exitVotes(j, need);
