@@ -192,9 +192,6 @@ try:
 except Exception as e:
     print('etf series unavailable:', type(e).__name__, e, file=sys.stderr)
 
-data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, macroNow=macro_now, etf=etf)
-data_js = json.dumps({k: v for k, v in data.items() if k != 'etf'}, separators=(',', ':'))
-hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix')}, separators=(',', ':'))
 last = iso(days[-1])
 y, m, d_ = last.split('-')
 
@@ -238,6 +235,19 @@ macro_last = {k: file_last(k) for k in ['BAA10Y', 'AAA10Y', 'T10Y3M', 'DFF', 'ST
 fresh = dict(data_last=last, expected_last=exp.isoformat(), stale=STALE, missing_sessions=missing[:10], series_last=series_last,
              series_source=SRC, macro_last=macro_last, checked=now_utc.strftime('%Y-%m-%dT%H:%MZ'))
 if STALE: print(f'STALE: data ends {last}, last NYSE session {exp} (missing {len(missing)})', file=sys.stderr)
+# weekDone: no more NYSE sessions this (Sat..Fri) week after the last close, so the engine may close the weekly RSI bar
+nxt = dt.date.fromisoformat(last) + dt.timedelta(days=1)
+while not is_session(nxt): nxt += dt.timedelta(days=1)
+week_done = (days[-1] + 5) // 7 != ((nxt - dt.date(1970, 1, 1)).days + 5) // 7
+# 10-year Treasury yield per trading day (forward-filled) for the bond-park comparison rule
+y10, y_last = [], None
+with open(P('data', 'macro', 'DGS10.csv')) as fh:
+    gs = {r[0][:10]: float(r[1]) / 100 for r in csv.reader(fh) if r and r[1] not in ('', '.', 'DGS10')}
+for n in days:
+    y_last = gs.get(iso(n), y_last); y10.append(y_last)
+data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, y10=y10, weekDone=week_done, macroNow=macro_now, etf=etf)
+data_js = json.dumps({k: v for k, v in data.items() if k != 'etf'}, separators=(',', ':'))
+hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix', 'y10')}, separators=(',', ':'))
 RESEARCH_ONLY = '--research' in sys.argv  # research/refresh_data.py: rebuild data only, never touch status.json or alert.md
 built = dt.datetime.now(KST).strftime('%Y-%m-%d %H:%M KST')
 eng = open(P('src', 'engine.js')).read()
@@ -272,22 +282,15 @@ js = os.path.join(tempfile.mkdtemp(), 'status.js')
 open(js, 'w').write(f"""
 const E=require({json.dumps(P('src','engine.js'))});
 const RAW={data_js};
-const D=E.prepData(RAW);
-const j=D.n-1; let i0=0; while(isNaN(D.rv[i0])) i0++;
 const P=Object.assign({{}},E.DEFAULTS,{{strategy:true}});
+// today's regime and the next close's trade come from the same engine function the page uses
+const A=E.nextAction(RAW,P), D=A.D, j=D.n-1; let i0=0; while(isNaN(D.rv[i0])) i0++;
 const ax=E.axesAt(D,P,j);
 const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j],rsiw:D.rsiw[j],expand:D.vols.rv10[j]/D.v60[j],
   axes:ax,votes:ax.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],
   macroOnset:E.macroOnset(D,P,j),reentry:ax.reduce((a,b)=>a+b,0)<=P.reMaxVotes&&D.px[j]>D.ma[20][j]&&D.vols.rv10[j]<D.v60[j],
   px:D.px[j],ma20:D.ma[20][j],rules:{{}}}};
-// today's regime, and tomorrow's: replay one copied day so the engine executes today's signal at the next close
-const R=E.runBT(D,i0,j,P,true);
-const R2raw=Object.assign({{}},RAW,{{dd:RAW.dd.concat([1]),px:RAW.px.concat([RAW.px[j]]),rq:RAW.rq.concat([0]),tb:RAW.tb.concat([RAW.tb[j]]),fx:RAW.fx.concat([RAW.fx[j]]),
-  vix:RAW.vix?RAW.vix.concat([RAW.vix[j]]):RAW.vix,ms:RAW.ms?RAW.ms.concat([RAW.ms[j]]):RAW.ms}});
-const D2=E.prepData(R2raw), R2=E.runBT(D2,i0,D2.n-1,P,true);
-const ev=R2.log.filter(x=>(x.type==='exit'||x.type==='reentry')&&x.d===D2.day[D2.n-1]).pop()||null;
-const lastEv=R.log.filter(x=>x.type==='exit'||x.type==='reentry').pop()||null;
-out.regime=R.regime; out.next=R2.regime; out.action=ev?{{type:ev.type,msg:ev.msg}}:null; out.lastTrade=lastEv?{{d:lastEv.d,type:lastEv.type}}:null;
+out.regime=A.regime; out.next=A.next; out.action=A.action?{{type:A.action.type,msg:A.action.msg}}:null; out.lastTrade=A.lastTrade?{{d:A.lastTrade.d,type:A.lastTrade.type}}:null;
 """ + ''.join(f"{{const R=E.runBT(D,i0,j,Object.assign({{strategy:true}},{cfg}),false);out.rules[{json.dumps(k)}]={{regime:R.regime}};}}\n" for k, (_, cfg) in RULES.items())
  + "console.log(JSON.stringify(out));\n")
 st = subprocess.run(['node', js], capture_output=True, text=True, timeout=600)
@@ -321,6 +324,9 @@ def save_research():
         print(f'research data: {last} ({len(px)} rows)', file=sys.stderr)
     else: print(f'research data kept: saved series is newer than {last}', file=sys.stderr)
 save_research()
+if added and '--offline' not in sys.argv and not RESEARCH_ONLY:
+    json.dump({k: data[k] for k in ('d0', 'dd', 'px', 'rq', 'tb', 'fx', 'vix')}, open(P('data', 'base.json'), 'w'), separators=(',', ':'))
+    print(f'base.json: +{added} rows to {last}', file=sys.stderr)
 if RESEARCH_ONLY:
     print(json.dumps(dict(date=last, stale=STALE, expected=fresh['expected_last']), ensure_ascii=False)); sys.exit(0)
 

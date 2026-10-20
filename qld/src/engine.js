@@ -1,5 +1,6 @@
 // QLD DCA + volatility-regime backtest engine (shared by grid search and web page)
 const ER3 = 0.0084; // TQQQ expense ratio
+const fmtKRW = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; return a >= 1e8 ? s + (a / 1e8).toFixed(2) + '억원' : s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
 function prepData(raw, lev, er, spread) {
   lev = lev || 2; er = (er == null ? 0.0095 : er); spread = (spread == null ? 0.005 : spread);
   const n = raw.px.length, day = new Int32Array(n);
@@ -43,7 +44,9 @@ function prepData(raw, lev, er, spread) {
   }
   const wkEnd = [];
   { const wk = new Int32Array(n); for (let i = 0; i < n; i++) wk[i] = Math.floor((day[i] + 5) / 7);
-    for (let i = 0; i < n; i++) if (i === n - 1 || wk[i + 1] !== wk[i]) wkEnd.push(i); }
+    // the last bar closes its week unless the build says more sessions follow this week (raw.weekDone === false):
+    // mid-week the live signal must use the last completed week, exactly as the backtest did on that weekday
+    for (let i = 0; i < n; i++) if (i === n - 1 ? raw.weekDone !== false : wk[i + 1] !== wk[i]) wkEnd.push(i); }
   const wpx = wkEnd.map(i => raw.px[i]), wr = new Float64Array(wpx.length).fill(NaN);
   { let u = 0, d = 0; for (let k = 1; k < wpx.length; k++) { const c = wpx[k] - wpx[k - 1], a = Math.max(c, 0), b = Math.max(-c, 0);
       if (k === 1) { u = a; d = b; } else { u += (a - u) / 14; d += (b - d) / 14; } if (k >= 14) wr[k] = d === 0 ? 100 : 100 - 100 / (1 + u / d); } }
@@ -171,7 +174,7 @@ function runBT(D, i0, i1, p, wantLog) {
     return 0;
   }
   const valKRW = i => (sharesOf(0) * LX[i] + sharesOf(1) * IX[i] + sharesOf(2) * D.lx3[i] + cash) * D.fx[i];
-  const fmt = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; return a >= 1e8 ? s + (a / 1e8).toFixed(2) + '억원' : s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
+  const fmt = fmtKRW;
   let prevVal = 0;
   for (let i = i0; i <= i1; i++) {
     const k = i - i0;
@@ -445,7 +448,7 @@ function mixBT(D, i0, i1, px, p) {
   const P = [px.hi, px.lo], LV = [p.levHi, p.levLo];
   const sh = [0, 0], basis = [0, 0]; // basis = total KRW cost of current shares
   const n1 = i1 - i0 + 1, vals = new Float64Array(n1), contr = new Float64Array(n1), twr = new Float64Array(n1), expo = new Float64Array(n1), wT = new Float64Array(n1), expoInv = new Float64Array(n1), cashW = new Float64Array(n1);
-  const fmtK = x => { const a = Math.abs(x), s = x < 0 ? '−' : ''; return a >= 1e8 ? s + (a / 1e8).toFixed(2) + '억원' : s + Math.round(a / 1e4).toLocaleString('ko-KR') + '만원'; };
+  const fmtK = fmtKRW;
   const flows = []; let stage = 0, lowNoted = false, nTrim = 0, nUp = 0, cash = 0, cashMax = 0, contributed = 0, prevVal = 0, fees = 0, realized = 0, taxesPaid = 0, nReb = 0;
   const log = [];
   const valUSD = i => sh[0] * P[0][i] + sh[1] * P[1][i] + cash;
@@ -581,6 +584,19 @@ function mixBT(D, i0, i1, px, p) {
     mddTwr: mddT, mddValue: mddV, worstVsPaid: worst, fees, nReb, nTrim, nUp, log, cashMax, cashEnd: cash, vals, contr, twr, expo, wT, expoInv, cashW };
 }
 
+// the next close's trade from the last day's signal: replay one copied day (the engine trades a signal at the next close).
+// The copy lands in the same week when more sessions follow (weekDone false), otherwise in the next week.
+function nextAction(raw, p) {
+  const last = a => a ? a.concat([a[a.length - 1]]) : a;
+  const D = prepData(raw); let i0 = 0; while (isNaN(D.rv[i0])) i0++;
+  const R = runBT(D, i0, D.n - 1, p, true);
+  const raw2 = Object.assign({}, raw, { dd: raw.dd.concat([raw.weekDone === false ? 1 : 7]), rq: raw.rq.concat([0]), weekDone: true });
+  for (const k of ['px', 'tb', 'fx', 'vix', 'ms', 'y10']) raw2[k] = last(raw[k]);
+  const D2 = prepData(raw2), R2 = runBT(D2, i0, D2.n - 1, p, true), t = D2.day[D2.n - 1];
+  const trade = e => e.type === 'exit' || e.type === 'reentry';
+  return { D, R, regime: R.regime, next: R2.regime, action: R2.log.filter(e => trade(e) && e.d === t).pop() || null, lastTrade: R.log.filter(trade).pop() || null };
+}
+
 function xirr(flows) {
   const t0 = flows[0][0];
   const f = r => { let s = 0; for (const [d, c] of flows) s += c / Math.pow(1 + r, (d - t0) / 365.25); return s; };
@@ -589,4 +605,4 @@ function xirr(flows) {
   return (lo + hi) / 2;
 }
 
-if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, mixBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };
+if (typeof module !== 'undefined') module.exports = { prepData, runBT, nextAction, holdBT, mixBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };

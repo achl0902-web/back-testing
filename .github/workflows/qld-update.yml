@@ -43,6 +43,10 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python3 qld/scripts/fetch_macro.py || echo "macro fetch failed, using stored series"
 
+      - name: Engine tests (pushes only, so a daily run never stalls on them)
+        if: github.event_name == 'push'
+        run: node --test qld/src/engine.test.js
+
       - name: Build QLD page with latest closes
         working-directory: qld
         run: python3 scripts/build.py
@@ -51,7 +55,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add qld/data/status.json qld/data/macro qld/research/data/ndx_ms.json
+          git add qld/data/status.json qld/data/base.json qld/data/macro qld/research/data/ndx_ms.json
           git diff --cached --quiet || git commit -m "qld status: $(python3 -c 'import json;print(json.load(open("qld/data/status.json"))["date"])')"
           git pull --rebase -q origin main || true
           git push || echo "push skipped"
