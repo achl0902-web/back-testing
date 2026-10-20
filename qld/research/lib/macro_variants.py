@@ -19,7 +19,12 @@ for v in sys.argv[1:]:
         for s in ['ICSA', 'NFCIRISK', 'STLFSI4']:
             p = os.path.join(R, 'data', 'vintage', f'{s}_first.csv')
             if not os.path.exists(p): sys.exit(f'{p} 없음 (history-fetch 워크플로 필요)')
-            shutil.copy(p, os.path.join(tmp, f'{s}.csv'))
+            # splice: first releases where a vintage exists (ICSA 2009~, STLFSI4 2022~, ...), today's values before that
+            cur = pd.read_csv(os.path.join(src, f'{s}.csv')); cur.columns = ['date', 'value']; cur['date'] = pd.to_datetime(cur['date'])
+            fr = pd.read_csv(p)[['date', 'value']]; fr['date'] = pd.to_datetime(fr['date'])
+            comb = pd.concat([cur[cur['date'] < fr['date'].min()], fr]).sort_values('date')
+            comb.to_csv(os.path.join(tmp, f'{s}.csv'), index=False, date_format='%Y-%m-%d')
+            print(f'  {s}: 최초 발표치 {fr["date"].min().date()}~ ({len(fr)}개), 그 이전은 현재 값')
     out = {}
     for name, f in [('NDX', 'ndx_ms.json'), ('SPX2', 'spx_ms.json')]:
         idx, raw = dates(f)
