@@ -45,7 +45,8 @@ function runner(cfg, base = false) {
   };
 }
 
-const slim = r => ({ irr: r.irr, mdd: r.mddValue, fin: r.finalAfter, exits: r.exits || 0, tax: r.taxesPaid || 0 });
+// mdd = time-weighted drawdown (cash flows removed) for every risk comparison; mddVal = account-value drawdown (grows with contributions), shown only
+const slim = r => ({ irr: r.irr, mdd: r.mddTwr == null ? NaN : r.mddTwr, mddVal: r.mddValue, fin: r.finalAfter, exits: r.exits || 0, tax: r.taxesPaid || 0 });
 
 // raw per-window results for every validation set + episodes + full run since 1999
 function evaluate(cfg, opts = {}) {
@@ -63,7 +64,7 @@ function evaluate(cfg, opts = {}) {
 function fileSig(f) { try { const s = fs.statSync(f); return s.size + ':' + s.mtimeMs; } catch { return 'none'; } }
 function cacheKey(kind, cfg) {
   const h = crypto.createHash('sha1');
-  h.update(kind); h.update(JSON.stringify({ money: cfg.money || { weekly: 700000 }, costMult: cfg.costMult || 1, startMonth: cfg.startMonth || 1, sim: cfg.sim || 'engine' }));
+  h.update(kind + '|v2-mddTwr'); h.update(JSON.stringify({ money: cfg.money || { weekly: 700000 }, costMult: cfg.costMult || 1, startMonth: cfg.startMonth || 1, sim: cfg.sim || 'engine' }));
   for (const f of ['data/ndx_ms.json', 'data/spx_ms.json', '../src/engine.js', 'lib/buyrules.js', 'lib/data.js']) h.update(fileSig(path.join(R, f)));
   if (kind === 'champ') h.update(JSON.stringify(champion()));
   return h.digest('hex').slice(0, 16);
@@ -95,7 +96,7 @@ function summarize(cand, cfg) {
     const v = { n: r.length, irrMed: med(irr), irrMin: Math.min(...irr), irrP10: q10(irr),
       dcaMed: med(dk.map(x => x.irr)), dcaMin: Math.min(...dk.map(x => x.irr)),
       champMed: med(ck.map(x => x.irr)), champMin: Math.min(...ck.map(x => x.irr)),
-      winVsDca: winD, winVsChamp: winC, mddMed: med(r.map(x => x.mdd)), dcaMddMed: med(dk.map(x => x.mdd)) };
+      winVsDca: winD, winVsChamp: winC, mddMed: med(r.map(x => x.mdd)), dcaMddMed: med(dk.map(x => x.mdd)), mddValMed: med(r.map(x => x.mddVal)), dcaMddValMed: med(dk.map(x => x.mddVal)) };
     v.dMed = v.irrMed - v.champMed; v.dMin = v.irrMin - v.champMin;
     s.sets[k] = v;
     (DISCOVERY.includes(k) ? comp.disc : comp.conf).push(100 * (v.dMed + 0.5 * v.dMin));
@@ -115,7 +116,7 @@ function printFull(name, s) {
   const L = [`■ ${name}`];
   L.push(`  단순 적립보다 높은 구간 ${pct(s.overall.winRateVsDca, 0)}% · 챔피언보다 높은 구간 ${pct(s.overall.winRateVsChamp, 0)}% · 1999년 이후 이탈 ${s.overall.exits1999}회 (챔피언 ${s.overall.champExits1999})`);
   for (const [k, v] of Object.entries(s.sets))
-    L.push(`  ${k.padEnd(7)} IRR 중앙 ${pct(v.irrMed)} (DCA ${pct(v.dcaMed)}, 챔피언 ${pct(v.champMed)}) · 최악 ${pct(v.irrMin)} (DCA ${pct(v.dcaMin)}, 챔피언 ${pct(v.champMin)}) · 하위10% ${pct(v.irrP10)} · MDD중앙 ${pct(v.mddMed, 0)} (DCA ${pct(v.dcaMddMed, 0)}) · 승 DCA ${v.winVsDca}/${v.n} 챔피언 ${v.winVsChamp}/${v.n}`);
+    L.push(`  ${k.padEnd(7)} IRR 중앙 ${pct(v.irrMed)} (DCA ${pct(v.dcaMed)}, 챔피언 ${pct(v.champMed)}) · 최악 ${pct(v.irrMin)} (DCA ${pct(v.dcaMin)}, 챔피언 ${pct(v.champMin)}) · 하위10% ${pct(v.irrP10)} · MDD중앙(시간가중) ${pct(v.mddMed, 0)} (DCA ${pct(v.dcaMddMed, 0)}) · 평가액 낙폭 ${pct(v.mddValMed, 0)} (DCA ${pct(v.dcaMddValMed, 0)}) · 승 DCA ${v.winVsDca}/${v.n} 챔피언 ${v.winVsChamp}/${v.n}`);
   if (Object.keys(s.episodes).length) L.push('  사례 (DCA 대비 / 챔피언 대비 %p): ' + Object.entries(s.episodes).map(([k, v]) => `${k} ${pct(v.vsDca)}/${pct(v.vsChamp)}`).join(' · '));
   return L.join('\n');
 }

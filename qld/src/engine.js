@@ -146,7 +146,7 @@ function runBT(D, i0, i1, p, wantLog) {
   function buy(a, usd, i) {
     usd = Math.min(usd, cash); if (usd <= 0) return 0;
     cash -= usd; fees += usd * p.fee * D.fx[i];
-    const sh = usd * (1 - p.fee) / px[a][i]; lots[a].push([sh, px[a][i] * D.fx[i]]); shTot[a] += sh; return usd;
+    const sh = usd * (1 - p.fee) / px[a][i]; lots[a].push([sh, usd * D.fx[i] / sh]); shTot[a] += sh; return usd; // basis = KRW paid incl. the buy fee (필요경비)
   }
   function harvestAsset(a, i) {
     const room = p.deduct - realized; if (room <= 0 || !lots[a].length) return 0;

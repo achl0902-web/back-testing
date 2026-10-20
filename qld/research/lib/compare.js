@@ -11,7 +11,7 @@ for (const [nm, p] of Object.entries(S)) {
   res[nm] = r;
 }
 const pct = x => (x * 100).toFixed(1);
-console.log(`주 ${money.weekly / 1e4}만원 · 세트별 IRR 중앙 / 최악 / MDD 중앙 (%) · 세트 점수 = 중앙 + 0.5·최악`);
+console.log(`주 ${money.weekly / 1e4}만원 · 세트별 IRR 중앙 / 최악 / MDD 중앙(시간가중) (%) · 세트 점수 = 중앙 + 0.5·최악`);
 const sets = Object.keys(res['단순 적립'].sets), score = {};
 for (const k of sets) {
   const row = [];
@@ -26,4 +26,4 @@ const a = '최종 전략 v1', b = '노출 조절';
 const wa = sets.filter(k => score[a][k] > score[b][k]).length, wb = sets.filter(k => score[b][k] > score[a][k]).length;
 console.log(`세트 점수 승: ${a} ${wa} · ${b} ${wb}`);
 console.log('사례 IRR (단순 적립 / 최종 / 노출 조절): ' + Object.keys(res[a].episodes).map(e => `${e} ${Object.keys(S).map(nm => pct(res[nm].episodes[e].irr)).join('/')}`).join(' · '));
-console.log('1999~ 실행: ' + Object.keys(S).map(nm => { const f = res[nm].full; return `${nm} IRR ${pct(f.irr)} · MDD ${pct(f.mdd)} · 세후 ${(f.fin / 1e8).toFixed(0)}억 · 매매 ${f.exits}`; }).join(' | '));
+console.log('1999~ 실행: ' + Object.keys(S).map(nm => { const f = res[nm].full; return `${nm} IRR ${pct(f.irr)} · MDD(시간가중) ${pct(f.mdd)} · 평가액 낙폭 ${pct(f.mddVal)} · 세후 ${(f.fin / 1e8).toFixed(0)}억 · 매매 ${f.exits}`; }).join(' | '));
