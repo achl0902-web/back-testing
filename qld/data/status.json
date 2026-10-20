@@ -18,7 +18,7 @@
  "down20": 0.1933,
  "up20": 0.1085,
  "r10": -0.0498,
- "rsiw": 53.9,
+ "rsiw": 51.9,
  "expand": 1.0,
  "macro": 0.231,
  "macroOnset": false,
@@ -57,7 +57,7 @@
   "cugold": -1.97
  },
  "macro_ok": true,
- "built": "2026-10-20 12:12 KST",
+ "built": "2026-10-20 12:46 KST",
  "sources": [
   "yahoo(5/5)"
  ],
@@ -98,7 +98,7 @@
    "Y_COPPER": "2026-10-19",
    "Y_GOLD": "2026-10-19"
   },
-  "checked": "2026-10-20T03:12Z"
+  "checked": "2026-10-20T03:46Z"
  },
  "stale": false,
  "title": "[QLD] 2026-10-19 QLD 보유"
