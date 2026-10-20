@@ -48,7 +48,7 @@
 - 결선 검증: `node lib/battery.js '<cfg>' --step Sxx --md steps/Sxx-battery.md` (이웃값·비용2배·7월시작·1억거치·플라시보·연도기여·결정적 매매·자동판정, 약 30초)
 - 브리프 출력 한 줄 형식: 점수 | 세트별 챔피언 대비 Δ중앙/Δ최악 %p | 사례 최악 | 이탈수 | 이름. 점수 = min(발견세트 N10·N5, 확인세트 N10oos·S10·S5)의 평균(Δ중앙+0.5Δ최악)
 - 신호 모듈: `module.exports = (D, p, H, L) => ({ extraVoteExit | extraVote | extraExit | reentryBlock | exitSig/enterSig })` 0/1 배열, 인덱스 j는 j일 종가까지만 사용. 엔진이 j+1일 종가에 매매
-  - extraVoteExit: 이탈 표에만 +1 · extraVote: 이탈·복귀 모두 +1 (복귀 엄격) · extraExit: 켜진 날 이탈 · reentryBlock: 켜진 동안 복귀 금지 · exitSig/enterSig + params.rule "sig": 챔피언 대체 · slowSig: 보유 중 켜진 동안 QLD 대신 QQQ(1배) 보유 (S11) · boostSig: 보유 중 켜진 동안 QLD 대신 합성 3배 보유(적립금도 3배, 이탈 때 함께 매도; params.boostName 로그 이름, S16)
+  - extraVoteExit: 이탈 표에만 +1 · extraVote: 이탈·복귀 모두 +1 (복귀 엄격) · extraExit: 켜진 날 이탈 · reentryBlock: 켜진 동안 복귀 금지 · exitSig/enterSig + params.rule "sig": 챔피언 대체 · slowSig: 보유 중 켜진 동안 QLD 대신 QQQ(1배) 보유 (S11) · boostSig: 보유 중 켜진 동안 QLD 대신 합성 3배 보유(적립금도 3배, 이탈 때 함께 매도; params.boostName 로그 이름, S16) · qldTarget: 보유 중 QLD 목표 비중 0~1(나머지 SGOV, 목표가 바뀔 때만 매매, 적립금도 그 비중; params.targetName 로그 이름, S18)
   - 카탈로그 지표 재사용: `require('../lib/catalog.js').zOf(D, key)` → {raw, z} (발표 시차·z점수 적용됨). 새 지표는 catalog.js에 한 줄 추가(가족, 시작연도, 근거, 시차)
   - 원자료: `require('../lib/macro.js').series(D, 'FRED이름 또는 Y_이름', 발표시차일)`. 시차: 일간 1, 주간 5~6, 월간 CPI/PPI 50, 실업률 40, M2 55. 같은 시각 종가 비율은 0
   - D: px(지수), lx(QLD), ma[20|50|100|200], vols.{rv20,down20,up20,rv10}, v60, r10, rsiw(주봉 RSI), ms(매크로 경보 비율), day(일수)

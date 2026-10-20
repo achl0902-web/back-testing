@@ -126,7 +126,7 @@ function runBT(D, i0, i1, p, wantLog) {
   const LX = KELLY ? D.lx3 : D.lx, LV = KELLY ? 3 : 2;
   const px = [LX, D.ix, D.lx3];
   let cash = 0, realized = 0, pending = 0, contributed = 0, taxesPaid = 0, fees = 0;
-  let tgtE = 2, nReb = 0, lastTgt = NaN, regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9, outSince = 0, fKeep = 1, halfPending = false, slow = false;
+  let tgtE = 2, nReb = 0, lastTgt = NaN, regime = 'in', vpk = 0, exits = 0, partial = false, lastEntry = -1e9, outSince = 0, fKeep = 1, halfPending = false, slow = false, qT = 1;
   const log = [];
   const L = (i, type, msg) => { if (wantLog) log.push({ d: D.day[i], type, msg }); };
   const n1 = i1 - i0 + 1;
@@ -260,6 +260,17 @@ function runBT(D, i0, i1, p, wantLog) {
           L(i, 'reentry', `${why} → ${fr < 1 ? Math.round(fr * 100) + '% ' : '전량 '}${['QLD', 'QQQ', '3배'][inA]} ${fmt(amt * D.fx[i])}`);
         }
       }
+      //   qldTarget (S18): research hook (0..1 by signal day); while in the market, hold this share of QLD (rest SGOV),
+      //   traded only when the target changes. Defaults keep the champion unchanged.
+      if (p.qldTarget && regime === 'in') {
+        const t = Math.max(0, Math.min(1, p.qldTarget[j]));
+        if (t !== qT) {
+          const qv = sharesOf(0) * LX[i], V = qv + cash, tv = t * V, r0 = realized;
+          if (qv > tv + 1e-9) sell(0, qv - tv, i); else if (tv > qv + 1e-9) buy(0, Math.min(cash, tv - qv), i);
+          L(i, t < qT ? 'down' : 'up', `QLD 비중 ${Math.round(qT * 100)}% → ${Math.round(t * 100)}%${p.targetName ? ' (' + p.targetName + ')' : ''}` + (Math.abs(realized - r0) > 1 ? ` (실현손익 ${fmt(realized - r0)})` : ''));
+          qT = t;
+        }
+      } else if (p.qldTarget) qT = 1;
       if ((SLOW || BOOST) && regime === 'in') {
         for (const from of [0, 1, 2]) {
           if (from === inA || sharesOf(from) <= 0) continue;
@@ -322,6 +333,7 @@ function runBT(D, i0, i1, p, wantLog) {
       else if (p.strategy && p.contribAlways) { toQ = 1; toP = 0; }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && (p.slowSig || p.slowMA > 0) && slow) { toQ = 0; toP = 1; }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && p.boostSig && p.boostSig[i > i0 ? i - 1 : i0]) { toQ = 0; toP = 0; buy(2, usd, i); }
+      else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && p.qldTarget) { toQ = qT; toP = 0; }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'out') { toQ = p.contribOut || 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'out') { toQ = partial ? 1 - p.exitFrac : 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'staged') { toQ = p.reentryFrac; toP = (1 - p.reentryFrac) * p.parkQQQ; }
