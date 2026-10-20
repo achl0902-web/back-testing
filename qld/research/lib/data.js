@@ -15,11 +15,21 @@ let _cache = null;
 function load() {
   if (_cache) return _cache;
   // NDX: QLD synthetic (2x QQQ total return - financing - 0.95% fee); SPX: 2x S&P total return proxy (fee 0.89%)
-  const ND = E.prepData(JSON.parse(fs.readFileSync(path.join(DATA, 'ndx_ms.json'))));
-  const SP = E.prepData(JSON.parse(fs.readFileSync(path.join(DATA, 'spx_ms.json'))), 2, 0.0089);
+  const read = f => withY10(JSON.parse(fs.readFileSync(path.join(DATA, f))));
+  const ND = E.prepData(read('ndx_ms.json'));
+  const SP = E.prepData(read('spx_ms.json'), 2, 0.0089);
   ND.name = 'NDX'; SP.name = 'SPX2';
   _cache = { ND, SP };
   return _cache;
+}
+
+// 10-year Treasury yield (DGS10) on each trading day, forward-filled, null before 1962; prepData turns it into D.bx
+function withY10(raw) {
+  const m = new Map();
+  for (const ln of fs.readFileSync(path.join(MACRO, 'DGS10.csv'), 'utf8').trim().split('\n').slice(1)) { const [d, v] = ln.split(','); if (v && v !== '.') m.set(day(d), +v / 100); }
+  let d = raw.d0, last = null; raw.y10 = [];
+  for (let i = 0; i < raw.px.length; i++) { if (i) d += raw.dd[i - 1]; if (m.has(d)) last = m.get(d); raw.y10.push(last); }
+  return raw;
 }
 
 // synthetic high/low of the leveraged series from the index's daily range (for stochastics etc.)
@@ -69,4 +79,4 @@ function episodes() {
   return EPISODES.map(([n, a, b]) => ({ key: n, D: ND, i0: E.idxOfDay(ND, day(a), true), i1: E.idxOfDay(ND, day(b), false) }));
 }
 
-module.exports = { E, B, load, highLow, sets, episodes, day, iso, EPISODES };
+module.exports = { E, B, load, withY10, highLow, sets, episodes, day, iso, EPISODES };
