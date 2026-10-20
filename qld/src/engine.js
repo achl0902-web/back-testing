@@ -273,6 +273,11 @@ function runBT(D, i0, i1, p, wantLog) {
           qT = t;
         }
       } else if (p.qldTarget) qT = 1;
+      //   pauseSig (S22): research hook (0/1 by signal day); while set and in the market, new contributions wait in SGOV,
+      //   and the waiting cash goes into QLD on the first signal day it is off. Holdings are never sold by this hook.
+      if (p.pauseSig && regime === 'in' && !p.pauseSig[j] && cash > 1 && !SLOW && !BOOST && !p.qldTarget) {
+        const amt = buy(0, cash, i); if (amt > 0) L(i, 'up', `적립 보류분 QLD 투입 ${fmt(amt * D.fx[i])}${p.pauseName ? ' (' + p.pauseName + ')' : ''}`);
+      }
       if ((SLOW || BOOST) && regime === 'in') {
         for (const from of [0, 1, 2]) {
           if (from === inA || sharesOf(from) <= 0) continue;
@@ -336,6 +341,9 @@ function runBT(D, i0, i1, p, wantLog) {
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && (p.slowSig || p.slowMA > 0) && slow) { toQ = 0; toP = 1; }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && p.boostSig && p.boostSig[i > i0 ? i - 1 : i0]) { toQ = 0; toP = 0; buy(2, usd, i); }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && p.qldTarget) { toQ = qT; toP = 0; }
+      else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'in' && p.pauseSig && p.pauseSig[i > i0 ? i - 1 : i0]) { toQ = 0; toP = 0; }
+      //   contribSig (S22): research hook (0/1 by signal day); while out of the market, contributions buy QLD on days it is set
+      else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'out' && p.contribSig) { toQ = p.contribSig[i > i0 ? i - 1 : i0] ? 1 : (p.contribOut || 0); toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && p.rule === 'final' && !p.exitSig && regime === 'out') { toQ = p.contribOut || 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'out') { toQ = partial ? 1 - p.exitFrac : 0; toP = (1 - toQ) * p.parkQQQ; }
       else if (p.strategy && regime === 'staged') { toQ = p.reentryFrac; toP = (1 - p.reentryFrac) * p.parkQQQ; }
