@@ -16,4 +16,23 @@ for s in ['ICSA', 'NFCIRISK', 'STLFSI4']:
     except Exception as e:
         if attempt == 2: log.append(f'{s}: failed {type(e).__name__} {e}')
         time.sleep(10)
+# NFCIRISK: the full first-release query times out (504); ask year by year of release instead
+if not os.path.exists(os.path.join(OUT, 'NFCIRISK_first.csv')):
+    rows = {}
+    for yr in range(2011, 2027):
+        for attempt in range(3):
+            try:
+                u = (f'https://api.stlouisfed.org/fred/series/observations?series_id=NFCIRISK&realtime_start={yr}-01-01&realtime_end={yr}-12-31'
+                     f'&output_type=4&file_type=json&api_key={KEY}')
+                for o in json.load(urllib.request.urlopen(u, timeout=240))['observations']:
+                    if o['value'] not in ('.', '') and (o['date'] not in rows or o.get('realtime_start', '') < rows[o['date']][1]):
+                        rows[o['date']] = (o['value'], o.get('realtime_start', ''))
+                break
+            except Exception as e:
+                if attempt == 2: log.append(f'NFCIRISK {yr}: failed {type(e).__name__} {e}')
+                time.sleep(10)
+    if rows:
+        ks = sorted(rows)
+        open(os.path.join(OUT, 'NFCIRISK_first.csv'), 'w').write('date,value,realtime_start\n' + '\n'.join(f'{k},{rows[k][0]},{rows[k][1]}' for k in ks) + '\n')
+        log.append(f'NFCIRISK (by year): {len(ks)} rows {ks[0]}..{ks[-1]} · first vintage {min(v[1] for v in rows.values())}')
 open(os.path.join(OUT, 'fetch_log.txt'), 'w').write('\n'.join(log) + '\n'); print('\n'.join(log))
