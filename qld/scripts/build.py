@@ -93,13 +93,39 @@ def yahoo():
     if got: used.append(f'yahoo({len(got)}/5)')
     return got
 
+def stooq(names):
+    """Second public source (CSV, no key) for the series Yahoo did not return: ^NDX, QQQ, USD/KRW."""
+    import urllib.request
+    out = []
+    for target, sym in [(ndx, '%5Endx'), (qqq, 'qqq.us'), (fx, 'usdkrw')]:
+        nm = {id(ndx): 'ndx', id(qqq): 'qqq', id(fx): 'fx'}[id(target)]
+        if nm not in names: continue
+        try:
+            t = urllib.request.urlopen(urllib.request.Request(f'https://stooq.com/q/d/l/?s={sym}&i=d', headers={'User-Agent': 'Mozilla/5.0'}), timeout=30).read().decode()
+            d = {}
+            for row in csv.DictReader(t.splitlines()):
+                if row.get('Date', '') >= start and row.get('Close') not in (None, '', 'N/D'): d[row['Date']] = float(row['Close'])
+            if d: out.append((target, d))
+        except Exception as e:
+            print(f'stooq {sym} failed:', e, file=sys.stderr)
+    if out: used.append(f'stooq({len(out)}/{len(names)})')
+    return out
+
+SRC = {}  # series -> source that supplied its latest date
+NAMES = lambda t: {id(ndx): 'ndx', id(qqq): 'qqq', id(fx): 'fx', id(tb): 'tb', id(vix): 'vix'}[id(t)]
 if '--offline' not in sys.argv:  # --offline: 저장된 데이터만으로 페이지를 만든다 (로컬 미리보기·비교용)
     got = yahoo()
+    have = {NAMES(t) for t, _ in got}
     if len(got) < 5:  # 야후가 하나라도 비었을 때만 미러 3곳을 클론한다 (클론은 몇 분 걸림)
         mirrors()
-    for target, d in got:  # 야후 값이 미러보다 우선
+        for t in (ndx, qqq, fx, tb, vix):
+            if t: SRC[NAMES(t)] = 'github-mirrors'
+    miss = {'ndx', 'qqq', 'fx'} - have
+    if miss: got += stooq(miss)   # 야후가 빠뜨린 가격·환율은 Stooq로 한 번 더
+    for target, d in got:  # 야후·Stooq 값이 미러보다 우선
         # QQQ adjusted prices are rescaled after each dividend: only ratios matter, keep the series self-consistent
         if target is qqq: qqq.clear()
+        if not target or max(d) >= max(target): SRC[NAMES(target)] = 'yahoo' if NAMES(target) in have else 'stooq'
         target.update(d)
 
 # ---------- append new rows ----------
@@ -171,6 +197,48 @@ data_js = json.dumps({k: v for k, v in data.items() if k != 'etf'}, separators=(
 hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix')}, separators=(',', ':'))
 last = iso(days[-1])
 y, m, d_ = last.split('-')
+
+# ---------- freshness: compare the data's last close with the last completed NYSE session ----------
+def nyse_holidays(yr):
+    from datetime import date, timedelta as td
+    def obs(d):  # Saturday -> Friday, Sunday -> Monday
+        return d - td(1) if d.weekday() == 5 else d + td(1) if d.weekday() == 6 else d
+    def nth(mo, wd, k):  # k-th weekday wd of month (k = -1: last)
+        if k > 0: d = date(yr, mo, 1); d += td((wd - d.weekday()) % 7); return d + td(7 * (k - 1))
+        d = date(yr, mo + 1, 1) - td(1) if mo < 12 else date(yr, 12, 31); return d - td((d.weekday() - wd) % 7)
+    a = yr % 19; b, c = divmod(yr, 100); dd_ = (19 * a + b - b // 4 - (b - (8 * b + 13) // 25) + 15) % 30
+    e = (32 + 2 * (b % 4) + 2 * (c // 4) - dd_ - c % 4) % 7; f_ = dd_ + e - 7 * ((a + 11 * dd_ + 22 * e) // 451) + 114
+    easter = date(yr, f_ // 31, f_ % 31 + 1)
+    h = {nth(1, 0, 3), nth(2, 0, 3), easter - td(2), nth(5, 0, -1), obs(date(yr, 7, 4)), nth(9, 0, 1), nth(11, 3, 4), obs(date(yr, 12, 25))}
+    if date(yr, 1, 1).weekday() != 5: h.add(obs(date(yr, 1, 1)))   # New Year on Saturday is not observed
+    if yr >= 2022: h.add(obs(date(yr, 6, 19)))
+    return h
+def is_session(d): return d.weekday() < 5 and d not in nyse_holidays(d.year)
+def expected_session(now_utc):
+    from zoneinfo import ZoneInfo
+    ny = now_utc.astimezone(ZoneInfo('America/New_York')); d = ny.date()
+    if not (is_session(d) and (ny.hour, ny.minute) >= (16, 30)):
+        d -= dt.timedelta(days=1)
+        while not is_session(d): d -= dt.timedelta(days=1)
+    return d
+now_utc = dt.datetime.now(dt.timezone.utc)
+exp = expected_session(now_utc)
+missing = []
+k = dt.date.fromisoformat(last) + dt.timedelta(days=1)
+while k <= exp:
+    if is_session(k): missing.append(k.isoformat())
+    k += dt.timedelta(days=1)
+STALE = len(missing) > 0 and '--offline' not in sys.argv
+series_last = {nm: (max(s) if s else None) for nm, s in [('ndx', ndx), ('qqq', qqq), ('fx', fx), ('tb', tb), ('vix', vix)]}
+def file_last(name):
+    try:
+        with open(P('data', 'macro', f'{name}.csv')) as fh: return fh.read().strip().rsplit('\n', 1)[-1].split(',')[0][:10]
+    except Exception: return None
+macro_last = {k: file_last(k) for k in ['BAA10Y', 'AAA10Y', 'T10Y3M', 'DFF', 'STLFSI4', 'NFCIRISK', 'VIXCLS', 'VXVCLS', 'ICSA', 'SAHMREALTIME', 'Y_DXY', 'Y_RUT', 'Y_SPX', 'Y_COPPER', 'Y_GOLD']}
+fresh = dict(data_last=last, expected_last=exp.isoformat(), stale=STALE, missing_sessions=missing[:10], series_last=series_last,
+             series_source=SRC, macro_last=macro_last, checked=now_utc.strftime('%Y-%m-%dT%H:%MZ'))
+if STALE: print(f'STALE: data ends {last}, last NYSE session {exp} (missing {len(missing)})', file=sys.stderr)
+RESEARCH_ONLY = '--research' in sys.argv  # research/refresh_data.py: rebuild data only, never touch status.json or alert.md
 built = dt.datetime.now(KST).strftime('%Y-%m-%d %H:%M KST')
 eng = open(P('src', 'engine.js')).read()
 ui_js, ui_css = open(P('src', 'ui.js')).read(), open(P('src', 'ui.css')).read()  # 두 페이지 공통 화면 코드
@@ -179,7 +247,8 @@ assert '</script' not in data_js and '</script' not in eng and '</script' not in
 
 def fill(tpl, data):
     return (tpl.replace('__UI_CSS__', ui_css).replace('__DATA__', data).replace('__ENGINE__', eng).replace('__UI_JS__', ui_js)
-               .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built))
+               .replace('__LASTDATE__', f'{int(y)}년 {int(m)}월 {int(d_)}일').replace('__BUILT__', built)
+               .replace('__FRESH__', json.dumps(dict(stale=fresh['stale'], last=last, expected=fresh['expected_last'], missing=len(missing), builtUtc=fresh['checked']))))
 
 
 page = fill(open(P('src', 'page_tpl.html')).read(), data_js)
@@ -238,34 +307,61 @@ status = dict(date=last, strategy='final', regime=s['regime'], next=s['next'],
               rules={k: dict(name=RULES[k][0], regime=v['regime']) for k, v in s['rules'].items()},
               macroNow={m['k']: m['z'] for m in macro_now}, macro_ok=macro_ok,
               built=built, sources=used, added_rows=added)
+status.update(fresh=fresh, stale=fresh['stale'])
 status['title'] = (f"[QLD] {last} 다음 거래일 " + ('이탈: QLD 전량 매도 → SGOV' if action and action['type'] == 'exit' else '복귀: SGOV 전량 → QLD')
                    if action else f"[QLD] {last} {NAME[status['regime']]}")
+
+# research data: the daily run keeps research/data/ndx_ms.json fresh, but never replaces it with an older series
+def save_research():
+    out = P('research', 'data', 'ndx_ms.json')
+    try: old_last = (lambda r: r['d0'] + sum(r['dd']))(json.load(open(out)))
+    except Exception: old_last = -1
+    if days[-1] >= old_last:
+        json.dump({k: data[k] for k in ('d0', 'dd', 'px', 'rq', 'tb', 'fx', 'ms')}, open(out, 'w'), separators=(',', ':'))
+        print(f'research data: {last} ({len(px)} rows)', file=sys.stderr)
+    else: print(f'research data kept: saved series is newer than {last}', file=sys.stderr)
+save_research()
+if RESEARCH_ONLY:
+    print(json.dumps(dict(date=last, stale=STALE, expected=fresh['expected_last']), ensure_ascii=False)); sys.exit(0)
 
 prev = {}
 try: prev = json.load(open(P('data', 'status.json')))
 except Exception: pass
-json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, indent=1)
-json.dump(status, open(P('site', 'status.json'), 'w'), ensure_ascii=False, indent=1)
+if prev.get('date') and prev['date'] > last:
+    # never downgrade the saved daily status with older data (e.g. a build without access to fresh prices)
+    print(f"status kept: saved status is {prev['date']}, this build only reaches {last}", file=sys.stderr)
+    json.dump(prev, open(P('site', 'status.json'), 'w'), ensure_ascii=False, indent=1)
+    sys.exit(0)
 
-# ---------- alert: only when the next close brings a trade (or once, when the alert strategy changed) ----------
+# ---------- alert ----------
+try: os.remove(P('alert.md'))  # a leftover from an earlier local run must not be sent again
+except FileNotFoundError: pass
+#   trade alert: only when the next close brings an exit or re-entry AND the data is fresh
+#   stale alert: once per stale episode (data ends before the last completed NYSE session) — no buy/sell instruction
 AX = ['변동성', '급락', '추세', '급팽창']
 pv = lambda x: '–' if x is None else f'{x*100:.1f}%'
 msgs = []
-if prev.get('date') != last and action:
-    msgs.append(('**다음 거래일 종가에 QLD를 모두 팔아 SGOV로 옮깁니다.**' if action['type'] == 'exit' else '**다음 거래일 종가에 SGOV를 모두 QLD로 옮깁니다.**')
-                + f" 사유: {action['msg'].split(' → ')[0]}")
-if prev.get('strategy') != 'final':
-    msgs.append(f"알림 기준이 **최종 전략 v1**(기술 4축 + 매크로 경보 이탈)로 바뀌었습니다(2026-10-19 비교: 5개 검증 세트 중 4개에서 노출 조절보다 우세). "
-                f"현재 상태: **{NAME[status['regime']]}**. 노출 조절(TQQQ·QQQ·SGOV)로 들고 있었다면 QLD 보유로 맞추는 것을 검토하세요.")
+if STALE:
+    status['title'] = f"[QLD] 데이터 지연: 마지막 종가 {last} (정상이면 {fresh['expected_last']})"
+    if not (prev.get('stale') and (prev.get('fresh') or {}).get('data_last') == last):
+        msgs.append(f"**데이터가 오래됐습니다.** 마지막 종가 {last}, 정상이라면 {fresh['expected_last']}까지 있어야 합니다(빠진 거래일 {len(missing)}일: {', '.join(missing[:5])}). "
+                    f"이 상태로는 매수·매도 알림을 보내지 않습니다. 데이터가 복구되면 다음 실행에서 정상 신호를 다시 계산합니다.")
+        msgs.append('시리즈별 최신 날짜: ' + ' · '.join(f"{k} {v or '–'}({SRC.get(k, '저장값')})" for k, v in series_last.items()))
+else:
+    if prev.get('date') != last and action:
+        msgs.append(('**다음 거래일 종가에 QLD를 모두 팔아 SGOV로 옮깁니다.**' if action['type'] == 'exit' else '**다음 거래일 종가에 SGOV를 모두 QLD로 옮깁니다.**')
+                    + f" 사유: {action['msg'].split(' → ')[0]}")
+    if prev.get('strategy') != 'final':
+        msgs.append(f"알림 기준이 **최종 전략 v1**(기술 4축 + 매크로 경보 이탈)로 바뀌었습니다. 현재 상태: **{NAME[status['regime']]}**.")
+        if not action: status['title'] = f"[QLD] {last} 알림 기준 변경: 최종 전략 v1 · {NAME[status['regime']]}"
+json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, indent=1)
+json.dump(status, open(P('site', 'status.json'), 'w'), ensure_ascii=False, indent=1)
 if msgs:
-    if prev.get('strategy') != 'final' and not action:
-        status['title'] = f"[QLD] {last} 알림 기준 변경: 최종 전략 v1 · {NAME[status['regime']]}"
-        json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, indent=1)
     lines = [f"- {m}" for m in msgs]
     lines.append(f"\n신호: 기술 {status['votes']}/4축" + (f" ({'·'.join(a for a, on in zip(AX, status['axes']) if on)})" if status['votes'] else '')
                  + f" · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · 주봉 RSI {status['rsiw']}"
                  + f" · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}")
     lines.append('규칙: 기술 4축 중 2개 이상(복귀 후 40거래일은 3개) 또는 매크로 경보 50% 신규 돌파 → 전량 SGOV. 축 1개 이하 · 20일선 위 · 10일 변동성 < 60일 변동성 → 전량 QLD.')
-    lines.append(f"데이터 출처: {', '.join(used)}")
+    lines.append(f"데이터 출처: {', '.join(used) or '저장값'} · 점검 {fresh['checked']}")
     open(P('alert.md'), 'w').write(f"**{last} 종가 기준**\n\n" + '\n'.join(lines) + '\n')
 print(json.dumps(status, ensure_ascii=False))

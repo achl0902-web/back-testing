@@ -141,3 +141,6 @@ th small.sub-l { display: block; font-size: 0.72rem; font-weight: 400; color: va
 /* 한글은 단어(띄어쓰기) 단위로 줄바꿈: '낙/폭'처럼 낱말 중간에서 끊기지 않게 */
 body { word-break: keep-all; overflow-wrap: anywhere; }
 .field label b { white-space: nowrap; }  /* 슬라이더 값(2.45배 등)은 한 줄로 */
+
+.stale { margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); border-left: 3px solid var(--bad); }
+.stale b { display: block; margin-bottom: 2px; }

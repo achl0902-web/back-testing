@@ -4,6 +4,8 @@ on:
   schedule:
     # 22:30 UTC Mon-Fri = 07:30 KST Tue-Sat, after the US close
     - cron: "30 22 * * 1-5"
+    # second pass two hours later in case a data source was late (alerts are sent once per date)
+    - cron: "30 0 * * 2-6"
   workflow_dispatch: {}
   push:
     branches: [main]
@@ -49,7 +51,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add qld/data/status.json qld/data/macro
+          git add qld/data/status.json qld/data/macro qld/research/data/ndx_ms.json
           git diff --cached --quiet || git commit -m "qld status: $(python3 -c 'import json;print(json.load(open("qld/data/status.json"))["date"])')"
           git pull --rebase -q origin main || true
           git push || echo "push skipped"
