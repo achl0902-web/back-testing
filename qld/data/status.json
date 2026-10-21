@@ -1,5 +1,5 @@
 {
- "date": "2026-10-20",
+ "date": "2026-10-21",
  "strategy": "final",
  "regime": "in",
  "next": "in",
@@ -15,17 +15,17 @@
   0,
   0
  ],
- "down20": 0.1934,
- "up20": 0.1004,
- "r10": -0.0555,
+ "down20": 0.1886,
+ "up20": 0.1152,
+ "r10": -0.0429,
  "rsiw": 51.9,
- "expand": 0.97,
+ "expand": 1.07,
  "macro": 0.154,
  "macroOnset": false,
  "reentryOK": false,
- "rv20": 0.1546,
- "ndx": 29490.28,
- "ma20": 30414.46,
+ "rv20": 0.1595,
+ "ndx": 29822.52,
+ "ma20": 30382.07,
  "rules": {
   "final": {
    "name": "최종 전략 v1 (기술 4축 + 매크로 경보)",
@@ -41,38 +41,38 @@
   }
  },
  "macroNow": {
-  "baa": -1.29,
+  "baa": -1.28,
   "baa3m": -0.7,
   "dflt": -1.15,
-  "curve": -0.1,
+  "curve": -0.2,
   "cut": -1.43,
   "stl": -0.51,
-  "nfcir": -0.92,
+  "nfcir": -0.91,
   "ted": null,
   "vterm": 0.73,
   "claims": -1.81,
-  "sahm": -1.84,
-  "dxy": 1.23,
-  "small": 1.47,
-  "cugold": -2.02
+  "sahm": -1.83,
+  "dxy": 1.06,
+  "small": 1.19,
+  "cugold": -1.94
  },
  "macro_ok": true,
- "built": "2026-10-21 10:13 KST",
+ "built": "2026-10-22 07:54 KST",
  "sources": [
   "yahoo(5/5)"
  ],
- "added_rows": 3,
+ "added_rows": 4,
  "fresh": {
-  "data_last": "2026-10-20",
-  "expected_last": "2026-10-20",
+  "data_last": "2026-10-21",
+  "expected_last": "2026-10-21",
   "stale": false,
   "missing_sessions": [],
   "series_last": {
-   "ndx": "2026-10-20",
-   "qqq": "2026-10-19",
+   "ndx": "2026-10-21",
+   "qqq": "2026-10-21",
    "fx": "2026-10-21",
-   "tb": "2026-10-20",
-   "vix": "2026-10-20"
+   "tb": "2026-10-21",
+   "vix": "2026-10-21"
   },
   "series_source": {
    "ndx": "yahoo",
@@ -92,14 +92,14 @@
    "VXVCLS": "2026-10-19",
    "ICSA": "2026-10-10",
    "SAHMREALTIME": "2026-09-01",
-   "Y_DXY": "2026-10-20",
-   "Y_RUT": "2026-10-20",
-   "Y_SPX": "2026-10-20",
-   "Y_COPPER": "2026-10-20",
-   "Y_GOLD": "2026-10-20"
+   "Y_DXY": "2026-10-21",
+   "Y_RUT": "2026-10-21",
+   "Y_SPX": "2026-10-21",
+   "Y_COPPER": "2026-10-21",
+   "Y_GOLD": "2026-10-21"
   },
-  "checked": "2026-10-21T01:13Z"
+  "checked": "2026-10-21T22:54Z"
  },
  "stale": false,
- "title": "[QLD] 2026-10-20 QLD 보유"
+ "title": "[QLD] 2026-10-21 QLD 보유"
 }
