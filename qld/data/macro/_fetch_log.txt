@@ -1,4 +1,4 @@
-fetched 2026-10-21 22:54 UTC
+fetched 2026-10-22 01:11 UTC
 FRED BAA10Y: skipped after 3 consecutive failures
 FRED AAA10Y: skipped after 3 consecutive failures
 FRED BAMLH0A0HYM2: skipped after 3 consecutive failures
@@ -73,15 +73,15 @@ FRED-API TB3MS: JSONDecodeError Expecting value: line 1 column 1 (char 0)
 FRED-API FEDFUNDS: JSONDecodeError Expecting value: line 1 column 1 (char 0)
 FRED-API M2SL: JSONDecodeError Expecting value: line 1 column 1 (char 0)
 FRED-API WALCL: JSONDecodeError Expecting value: line 1 column 1 (char 0)
-YAHOO N225 ^N225: ok 11506 rows 1980-01-04..2026-10-20 (Adj Close)
+YAHOO N225 ^N225: ok 11507 rows 1980-01-04..2026-10-22 (Adj Close)
 YAHOO GDAXI ^GDAXI: ok 9814 rows 1987-12-30..2026-10-20 (Adj Close)
-YAHOO KS11 ^KS11: ok 7347 rows 1996-12-11..2026-10-20 (Adj Close)
-YAHOO FTSE ^FTSE: ok 10813 rows 1984-01-03..2026-10-21 (Adj Close)
+YAHOO KS11 ^KS11: ok 7348 rows 1996-12-11..2026-10-22 (Adj Close)
+YAHOO FTSE ^FTSE: ok 10812 rows 1984-01-03..2026-10-20 (Adj Close)
 YAHOO HSI ^HSI: ok 9822 rows 1986-12-31..2026-10-20 (Adj Close)
 YAHOO STOXX50E ^STOXX50E: ok 4903 rows 2007-03-30..2026-10-20 (Adj Close)
 YAHOO MOVE ^MOVE: ok 5920 rows 2002-11-12..2026-10-21 (Adj Close)
 YAHOO TNX ^TNX: ok 11733 rows 1980-01-02..2026-10-21 (Adj Close)
-YAHOO TLT TLT: ok 6097 rows 2002-07-30..2026-10-21 (Adj Close)
+YAHOO TLT TLT: ok 6096 rows 2002-07-30..2026-10-20 (Adj Close)
 YAHOO SOX ^SOX: ok 8172 rows 1994-05-04..2026-10-21 (Adj Close)
 YAHOO VIX3M ^VIX3M: ok 5099 rows 2006-07-17..2026-10-21 (Adj Close)
 YAHOO DXY DX-Y.NYB: ok 11926 rows 1980-01-02..2026-10-21 (Adj Close)
@@ -89,11 +89,11 @@ YAHOO COPPER HG=F: ok 6565 rows 2000-08-30..2026-10-21 (Adj Close)
 YAHOO GOLD GC=F: ok 6561 rows 2000-08-30..2026-10-21 (Adj Close)
 YAHOO RUT ^RUT: ok 9853 rows 1987-09-10..2026-10-21 (Adj Close)
 YAHOO SPX ^GSPC: ok 11797 rows 1980-01-02..2026-10-21 (Adj Close)
-YAHOO QQQ QQQ: ok 6948 rows 1999-03-10..2026-10-21 (Adj Close)
-YAHOO QLD QLD: ok 5116 rows 2006-06-21..2026-10-21 (Adj Close)
-YAHOO TQQQ TQQQ: ok 4199 rows 2010-02-11..2026-10-21 (Adj Close)
-YAHOO SPY SPY: ok 8490 rows 1993-01-29..2026-10-21 (Adj Close)
-YAHOO SSO SSO: ok 5116 rows 2006-06-21..2026-10-21 (Adj Close)
-YAHOO UPRO UPRO: ok 4358 rows 2009-06-25..2026-10-21 (Adj Close)
+YAHOO QQQ QQQ: ok 6947 rows 1999-03-10..2026-10-20 (Adj Close)
+YAHOO QLD QLD: ok 5115 rows 2006-06-21..2026-10-20 (Adj Close)
+YAHOO TQQQ TQQQ: ok 4198 rows 2010-02-11..2026-10-20 (Adj Close)
+YAHOO SPY SPY: ok 8489 rows 1993-01-29..2026-10-20 (Adj Close)
+YAHOO SSO SSO: ok 5115 rows 2006-06-21..2026-10-20 (Adj Close)
+YAHOO UPRO UPRO: ok 4357 rows 2009-06-25..2026-10-20 (Adj Close)
 OHLC NDX: ok 10344 rows 1985-10-01..2026-10-21
 OHLC SPX: ok 10532 rows 1985-01-02..2026-10-21
