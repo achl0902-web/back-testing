@@ -21,9 +21,15 @@ for (const f of fs.readdirSync(path.join(R, 'steps')).filter(f => f.endsWith('-s
 }
 const ledger = fs.readFileSync(path.join(R, 'LEDGER.md'), 'utf8');
 const champSec = ledger.split('## 스텝 기록')[0].replace('# 연구 기록', '').trim();
-const stepRows = (ledger.match(/^\| S\d+ \|.*$/gm) || []).map(r => { const c = r.split('|').map(x => x.trim()); return `- ${c[1]}: ${c[2]} → ${c[3]}`; });
+// 같은 스텝이 두 줄이면 마지막 줄만. 최근 3스텝은 전문, 그 이전은 목표를 줄여 싣는다(시험 내용과 점수는 아래 행동 유형표에 있다).
+const rowMap = new Map();
+for (const r of (ledger.match(/^\| S\d+ \|.*$/gm) || [])) { const c = r.split('|').map(x => x.trim()); rowMap.set(c[1], c); }
+const rowList = [...rowMap.values()];
+const cut = (t, n) => t.length > n ? t.slice(0, n).trimEnd() + '…' : t;
+const stepRows = rowList.map((c, i) => `- ${c[1]}: ${i >= rowList.length - 3 ? c[2] : cut(c[2], 45)} → ${c[3]}`);
 const ideas = fs.existsSync(path.join(R, 'IDEAS.md')) ? fs.readFileSync(path.join(R, 'IDEAS.md'), 'utf8') : '';
 const backlog = (ideas.split('## 아직 안 해 본 아이디어')[1] || '').trim();
+const ideaMap = ((ideas.split('## 행동 유형별 커버리지')[1] || '').split('\n## ')[0] || '').trim();
 
 const fams = {};
 for (const [k, fam] of CATALOG) (fams[fam] = fams[fam] || []).push(k + (best[k] ? `(${best[k].score.toFixed(1)})` : '(미시험)'));
@@ -37,12 +43,8 @@ ${champSec}
 ## 지난 스텝 결론 (다시 시험하려면 새 근거 필요)
 ${stepRows.join('\n')}
 
-## 도구 (qld/research 에서 실행, 출력은 짧게) — 연구 스텝 흐름은 PROTOCOL v3: 전략가는 plan.json + 모듈 + \`node lib/step.js check Sxx\`(오류·발동률만)까지, 채점은 진행자의 \`step.js run\`
+## 도구 (qld/research 에서 실행, 출력은 짧게) — 연구 스텝 흐름은 PROTOCOL v3: 전략가는 plan.json + 모듈 + \`node lib/step.js check Sxx\`(오류·발동률만)까지, 채점은 진행자의 \`step.js run\`. score·screen·battery는 진행자·비평가 전용이라 여기 적지 않는다
 - 계획 형식: steps/Sxx-plan.json = {"step","goal","directions":[{"id":"A","type","title","why","predict","signals","params","vary":{"키":[값≤3]},"neighbors"?}]} (방향 3~4개, 행동 유형 서로 다르게, 자유 파라미터 ≤2)
-- 후보 1개: \`node lib/score.js '<cfg>' --brief\` (1~2초). cfg = {"name","step","by","signals":"candidates/x.js","params":{"strategy":true,...}}
-- 넓은 스크린: \`node lib/screen.js --step Sxx [--fam a,b] [--extra ideas.json]\` (카탈로그 × 훅 × z, 약 5분, 토큰 0). 두 지표 조합: \`--pairs steps/Sxx-screen.jsonl\`
-- 결선 검증: \`node lib/battery.js '<cfg>' --step Sxx --md steps/Sxx-battery.md\` (이웃값·비용2배·7월시작·1억거치·플라시보·연도기여·결정적 매매·자동판정, 약 30초)
-- 브리프 출력 한 줄 형식: 점수 | 세트별 챔피언 대비 Δ중앙/Δ최악 %p | 사례 최악 | 이탈수 | 이름. 점수 = min(발견세트 N10·N5, 확인세트 N10oos·S10·S5)의 평균(Δ중앙+0.5Δ최악)
 - 신호 모듈: \`module.exports = (D, p, H, L) => ({ extraVoteExit | extraVote | extraExit | reentryBlock | exitSig/enterSig })\` 0/1 배열, 인덱스 j는 j일 종가까지만 사용. 엔진이 j+1일 종가에 매매
   - extraVoteExit: 이탈 표에만 +1 · extraVote: 이탈·복귀 모두 +1 (복귀 엄격) · extraExit: 켜진 날 이탈 · reentryBlock: 켜진 동안 복귀 금지 · exitSig/enterSig + params.rule "sig": 챔피언 대체 · slowSig: 보유 중 켜진 동안 QLD 대신 QQQ(1배) 보유 (S11) · boostSig: 보유 중 켜진 동안 QLD 대신 합성 3배 보유(적립금도 3배, 이탈 때 함께 매도; params.boostName 로그 이름, S16) · qldTarget: 보유 중 QLD 목표 비중 0~1(나머지 SGOV, 목표가 바뀔 때만 매매, 적립금도 그 비중; params.targetName 로그 이름, S18) · contribSig: 이탈 중 켜진 날 적립금으로 QLD 매수(꺼진 날은 contribOut 규칙, S22) · pauseSig: 보유 중 켜진 동안 새 적립금을 SGOV에 쌓고, 꺼진 첫날 쌓인 현금을 QLD에 투입(보유분은 안 팜; params.pauseName 로그 이름, S22)
   - 카탈로그 지표 재사용: \`require('../lib/catalog.js').zOf(D, key)\` → {raw, z} (발표 시차·z점수 적용됨). 새 지표는 catalog.js에 한 줄 추가(가족, 시작연도, 근거, 시차)
@@ -58,6 +60,9 @@ A1 표본 밖(N10oos·S10·S5) 중앙 −1%p·최악 −2%p 이내 · A2 최악 
 ${Object.entries(fams).map(([f, ks]) => `- ${f}: ${ks.join(' ')}`).join('\n')}
 
 상위 시험 결과: ${top.join(' · ')}
+
+## 행동 유형별 커버리지 (IDEAS.md, 시험한 것 · 결론 · 빈칸)
+${ideaMap}
 
 ## 아직 안 해 본 아이디어 (IDEAS.md)
 ${backlog.slice(0, 2500)}

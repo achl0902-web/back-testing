@@ -58,7 +58,7 @@ if (cmd === 'prep') {
     wide = '넓은 스크린 실행:\n' + o.split('\n').filter(l => /^\s+-?\d|점수 0 초과/.test(l)).slice(0, 6).join('\n');
   }
   sh('node lib/brief.js', {});
-  console.log(`다음 스텝 ${s} · 데이터 ${last}까지 (${refreshed})\n${wide}\n전략가에게: BRIEF.md + IDEAS.md, 계획은 steps/${s}-plan.json`);
+  console.log(`다음 스텝 ${s} · 데이터 ${last}까지 (${refreshed})\n${wide}\n전략가에게: BRIEF.md만, 계획은 steps/${s}-plan.json`);
 }
 
 else if (cmd === 'check') {

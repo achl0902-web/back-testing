@@ -11,7 +11,7 @@ v3로 바꾼 이유 (S11 피드백, 2026-10-18):
 | 단계 | 누가 | 하는 일 |
 |---|---|---|
 | 0 준비 | 코드 | `node lib/step.js prep`: pull, 데이터 새로고침 시도, 다음 스텝 번호, 카탈로그가 바뀌었거나 데이터가 90일 넘게 새로워졌을 때만 넓은 스크린(약 5분), BRIEF 갱신 |
-| 1 전략가 | LLM 1명 (`qld-strategist`) | BRIEF·IDEAS만 읽고 방향 3~4개를 `steps/Sxx-plan.json`에 등록, 모듈 작성, `step.js check`로 오류·신호 발동률만 확인. **점수를 보지 않는다** |
+| 1 전략가 | LLM 1명 (`qld-strategist`) | BRIEF만 읽고(IDEAS 행동 유형표는 BRIEF에 포함) 방향 3~4개를 `steps/Sxx-plan.json`에 등록, 모듈 작성, `step.js check`로 오류·신호 발동률만 확인. **점수를 보지 않는다** |
 | 2 실행 | 코드 | `node lib/step.js run Sxx`: 계획·모듈을 먼저 커밋(사전 등록) → 전 설정 스크린 → 방향별 최고 설정에 배터리 → `steps/Sxx.md` 작성 → 게이트 |
 | 3 검토 | 조건부 | 게이트가 "검토 필요"일 때만 비평가(`qld-critic`) → 결재자(`qld-judge`). "자동 기각"이면 생략 |
 | 4 마감 | 코드 | `node lib/step.js close Sxx --verdict … --why … [--ideas …]`: 스텝 문서 결론, LEDGER, IDEAS, BRIEF, 커밋·푸시 |
