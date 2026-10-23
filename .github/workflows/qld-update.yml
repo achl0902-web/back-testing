@@ -62,7 +62,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TITLE="$(python3 -c 'import json;print(json.load(open("qld/data/status.json"))["title"])')"
-          gh issue create --title "$TITLE" --body-file qld/alert.md || echo "issue skipped"
+          gh issue create --title "$TITLE" --body-file qld/alert.md --assignee achl0902-web || echo "issue skipped"
 
       - name: Assemble site (existing pages at root, QLD page under /qld/)
         run: |
