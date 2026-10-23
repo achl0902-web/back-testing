@@ -104,7 +104,7 @@ const UI = (() => {
       path(a, b); bctx.lineTo(X(b), h - 18); bctx.lineTo(X(a), h - 18); bctx.closePath(); bctx.fillStyle = css('--sel-fill'); bctx.fill();
       path(a, b); bctx.strokeStyle = css('--accent'); bctx.lineWidth = 2; bctx.stroke();
       // year labels
-      bctx.font = '10px ' + css('--f-num'); bctx.fillStyle = css('--faint'); bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
+      bctx.font = '11px ' + css('--f-num'); bctx.fillStyle = css('--faint'); bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
       const step = w < 360 ? 10 : 5;
       months.forEach((o, k) => { if (o.m === 1 && o.y % step === 0) bctx.fillText(String(o.y), X(k), h - 3); });
     }
