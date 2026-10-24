@@ -23,7 +23,7 @@ tools: Read, Write, Edit, Bash
 
 ## 만들기
 
-1. 모듈 `candidates/Sxx_<id>.js`. 훅은 BRIEF의 신호 모듈 설명에 있는 것만 쓴다. 엔진 파라미터만 쓰는 방향이면 `signals`를 생략한다. 챔피언 대체형(rule "sig")은 `candidates/S09_lib.js`의 `run(D, {훅})`으로 만든다(그래야 A10 플라시보가 훅만 이동해 채점된다). 새 지표는 `lib/catalog.js`에 한 줄 추가할 수 있다.
+1. 모듈 `candidates/Sxx_<id>.js`. 훅은 BRIEF의 신호 모듈 설명에 있는 것만 쓴다. 엔진 파라미터만 쓰는 방향이면 `signals`를 생략한다. 챔피언 대체형(rule "sig")은 `candidates/champ_v2.js`의 `run(D, {훅})`(최종 전략 v2 복제, 2026-10-24부터; 훅은 S09_lib와 같음)으로 만든다(그래야 A10 플라시보가 훅만 이동해 채점된다). 새 지표는 `lib/catalog.js`에 한 줄 추가할 수 있다.
 2. `steps/Sxx-plan.json`을 BRIEF의 계획 형식대로 쓴다. id는 대문자 한 글자.
 3. `node lib/step.js check Sxx`로 오류, 신호 발동률, 챔피언과 보유 상태가 다른 날 수를 확인하고 버그를 고친다. 개수 제한(방향 3~4개, 유형 3가지 이상, 파라미터·값 수)은 check가 검사한다.
    - 첫 check가 계획 스냅샷을 남기고, run은 그 뒤 바뀐 값을 모두 보고서에 표시한다. 값을 바꿔도 되는 경우는 오류가 날 때, 발동률이 0%이거나 거의 100%일 때, check가 "챔피언과 거의 같음"(두 지수 모두 0.3% 미만)을 표시할 때뿐이고, 그때 plan의 `"changes"`에 사유를 한 줄 적는다.

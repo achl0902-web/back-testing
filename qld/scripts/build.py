@@ -223,8 +223,23 @@ nxt = dt.date.fromisoformat(last) + dt.timedelta(days=1)
 while not is_session(nxt): nxt += dt.timedelta(days=1)
 week_done = (days[-1] + 5) // 7 != ((nxt - dt.date(1970, 1, 1)).days + 5) // 7
 data = dict(d0=base['d0'], dd=dd, px=px, rq=rq, tb=tbl, fx=fxl, vix=vxl, ms=ms_l, weekDone=week_done, macroNow=macro_now, etf=etf)
+
+# ---------- 최종 전략 v2: inflation re-entry block (research/lib/v2.js: one definition for research, page and alert) ----------
+ib_l, infl_now, infl_ok = None, None, False
+try:
+    tmpj = os.path.join(tempfile.mkdtemp(), 'raw.json'); json.dump({k: data[k] for k in ('d0', 'dd', 'px', 'rq', 'tb', 'fx', 'ms')}, open(tmpj, 'w'))
+    code = ("const E=require(%s),V=require(%s);const D=E.prepData(require(%s));D.name='PAGE';const b=V.inflBlock(D),z=V.zNow(D,D.n-1);"
+            "console.log(JSON.stringify({ib:Array.from(b),z:z.map(v=>isFinite(v)?Math.round(v*100)/100:null)}))"
+            % (json.dumps(P('src', 'engine.js')), json.dumps(P('research', 'lib', 'v2.js')), json.dumps(tmpj)))
+    r = subprocess.run(['node', '-e', code], capture_output=True, text=True, timeout=300)
+    o = json.loads(r.stdout.strip().splitlines()[-1]); ib_l = o['ib']; infl_ok = len(ib_l) == len(px)
+    infl_now = dict(z=o['z'], on=bool(ib_l[-1]), keys=['달러 6개월 상승', 'PPI 전년비', '유가 6개월 상승'])
+except Exception as e:
+    print('inflation block unavailable:', type(e).__name__, e, file=sys.stderr)
+if not infl_ok: ib_l = None
+data.update(ib=ib_l, inflNow=infl_now)
 data_js = json.dumps({k: v for k, v in data.items() if k != 'etf'}, separators=(',', ':'))
-hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix')}, separators=(',', ':'))
+hold_js = json.dumps({k: v for k, v in data.items() if k not in ('ms', 'macroNow', 'vix', 'ib', 'inflNow')}, separators=(',', ':'))
 now_utc = dt.datetime.now(dt.timezone.utc)
 exp = expected_session(now_utc)
 missing = []
@@ -269,9 +284,11 @@ open(P('site', 'index.html'), 'w').write(html)
 hold = fill(open(P('src', 'hold_tpl.html')).read(), hold_js)
 open(P('site', 'hold.html'), 'w').write(html.replace(page, hold))
 
-# ---------- daily signal: 최종 전략 v1 (page default since 2026-10-19; exposure-step rule kept as a reference) ----------
+# ---------- daily signal: 최종 전략 v2 (since 2026-10-24; v1 and the exposure-step rule kept as references) ----------
+V2 = "{monthPad:2,inflBlock:true}"
 RULES = {
-    'final': ('최종 전략 v1 (기술 4축 + 매크로 경보)', "{}"),
+    'final': ('최종 전략 v2 (v1 + 월초 창 + 인플레 복귀 금지)', V2),
+    'v1': ('최종 전략 v1 (기술 4축 + 매크로 경보)', "{}"),
     'tech': ('기술 4축만', "{useMacro:false}"),
     'kelly': ('노출 조절 (참고)', "{rule:'kelly'}"),
 }
@@ -281,16 +298,16 @@ const E=require({json.dumps(P('src','engine.js'))});
 const RAW={data_js};
 const D=E.prepData(RAW);
 const j=D.n-1; let i0=0; while(isNaN(D.rv[i0])) i0++;
-const P=Object.assign({{}},E.DEFAULTS,{{strategy:true}});
+const P=Object.assign({{}},E.DEFAULTS,{{strategy:true}},{V2});
 const ax=E.axesAt(D,P,j);
 const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j],rsiw:D.rsiw[j],expand:D.vols.rv10[j]/D.v60[j],
   axes:ax,votes:ax.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],
   macroOnset:E.macroOnset(D,P,j),reentry:ax.reduce((a,b)=>a+b,0)<=P.reMaxVotes&&D.px[j]>D.ma[20][j]&&D.vols.rv10[j]<D.v60[j],
-  px:D.px[j],ma20:D.ma[20][j],rules:{{}}}};
+  px:D.px[j],ma20:D.ma[20][j],monthWin:!!E.monthWin(D,P.monthPad)[j],inflBlock:!!(D.ib&&D.ib[j]),inflReady:!!D.ib,rules:{{}}}};
 // today's regime, and tomorrow's: replay one copied day so the engine executes today's signal at the next close
 const R=E.runBT(D,i0,j,P,true);
 const R2raw=Object.assign({{}},RAW,{{dd:RAW.dd.concat([RAW.weekDone===false?1:7]),weekDone:true,px:RAW.px.concat([RAW.px[j]]),rq:RAW.rq.concat([0]),tb:RAW.tb.concat([RAW.tb[j]]),fx:RAW.fx.concat([RAW.fx[j]]),
-  vix:RAW.vix?RAW.vix.concat([RAW.vix[j]]):RAW.vix,ms:RAW.ms?RAW.ms.concat([RAW.ms[j]]):RAW.ms}});
+  vix:RAW.vix?RAW.vix.concat([RAW.vix[j]]):RAW.vix,ms:RAW.ms?RAW.ms.concat([RAW.ms[j]]):RAW.ms,ib:RAW.ib?RAW.ib.concat([RAW.ib[j]]):RAW.ib}});
 const D2=E.prepData(R2raw), R2=E.runBT(D2,i0,D2.n-1,P,true);
 const ev=R2.log.filter(x=>(x.type==='exit'||x.type==='reentry')&&x.d===D2.day[D2.n-1]).pop()||null;
 const lastEv=R.log.filter(x=>x.type==='exit'||x.type==='reentry').pop()||null;
@@ -304,13 +321,13 @@ s = json.loads(st.stdout.strip().splitlines()[-1])
 r4 = lambda x: None if x is None else round(x, 4)
 NAME = {'in': 'QLD 보유', 'out': '이탈 중 (SGOV)', 'staged': '단계 복귀 중'}
 action = s['action']
-status = dict(date=last, strategy='final', regime=s['regime'], next=s['next'],
+status = dict(date=last, strategy='v2', regime=s['regime'], next=s['next'],
               action=None if not action else dict(type=action['type'], msg=action['msg']),
               lastTrade=None if not s['lastTrade'] else dict(date=iso(s['lastTrade']['d']), type=s['lastTrade']['type']),
               votes=s['votes'], axes=s['axes'],
               down20=r4(s['down20']), up20=r4(s['up20']), r10=r4(s['r10']), rsiw=round(s['rsiw'], 1), expand=round(s['expand'], 2),
               macro=r4(s['ms']), macroOnset=s['macroOnset'], reentryOK=s['reentry'], rv20=r4(s['rv20']),
-              ndx=round(s['px'], 2), ma20=round(s['ma20'], 2),
+              ndx=round(s['px'], 2), ma20=round(s['ma20'], 2), monthWin=s['monthWin'], inflBlock=s['inflBlock'], inflNow=infl_now, infl_ok=s['inflReady'],
               rules={k: dict(name=RULES[k][0], regime=v['regime']) for k, v in s['rules'].items()},
               macroNow={m['k']: m['z'] for m in macro_now}, macro_ok=macro_ok,
               built=built, sources=used, added_rows=added)
@@ -358,17 +375,20 @@ else:
     if prev.get('date') != last and action:
         msgs.append(('**다음 거래일 종가에 QLD를 모두 팔아 SGOV로 옮깁니다.**' if action['type'] == 'exit' else '**다음 거래일 종가에 SGOV를 모두 QLD로 옮깁니다.**')
                     + f" 사유: {action['msg'].split(' → ')[0]}")
-    if prev.get('strategy') != 'final':
-        msgs.append(f"알림 기준이 **최종 전략 v1**(기술 4축 + 매크로 경보 이탈)로 바뀌었습니다. 현재 상태: **{NAME[status['regime']]}**.")
-        if not action: status['title'] = f"[QLD] {last} 알림 기준 변경: 최종 전략 v1 · {NAME[status['regime']]}"
+    if prev.get('strategy') != 'v2':
+        msgs.append(f"알림 기준이 **최종 전략 v2**(v1 + 월초 창에서는 기술 축 1개 더 + 인플레 과열 시 복귀 금지)로 바뀌었습니다. 현재 상태: **{NAME[status['regime']]}**.")
+        if not action: status['title'] = f"[QLD] {last} 알림 기준 변경: 최종 전략 v2 · {NAME[status['regime']]}"
 json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, indent=1)
 json.dump(status, open(P('site', 'status.json'), 'w'), ensure_ascii=False, indent=1)
 if msgs:
     lines = [f"- {m}" for m in msgs]
     lines.append(f"\n신호: 기술 {status['votes']}/4축" + (f" ({'·'.join(a for a, on in zip(AX, status['axes']) if on)})" if status['votes'] else '')
                  + f" · 하방 변동성 {pv(status['down20'])} · 상방 {pv(status['up20'])} · 10일 {pv(status['r10'])} · 주봉 RSI {status['rsiw']}"
-                 + f" · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}")
-    lines.append('규칙: 기술 4축 중 2개 이상(복귀 후 40거래일은 3개) 또는 매크로 경보 50% 신규 돌파 → 전량 SGOV. 축 1개 이하 · 20일선 위 · 10일 변동성 < 60일 변동성 → 전량 QLD.')
+                 + f" · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}"
+                 + (" · 월초 창(기술 축 1개 더 필요)" if status['monthWin'] else '')
+                 + (f" · 인플레 과열 {'켜짐(복귀 금지)' if status['inflBlock'] else '꺼짐'}" if status['infl_ok'] else ' · 인플레 자료 없음'))
+    lines.append('규칙(최종 전략 v2): 기술 4축 중 2개 이상(복귀 후 40거래일은 3개, 월말·월초 창에서는 1개 더) 또는 매크로 경보 50% 신규 돌파 → 전량 SGOV. '
+                 '축 1개 이하 · 20일선 위 · 10일 변동성 < 60일 변동성이고 인플레 과열(달러·PPI·유가 중 2개 이상 z>1.5)이 아닐 때 → 전량 QLD.')
     lines.append(f"데이터 출처: {', '.join(used) or '저장값'} · 점검 {fresh['checked']}")
     open(P('alert.md'), 'w').write(f"**{last} 종가 기준**\n\n" + '\n'.join(lines) + '\n')
 print(json.dumps(status, ensure_ascii=False))

@@ -16,7 +16,10 @@ function wins(y0, y1, len) { const o = [];
 const G = { '10년': wins(1961, 1975, 10), '5년': wins(1961, 1980, 5) };
 const group = (p, w) => { const irr = w.map(([a, b]) => E.runBT(D, a, b, Object.assign({ weeklyKRW: W }, p), false).irr); return { med: med(irr), min: Math.min(...irr) }; };
 const sc = g => 100 * (g.med + 0.5 * g.min);
-const base = {}; for (const [k, w] of Object.entries(G)) base[k] = { champ: group({ strategy: true }, w), dca: group({ strategy: false }, w) };
+// champion = 최종 전략 v2 (since 2026-10-24); its inflation block uses the monthly oil/dollar histories (T14)
+D.ib = require('./v2.js').inflBlockHist(D);
+const CHAMP = JSON.parse(fs.readFileSync(path.join(R, 'champion.json'))).params;
+const base = {}; for (const [k, w] of Object.entries(G)) base[k] = { champ: group(Object.assign({}, CHAMP), w), dca: group({ strategy: false }, w) };
 
 function check(cfg) {
   const p = Object.assign({ strategy: true }, cfg.params || {}); let rate = '';

@@ -33,6 +33,7 @@ function runner(cfg, base = false) {
       p.fee = (p.fee ?? E.DEFAULTS.fee) * cm; p.fxSpread = (p.fxSpread ?? E.DEFAULTS.fxSpread) * cm;
       if (base) p.strategy = false; else if (p.strategy === undefined) p.strategy = true;
       if (!base) { const s = signalsFor(cfg, D); if (s) Object.assign(p, s); }
+      if (p.inflBlock && !D.ib) D.ib = require('./v2.js').inflBlock(D); // 최종 전략 v2 복귀 금지 배열
       return E.runBT(D, i0, i1, p, wantLog);
     };
   }

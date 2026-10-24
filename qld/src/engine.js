@@ -61,7 +61,9 @@ function prepData(raw, lev, er, spread) {
     year[i] = dt.getUTCFullYear(); month[i] = dt.getUTCMonth() + 1;
     week[i] = Math.floor((day[i] + 5) / 7); // W-FRI weeks (Sat..Fri)
   }
-  return { n, day, px: raw.px, tb: raw.tb, fx: raw.fx, vix: raw.vix || null, lx, ix, lx3, mu, rv, vols: { rv20: rv, down20: rvDown, rv10, up20 }, v60, r10, rsiw, ms, ma, year, month, week };
+  // ib (최종 전략 v2): 1 = 인플레 과열(달러·PPI·유가 z>1.5 중 2개 이상)로 복귀 금지, by signal day; built outside the engine
+  const ib = raw.ib ? Uint8Array.from(raw.ib, v => v ? 1 : 0) : null;
+  return { n, day, px: raw.px, tb: raw.tb, fx: raw.fx, vix: raw.vix || null, ib, lx, ix, lx3, mu, rv, vols: { rv20: rv, down20: rvDown, rv10, up20 }, v60, r10, rsiw, ms, ma, year, month, week };
 }
 
 const DEFAULTS = {
@@ -70,6 +72,9 @@ const DEFAULTS = {
   strategy: true, volHi: 0.35, volLo: 0.25, peakRatio: 2 / 3, reentryFrac: 1 / 3,
   rule: 'final', dnHi: 0.30, upHi: 0.35, crash: -0.08, rsiW: 45, expand: 1.6, votes: 2, strongVotes: 3, hold: 40,
   reMaxVotes: 1, useMacro: true, macroTh: 0.5,
+  // 최종 전략 v2 (S26 A, adopted 2026-10-24): monthPad >= 0 → a technical exit inside the month-turn window needs one more axis;
+  // inflBlock → no re-entry while D.ib is set. Defaults (−1, false) are 최종 전략 v1.
+  monthPad: -1, inflBlock: false,
   parkQQQ: 0, weeklyCheck: false, slowMA: 0, slowBand: 0, capQ: 0, parkMacro: 0,
   // volatility-sized exposure with TQQQ/QQQ/SGOV. Default: step table on 20-day vol (<25% 2.5x, <35% 2x, <45% 1x, else 0x);
   // 'kelly' sizing: kellyFrac * mu/sigma^2. Rebalance on check days when |target - holding| > band
@@ -87,6 +92,19 @@ function axesAt(D, p, j) {
 }
 function macroOnset(D, p, j) {
   return !!p.useMacro && j > 0 && !isNaN(D.ms[j]) && D.ms[j] >= p.macroTh && !(D.ms[j - 1] >= p.macroTh);
+}
+// month-turn window (S14 B): the first return day a sell would miss falls within the last 1+pad weekdays of the month or its
+// first 1+pad trading days. Weekdays (not holidays) are counted to the month end, so it is known in advance.
+function monthWin(D, pad) {
+  const key = '_mw' + pad; if (D[key]) return D[key];
+  const n = D.n, win = new Uint8Array(n); let t = 0;
+  for (let j = 0; j < n; j++) {
+    t = (j > 0 && D.month[j] === D.month[j - 1]) ? t + 1 : 1;
+    const d = new Date(D.day[j] * 864e5), end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0) / 864e5; let dl = 0;
+    for (let k = D.day[j] + 1; k <= end; k++) { const w = new Date(k * 864e5).getUTCDay(); if (w && w < 6) dl++; }
+    win[j] = (dl <= 2 + pad || t <= 1 + pad) ? 1 : 0;
+  }
+  return (D[key] = win);
 }
 function reentryOK(D, p, cnt, j) { return cnt <= p.reMaxVotes && D.px[j] > D.ma[20][j] && D.vols.rv10[j] < D.v60[j]; }
 
@@ -231,7 +249,9 @@ function runBT(D, i0, i1, p, wantLog) {
       //   fCore   share of QLD never sold on exits (core holding)      contribOut  share of contributions still bought while out
       //   ddRe    re-enter when the index is this far below its 252-day high and above its 20-day average (contrarian)
       //   maxOut  re-enter after this many trading days out if above the 20-day average
-      const strong = c + xe >= p.strongVotes || mOn, fCore = p.fCore || 0;
+      const wv = p.monthPad >= 0 && monthWin(D, p.monthPad)[j] ? 1 : 0; // v2: one more technical axis inside the month-turn window
+      const ib = !!(p.inflBlock && D.ib && D.ib[j]);                   // v2: inflation overheating blocks re-entry
+      const strong = c + xe >= p.strongVotes + wv || mOn, fCore = p.fCore || 0;
       // in-market leverage choice (S11): while 'slow', the in-market holding is QQQ (1x) instead of QLD.
       //   slowMA/slowBand: slow when the index closes below its slowMA-day average by slowBand, back to QLD above it by slowBand
       //   slowSig: research hook (0/1 by signal day) that sets the slow state directly. Defaults keep the champion unchanged.
@@ -240,12 +260,12 @@ function runBT(D, i0, i1, p, wantLog) {
       else if (p.slowMA > 0) { const m = D.ma[p.slowMA][j]; if (!slow && D.px[j] < m * (1 - p.slowBand)) slow = true; else if (slow && D.px[j] > m * (1 + p.slowBand)) slow = false; }
       //   boostSig (S16): research hook (0/1 by signal day); while set and not slow, the in-market holding is synthetic 3x
       const inA = SLOW && slow ? 1 : BOOST && p.boostSig[j] ? 2 : 0;
-      if (regime === 'in' && halfPending && reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) {
+      if (regime === 'in' && halfPending && reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j]) && !ib) {
         const amt = buy(inA, cash, i); halfPending = false;
         L(i, 'reentry', `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정 → 나머지 QLD ${fmt(amt * D.fx[i])}`);
       }
       if (regime === 'in') {
-        if ((c + xe >= p.votes || mOn) && (i - lastEntry >= p.hold || c + xe >= p.strongVotes)) {
+        if ((c + xe >= p.votes + wv || mOn) && (i - lastEntry >= p.hold || c + xe >= p.strongVotes + wv)) {
           const keep = fCore + (1 - fCore) * (strong ? 0 : 1 - (p.fExit1 ?? 1));
           if ((SLOW || BOOST) && sharesOf(1) > 0) sell(1, sharesOf(1) * D.ix[i], i);
           const p3 = BOOST && sharesOf(2) > 0 ? sell(2, sharesOf(2) * D.lx3[i], i) : 0;
@@ -253,7 +273,7 @@ function runBT(D, i0, i1, p, wantLog) {
           const park = (p.parkMacro > 0 && mOn && c + xe < p.votes) ? p.parkMacro : p.parkQQQ;
           regime = 'out'; exits++; outSince = i; fKeep = keep; halfPending = false; const r0 = realized; const pr = sell(0, sharesOf(0) * LX[i] * (1 - keep), i) + p3; buy(1, pr * park, i);
           const nm = ['변동성', '급락', '추세', '급팽창'].filter((_, k) => ax[k]); if (xv) nm.push(p.extraName || '추가 축');
-          const why = (c >= p.votes ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}${xOn && !macroOnset(D, p, j) ? (p.extraName || '추가 경보') : `매크로 경보 ${Math.round(D.ms[j] * 100)}%`}` : '');
+          const why = (c >= p.votes + wv ? `기술 ${c}축(${nm.join('·')})` : '') + (mOn ? `${c >= p.votes ? ' + ' : ''}${xOn && !macroOnset(D, p, j) ? (p.extraName || '추가 경보') : `매크로 경보 ${Math.round(D.ms[j] * 100)}%`}` : '');
           L(i, 'exit', `${why} → QLD ${keep > 0 ? Math.round((1 - keep) * 100) + '%' : '전량'} 매도 ${fmt(pr * D.fx[i])} (실현손익 ${fmt(realized - r0)})`);
         }
       } else {
@@ -263,7 +283,7 @@ function runBT(D, i0, i1, p, wantLog) {
         }
         const above20 = D.px[j] > D.ma[20][j];
         let why = null;
-        if (reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j])) why = `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정`;
+        if (reentryOK(D, p, c, j) && !(p.reentryBlock && p.reentryBlock[j]) && !ib) why = `켜진 축 ${c}개 · 20일선 위 · 단기 변동성 진정${p.inflBlock ? ' · 인플레 과열 아님' : ''}`;
         else if (p.ddRe > 0 && above20) { if (!D._mx252) { D._mx252 = new Float64Array(D.n); for (let k = 0; k < D.n; k++) { let m = 0; for (let q = Math.max(0, k - 251); q <= k; q++) if (D.px[q] > m) m = D.px[q]; D._mx252[k] = m; } } if (D.px[j] <= D._mx252[j] * (1 - p.ddRe)) why = `고점 대비 ${Math.round(p.ddRe * 100)}% 이상 하락 후 20일선 회복 (역발상)`; }
         let viaTimeout = false;
         if (!why && p.maxOut > 0 && above20 && i - outSince >= p.maxOut) { why = `이탈 ${p.maxOut}거래일 경과 · 20일선 위`; viaTimeout = true; }
@@ -610,4 +630,4 @@ function xirr(flows) {
   return (lo + hi) / 2;
 }
 
-if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, mixBT, idxOfDay, DEFAULTS, axesAt, macroOnset, kellyTarget, targetFrom, mixOf };
+if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, mixBT, idxOfDay, DEFAULTS, axesAt, macroOnset, monthWin, kellyTarget, targetFrom, mixOf };

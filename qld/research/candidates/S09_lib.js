@@ -2,6 +2,8 @@
 // opt: exitVotes(j,base)->필요 표수, extraExit(j)->bool, enterOk(j,st)->bool(추가 조건), timeout{N,ok(j,st),hold}
 // S10 추가(기본값이면 동작 동일): axes(j)->켜진 축 수 대체, timeout.hold===0 이면 타임아웃 복귀 뒤 40일 보유 없음
 // S19 추가(기본값이면 동작 동일): macro(j)->bool 매크로 경보 발동일 대체(복귀 후 보호기간 무시 규칙은 그대로 적용)
+// v2 추가(2026-10-24, 기본값이면 동작 동일): base{win, ib} = 챔피언 자체의 규칙(월초 창 +1표, 인플레 복귀 금지). 플라시보 이동 대상이 아님
+//   → 최종 전략 v2 위의 후보는 candidates/champ_v2.js의 run(D, {훅})을 쓴다
 const E = require('../../src/engine.js');
 const P0 = E.DEFAULTS;
 function axes(D, j) {
@@ -35,13 +37,15 @@ function run(D, opt = {}) {
     const macro = !!(opt.macro ? opt.macro(j) : E.macroOnset(D, P0, j)) && !(opt.macroHold !== false && j - inSince <= HOLD);
     if (!out) {
       let need = (j - inSince <= HOLD) ? 3 : 2;
+      if (opt.base && opt.base.win[j]) need++;
       if (opt.exitVotes) need = opt.exitVotes(j, need);
       if ((a >= need && !(opt.exitVeto && opt.exitVeto(j))) || macro || (opt.extraExit && opt.extraExit(j))) { out = true; outSince = j; }
     } else {
       let ok = a <= 1 && D.px[j] > D.ma[20][j] && D.vols.rv10[j] < D.v60[j];
+      if (ok && opt.base && opt.base.ib[j]) ok = false;
       if (ok && opt.enterOk) ok = opt.enterOk(j, { outSince });
       let viaT = false;
-      if (!ok && opt.timeout && j - outSince >= opt.timeout.N && opt.timeout.ok(j, { outSince, a })) { ok = true; viaT = true; }
+      if (!ok && opt.timeout && j - outSince >= opt.timeout.N && !(opt.base && opt.base.ib[j]) && opt.timeout.ok(j, { outSince, a })) { ok = true; viaT = true; }
       if (ok) { out = false; inSince = (viaT && opt.timeout.hold === 0) ? -1e9 : j; }
     }
     ex[j] = out ? 1 : 0; en[j] = out ? 0 : 1;
