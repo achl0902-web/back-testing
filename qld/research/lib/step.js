@@ -5,6 +5,7 @@
 //   node lib/step.js run Sxx                    commit the plan (pre-registration), screen all configs, battery the best per
 //                                               direction, write steps/Sxx.md, print a short digest with the review gate
 //   node lib/step.js close Sxx --verdict 기각 --why "..." [--ideas '[{"row","tested","result","gap"}]'] [--session URL]
+//   node lib/step.js criteria                   print the adoption criteria, warnings and habits from PROTOCOL.md (for the judge)
 // Plan file steps/Sxx-plan.json:
 //   {"step":"S12","goal":"...","directions":[{"id":"A","type":"이탈 시점","title":"...","why":"근거·겨냥 사례",
 //     "predict":"맞다면 무엇이 좋아지고 무엇은 그대로인가","signals":"candidates/S12_A.js","params":{"strategy":true},
@@ -22,7 +23,7 @@ function loadPlan(s) {
   const f = path.join(R, 'steps', `${s}-plan.json`);
   if (!fs.existsSync(f)) { console.error(`계획 파일 없음: steps/${s}-plan.json`); process.exit(1); }
   const P = JSON.parse(fs.readFileSync(f, 'utf8')), D = P.directions || [], err = [];
-  if (D.length < 3) err.push(`방향 ${D.length}개 (최소 3)`);
+  if (D.length < 3 || D.length > 4) err.push(`방향 ${D.length}개 (3~4개)`);
   if (new Set(D.map(d => d.type)).size < Math.min(3, D.length)) err.push('행동 유형이 3가지 미만');
   for (const d of D) {
     const ks = Object.keys(d.vary || {});
@@ -135,15 +136,17 @@ else if (cmd === 'close') {
   const sd = path.join(R, 'steps', `${step}.md`);
   fs.appendFileSync(sd, `## 결론\n\n**${verdict}** — ${why}\n`);
   const lf = path.join(R, 'LEDGER.md'), L = fs.readFileSync(lf, 'utf8').split('\n');
-  const k = L.map((l, i) => /^\| S\d+ /.test(l) ? i : -1).filter(i => i >= 0).pop();
-  L.splice(k + 1, 0, `| ${step} | ${P.goal} (${P.directions.map(d => `${d.id} ${d.title}`).join(' / ')}) | ${verdict} | ${why} |`);
+  const row = `| ${step} | ${P.goal} (${P.directions.map(d => `${d.id} ${d.title}`).join(' / ')}) | ${verdict} | ${why} |`;
+  const same = L.findIndex(l => l.startsWith(`| ${step} |`));
+  if (same >= 0) L[same] = row; // close again = replace, not a second row
+  else L.splice(L.map((l, i) => /^\| S\d+ /.test(l) ? i : -1).filter(i => i >= 0).pop() + 1, 0, row);
   fs.writeFileSync(lf, L.join('\n'));
   if (opt('--ideas')) {
     const If = path.join(R, 'IDEAS.md'); let I = fs.readFileSync(If, 'utf8');
     for (const u of JSON.parse(opt('--ideas'))) {
       // keep the row's history: append to "tested", replace "result" and "gap" (a new row goes after the last table row)
       const re = new RegExp(`^\\| ${u.row} \\|(.*)$`, 'm'), m = I.match(re);
-      if (m) { const c = m[1].split('|').map(x => x.trim()); I = I.replace(re, `| ${u.row} | ${c[0]}, ${u.tested} | ${u.result} | ${u.gap} |`); }
+      if (m) { const c = m[1].split('|').map(x => x.trim()); const t = c[0].includes(u.tested) ? c[0] : `${c[0]}, ${u.tested}`; I = I.replace(re, `| ${u.row} | ${t} | ${u.result} | ${u.gap} |`); }
       else I = I.replace(/(\| 매수 타이밍만 \|.*\n)/, `$1| ${u.row} | ${u.tested} | ${u.result} | ${u.gap} |\n`);
     }
     fs.writeFileSync(If, I);
@@ -154,4 +157,5 @@ else if (cmd === 'close') {
   try { sh(`git commit -qm "${step} ${verdict}: ${P.goal.replace(/"/g, "'").slice(0, 60)}" ${trailer}`, { cwd: ROOT }); } catch { }
   try { sh('git pull -q --rebase && git push -q', { cwd: ROOT, timeout: 180000 }); console.log(`${step} 기록·푸시 완료`); } catch (e) { console.log('푸시 실패: ' + String(e.stderr || e).slice(0, 160)); }
 }
-else console.log('usage: node lib/step.js prep | check Sxx | run Sxx | close Sxx --verdict ... --why ...');
+else if (cmd === 'criteria') console.log(require('./brief.js').criteria());
+else console.log('usage: node lib/step.js prep | check Sxx | run Sxx | close Sxx --verdict ... --why ... | criteria');

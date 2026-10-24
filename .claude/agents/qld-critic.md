@@ -12,7 +12,7 @@ tools: Read, Bash, Write
 
 필요하면 `node lib/score.js '<cfg>' --brief`를 최대 2회 실행한다. 설정에 "step"과 "by":"critic"을 넣고, 파라미터는 `params` 안에 둔다.
 
-판단할 것:
+판단 기준은 프롬프트에 붙은 `step.js criteria` 출력(채택 기준표·보조 경고·과최적화 습관, 원본 PROTOCOL.md)이다. 판단할 것:
 - 미래 정보(A8): 신호는 j일 종가까지, 발표 시차를 지키는가
 - 파라미터 근거(A6)
 - 이득의 실제 원천: 결정적 매매, 연도별 기여
