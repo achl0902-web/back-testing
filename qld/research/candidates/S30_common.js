@@ -14,10 +14,11 @@ function rollMean(a, k) { const o = nan(a.length);
 exports.marginDD = D => memo(D, 'mdd', () => { const m = M.series(D, 'MARGIN_FINRA_M', 50), mx = rollMax(m, 252), o = nan(D.n);
   for (let j = 0; j < D.n; j++) if (isFinite(m[j]) && mx[j] > 0) o[j] = m[j] / mx[j] - 1; return o; });
 // AAII 강세 − 약세 스프레드(1987-09~ 주간, 날짜 = 발표 목요일) → 시차 1일. 20거래일(약 4주) 평균.
+// 2026-10-24 받기 스크립트 수정 뒤: AAII_SPREAD.csv가 올바른 강세−약세 스프레드(2009-03-05 −0.5135)라 그 파일을 읽는다(값은 S30 실행 때와 같음).
 // 자료 버그(2026-10-24 S30 check에서 발견): 받은 파일의 열이 밀려 있다. AAII_BEAR.csv가 실제 강세−약세 스프레드
 // (2009-03-05 −0.5135 = 강세 18.92% − 약세 70.27%, 2025-04-03 −0.4016 = 21.8% − 61.9%로 공개 기록과 일치, 범위 −0.54~+0.63),
 // AAII_SPREAD.csv는 (AAII_BULL − AAII_BEAR)라 의미 없는 값(최소 −0.086). 파일을 고칠 때까지 AAII_BEAR.csv를 스프레드로 읽는다.
-exports.aaii20 = D => memo(D, 'aaii20', () => rollMean(M.series(D, 'AAII_BEAR', 1), 20));
+exports.aaii20 = D => memo(D, 'aaii20', () => rollMean(M.series(D, 'AAII_SPREAD', 1), 20));
 // k거래일 안에 한 번이라도 켜졌으면 1
 exports.memory = (on, k) => { const o = new Uint8Array(on.length); let last = -1e9;
   for (let j = 0; j < on.length; j++) { if (on[j]) last = j; o[j] = j - last < k ? 1 : 0; } return o; };
