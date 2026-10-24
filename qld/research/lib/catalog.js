@@ -116,6 +116,10 @@ const CATALOG = [
   ['f_m2', 'liquidity', 'M2 전년비 둔화', 1986, D => neg(yoy(S(D, 'M2SL', 55)))],
   ['f_walcl', 'liquidity', '연준 자산 전년비 축소', 2004, D => neg(yoy(S(D, 'WALCL', 2)))],
   ['f_ms', 'liquidity', '챔피언 매크로 경보 비율', 1989, D => Array.from(D.ms)],
+  // S28: 연준 Z.1 증권사 신용 계정(분기, 날짜=분기 첫날) → 분기 끝 + 발표 약 75일 = 날짜 기준 시차 165일. 레버리지 과열(급증)일수록 위험
+  ['f_margin', 'liquidity', '신용융자(Z.1) 전년비 증가 (S28)', 1953, D => ret(S(D, 'MARGIN_Z1', 165), 252)],
+  // S28: CBOE 총 Put/Call 10일 평균(1995-09~2003-12 아카이브 + 2006-11~2019-10, 시차 1일, 공백·이후는 NaN). 높을수록 공포(헤지 수요)
+  ['v_pc', 'vol', 'Put/Call 10일 평균 (S28, 실시간 자료원 없음)', 1996, D => require('../candidates/S28_common.js').pc10(D)],
 ];
 const BY = Object.fromEntries(CATALOG.map(c => [c[0], c]));
 
