@@ -1,0 +1,139 @@
+2026-10-24T08:38Z
+2004-06-01 https://www.cboe.com/us/options/market_statistics/daily/?dt=2004-06-01: 394696 bytes, ratios [], next_data 0, dates ['2004-06-01', '2019-10-07', '2026-10-23']
+2004-06-01 https://cdn.cboe.com/data/us/options/market_statistics/daily/2004-06-01_daily_options: ERROR HTTP Error 403: Forbidden
+2019-12-02 https://www.cboe.com/us/options/market_statistics/daily/?dt=2019-12-02: 425891 bytes, ratios [('TOTAL PUT/CALL RATIO', '0.99'), ('INDEX PUT/CALL RATIO', '1.34'), ('EQUITY PUT/CALL RATIO', '0.66')], next_data 0, dates ['2019-10-07', '2019-12-02', '2026-10-23']
+2019-12-02 https://cdn.cboe.com/data/us/options/market_statistics/daily/2019-12-02_daily_options: 3934 bytes, ratios [('TOTAL PUT/CALL RATIO', '0.99'), ('INDEX PUT/CALL RATIO', '1.34'), ('EQUITY PUT/CALL RATIO', '0.66')], next_data 0, dates []
+   json head: {
+  "ratios": [
+    {
+      "name": "TOTAL PUT/CALL RATIO",
+      "value": "0.99"
+    },
+    {
+      "name": "INDEX PUT/CALL RATIO",
+      "value": "1.34"
+    },
+    {
+      "name": "EXCHANGE TRADED PRODUCTS PUT/CALL RATIO",
+      "value": "0.92"
+    },
+    {
+      "name": "EQUITY PUT/CALL RATIO",
+      "value": "0.66"
+    },
+    {
+      "name": "CBOE VOLATILITY INDEX (VIX) PUT/CALL RATIO",
+      "value": "0.61"
+    },
+    {
+      "name": "SPX + SPXW PUT/CALL RATIO",
+      "value": "1.81"
+    },
+    {
+      "name": "OEX PUT/CALL RATIO",
+      "value": "2.83"
+    },
+    {
+      "name": "MRUT PU
+2020-03-16 https://www.cboe.com/us/options/market_statistics/daily/?dt=2020-03-16: 425876 bytes, ratios [('TOTAL PUT/CALL RATIO', '1.28'), ('INDEX PUT/CALL RATIO', '1.25'), ('EQUITY PUT/CALL RATIO', '1.10')], next_data 0, dates ['2019-10-07', '2020-03-16', '2026-10-23']
+2020-03-16 https://cdn.cboe.com/data/us/options/market_statistics/daily/2020-03-16_daily_options: 3928 bytes, ratios [('TOTAL PUT/CALL RATIO', '1.28'), ('INDEX PUT/CALL RATIO', '1.25'), ('EQUITY PUT/CALL RATIO', '1.10')], next_data 0, dates []
+   json head: {
+  "ratios": [
+    {
+      "name": "TOTAL PUT/CALL RATIO",
+      "value": "1.28"
+    },
+    {
+      "name": "INDEX PUT/CALL RATIO",
+      "value": "1.25"
+    },
+    {
+      "name": "EXCHANGE TRADED PRODUCTS PUT/CALL RATIO",
+      "value": "1.53"
+    },
+    {
+      "name": "EQUITY PUT/CALL RATIO",
+      "value": "1.10"
+    },
+    {
+      "name": "CBOE VOLATILITY INDEX (VIX) PUT/CALL RATIO",
+      "value": "0.82"
+    },
+    {
+      "name": "SPX + SPXW PUT/CALL RATIO",
+      "value": "1.75"
+    },
+    {
+      "name": "OEX PUT/CALL RATIO",
+      "value": "3.03"
+    },
+    {
+      "name": "MRUT PU
+2023-06-05 https://www.cboe.com/us/options/market_statistics/daily/?dt=2023-06-05: 425917 bytes, ratios [('TOTAL PUT/CALL RATIO', '0.97'), ('INDEX PUT/CALL RATIO', '1.11'), ('EQUITY PUT/CALL RATIO', '0.57')], next_data 0, dates ['2019-10-07', '2023-06-05', '2026-10-23']
+2023-06-05 https://cdn.cboe.com/data/us/options/market_statistics/daily/2023-06-05_daily_options: 3948 bytes, ratios [('TOTAL PUT/CALL RATIO', '0.97'), ('INDEX PUT/CALL RATIO', '1.11'), ('EQUITY PUT/CALL RATIO', '0.57')], next_data 0, dates []
+   json head: {
+  "ratios": [
+    {
+      "name": "TOTAL PUT/CALL RATIO",
+      "value": "0.97"
+    },
+    {
+      "name": "INDEX PUT/CALL RATIO",
+      "value": "1.11"
+    },
+    {
+      "name": "EXCHANGE TRADED PRODUCTS PUT/CALL RATIO",
+      "value": "1.42"
+    },
+    {
+      "name": "EQUITY PUT/CALL RATIO",
+      "value": "0.57"
+    },
+    {
+      "name": "CBOE VOLATILITY INDEX (VIX) PUT/CALL RATIO",
+      "value": "0.32"
+    },
+    {
+      "name": "SPX + SPXW PUT/CALL RATIO",
+      "value": "1.32"
+    },
+    {
+      "name": "OEX PUT/CALL RATIO",
+      "value": "3.04"
+    },
+    {
+      "name": "MRUT PU
+2026-10-22 https://www.cboe.com/us/options/market_statistics/daily/?dt=2026-10-22: 451195 bytes, ratios [('TOTAL PUT/CALL RATIO', '0.94'), ('INDEX PUT/CALL RATIO', '1.02'), ('EQUITY PUT/CALL RATIO', '0.69')], next_data 0, dates ['2019-10-07', '2026-10-22', '2026-10-23']
+2026-10-22 https://cdn.cboe.com/data/us/options/market_statistics/daily/2026-10-22_daily_options: 6996 bytes, ratios [('TOTAL PUT/CALL RATIO', '0.94'), ('INDEX PUT/CALL RATIO', '1.02'), ('EQUITY PUT/CALL RATIO', '0.69')], next_data 0, dates []
+   json head: {
+  "ratios": [
+    {
+      "name": "TOTAL PUT/CALL RATIO",
+      "value": "0.94"
+    },
+    {
+      "name": "INDEX PUT/CALL RATIO",
+      "value": "1.02"
+    },
+    {
+      "name": "EXCHANGE TRADED PRODUCTS PUT/CALL RATIO",
+      "value": "1.11"
+    },
+    {
+      "name": "EQUITY PUT/CALL RATIO",
+      "value": "0.69"
+    },
+    {
+      "name": "CBOE VOLATILITY INDEX (VIX) PUT/CALL RATIO",
+      "value": "0.41"
+    },
+    {
+      "name": "SPX + SPXW PUT/CALL RATIO",
+      "value": "1.23"
+    },
+    {
+      "name": "KPI BINARY OPTIONS PUT/CALL RATIO",
+      "value": "0.00"
+    },
+    {
+      "
