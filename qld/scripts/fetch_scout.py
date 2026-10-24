@@ -46,9 +46,9 @@ try:
     hdr = next((i for i in range(min(60, len(df))) if any(str(x).strip().lower().startswith('bull') for x in df.iloc[i])), None)
     if hdr is None: raise RuntimeError('no header; first rows: ' + ' | '.join(' ; '.join(str(x) for x in df.iloc[i].tolist()[:6]) for i in range(min(8, len(df)))))
     cols = [str(x).strip().lower() for x in df.iloc[hdr]]
-    ib = next((k for k, c in enumerate(cols) if c.startswith('bull')), None); ie = next((k for k, c in enumerate(cols) if 'bear' in c), None)
+    ib = next((k for k, c in enumerate(cols) if c == 'bullish'), None); ie = next((k for k, c in enumerate(cols) if c == 'bearish'), None)  # exact names: 'bull-bear spread' must not match
     if ie is None:  # header split over two rows
-        c2 = [str(x).strip().lower() for x in df.iloc[hdr + 1]]; ie = next((k for k, c in enumerate(c2) if 'bear' in c), None); ib = ib if ib is not None else next((k for k, c in enumerate(c2) if 'bull' in c), None)
+        c2 = [str(x).strip().lower() for x in df.iloc[hdr + 1]]; ie = next((k for k, c in enumerate(c2) if c == 'bearish'), None); ib = ib if ib is not None else next((k for k, c in enumerate(c2) if c == 'bullish'), None)
     if ib is None or ie is None: raise RuntimeError(f'columns not found: row {hdr}: {cols[:10]} / next: {[str(x) for x in df.iloc[hdr + 1].tolist()[:10]]}')
     bull, bear = [], []
     for _, r in df.iloc[hdr + 1:].iterrows():
