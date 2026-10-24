@@ -1,0 +1,8 @@
+2026-10-24T08:34Z
+MARGIN_Z1.csv (FRED BOGZ1FL663067003Q): 305 rows 1945-10-01..2026-04-01
+FINRA page: HTTP Error 403: Forbidden
+FINRA_MARGIN: failed HTTP Error 403: Forbidden
+CBOE_TOTALPC.csv (cdn.cboe.com/totalpc.csv): 3253 rows 2006-11-01..2019-10-04
+CBOE_EQUITYPC.csv (cdn.cboe.com/equitypc.csv): 3253 rows 2006-11-01..2019-10-04
+CBOE_PCARCHIVE.csv (cdn.cboe.com/pcratioarchive.csv): 2077 rows 1995-09-27..2003-12-31
+CNN_FG: failed HTTP Error 418: Unknown Error
