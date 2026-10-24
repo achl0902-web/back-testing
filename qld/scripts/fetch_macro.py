@@ -27,6 +27,17 @@ def get(url):
         return r.status, r.read().decode('utf-8', 'replace')
 
 fails = 0 if not os.environ.get('FRED_API_KEY') else 99
+def write_merged(path, header, rows):
+    # never shrink a stored series: FRED now serves some series (ICE BofA) for 3 years only; keep older stored dates
+    old = {}
+    if os.path.exists(path):
+        for r in csv.reader(open(path)):
+            if r and r[0][:4].isdigit(): old[r[0]] = r[1] if len(r) > 1 else ''
+    new = {r[0]: (r[1] if len(r) > 1 else '') for r in rows if r and r[0][:4].isdigit()}
+    old.update(new)
+    with open(path, 'w') as f: f.write(header + '\n' + ''.join(f'{d},{v}\n' for d, v in sorted(old.items())))
+    return len(old)
+
 for s in FRED:
     if fails >= 3:
         log.append(f'FRED {s}: skipped after 3 consecutive failures'); continue
@@ -38,8 +49,7 @@ for s in FRED:
                 code, body = get(url)
                 rows = [r for r in csv.reader(io.StringIO(body)) if r]
                 if code == 200 and len(rows) > 10 and len(rows[0]) >= 2:
-                    with open(os.path.join(OUT, f'{s}.csv'), 'w') as f:
-                        f.write(body)
+                    write_merged(os.path.join(OUT, f'{s}.csv'), ','.join(rows[0]), rows[1:])
                     log.append(f'FRED {s}: ok {len(rows) - 1} rows {rows[1][0]}..{rows[-1][0]} via {url}')
                     done = True
                     break
@@ -85,8 +95,7 @@ if KEY:
             u = f'https://api.stlouisfed.org/fred/series/observations?series_id={s}&file_type=json&api_key={KEY}'
             with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60) as r:
                 obs = _json.loads(r.read())['observations']
-            with open(os.path.join(OUT, f'{s}.csv'), 'w') as f:
-                f.write('observation_date,' + s + '\n' + ''.join(f"{o['date']},{o['value'] if o['value'] != '.' else ''}\n" for o in obs))
+            write_merged(os.path.join(OUT, f'{s}.csv'), 'observation_date,' + s, [[o['date'], o['value'] if o['value'] != '.' else ''] for o in obs])
             log.append(f'FRED-API {s}: ok {len(obs)} rows {obs[0]["date"]}..{obs[-1]["date"]}')
         except Exception as e:
             log.append(f'FRED-API {s}: {type(e).__name__} {str(e)[:120]}')

@@ -110,4 +110,44 @@ try:
     save('MARGIN_FINRA_M.csv', rows, f'thetrading.tools margin-debt.csv cols {hdr[:4]}')
 except Exception as e: log.append(f'MARGIN_FINRA_M: failed {e}')
 
+# --- 2nd scout (T20) ---
+# FOMC dates 1994~: SF Fed US Monetary Policy Event-Study Database (xlsx), fallback borisjoffe/FOMC-dates.js (MIT)
+try:
+    import pandas as pd
+    x = pd.read_excel(io.BytesIO(get('https://www.frbsf.org/wp-content/uploads/USMPD.xlsx', extra={'Referer': 'https://www.frbsf.org/research-and-insights/data-and-indicators/us-monetary-policy-event-study-database/'})), sheet_name=None)
+    rows = set()
+    for nm, df in x.items():
+        for c in df.columns:
+            for v in df[c].tolist():
+                try:
+                    d = pd.to_datetime(v)
+                    if 1994 <= d.year <= 2030 and getattr(d, 'hour', 0) == 0: rows.add(d.date().isoformat())
+                except Exception: pass
+        log.append(f'USMPD sheet {nm}: cols {list(df.columns)[:6]}')
+        break  # first sheet: one row per event
+    save('FOMC_DATES.csv', [(d, 1) for d in sorted(rows)], 'frbsf USMPD.xlsx first sheet, all date-like cells')
+except Exception as e:
+    log.append(f'FOMC USMPD: failed {e}')
+    try:
+        t = get('https://raw.githubusercontent.com/borisjoffe/FOMC-dates.js/master/dates.csv').decode()
+        save('FOMC_DATES.csv', [(m.group(0), 1) for m in re.finditer(r'\d{4}-\d{2}-\d{2}', t)], 'borisjoffe/FOMC-dates.js')
+    except Exception as e2: log.append(f'FOMC fallback: failed {e2}')
+# Ken French 48 industry portfolios, daily value-weighted returns (1926~) for industry breadth
+try:
+    import zipfile
+    z = zipfile.ZipFile(io.BytesIO(get('https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/48_Industry_Portfolios_daily_CSV.zip')))
+    t = z.read(z.namelist()[0]).decode('latin1'); lines = t.split('\n'); out = []; hdr = None
+    for l in lines:
+        p = [x.strip() for x in l.split(',')]
+        if hdr is None and len(p) > 40 and p[0] == '': hdr = p; continue
+        if hdr is not None:
+            if not re.fullmatch(r'\d{8}', p[0] or ''): 
+                if out: break
+                continue
+            out.append(p)
+    with open(os.path.join(OUT, 'FF48_DAILY_VW.csv'), 'w') as f:
+        f.write('date,' + ','.join(hdr[1:]) + '\n' + ''.join(f"{r[0][:4]}-{r[0][4:6]}-{r[0][6:]}," + ','.join(r[1:]) + '\n' for r in out))
+    log.append(f'FF48_DAILY_VW.csv: {len(out)} rows {out[0][0]}..{out[-1][0]}, {len(hdr) - 1} industries (percent returns, value-weighted)')
+except Exception as e: log.append(f'FF48: failed {e}')
+
 open(LOG, 'w').write(dt.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ') + '\n' + '\n'.join(log) + '\n'); print('\n'.join(log))
