@@ -118,8 +118,10 @@ const CATALOG = [
   ['f_ms', 'liquidity', '챔피언 매크로 경보 비율', 1989, D => Array.from(D.ms)],
   // S28: 연준 Z.1 증권사 신용 계정(분기, 날짜=분기 첫날) → 분기 끝 + 발표 약 75일 = 날짜 기준 시차 165일. 레버리지 과열(급증)일수록 위험
   ['f_margin', 'liquidity', '신용융자(Z.1) 전년비 증가 (S28)', 1953, D => ret(S(D, 'MARGIN_Z1', 165), 252)],
-  // S28: CBOE 총 Put/Call 10일 평균(1995-09~2003-12 아카이브 + 2006-11~2019-10, 시차 1일, 공백·이후는 NaN). 높을수록 공포(헤지 수요)
-  ['v_pc', 'vol', 'Put/Call 10일 평균 (S28, 실시간 자료원 없음)', 1996, D => require('../candidates/S28_common.js').pc10(D)],
+  // S28·S29: CBOE 총 Put/Call 10일 평균(1995-09~2003-12 아카이브 + 2006-11~2019-10 + S29에서 2019-10-07~ 일간 CBOE_TOTALPC_D 이어 붙임, 시차 1일, 2004~2006-10 공백은 NaN). 높을수록 공포(헤지 수요)
+  ['v_pc', 'vol', 'Put/Call 10일 평균 (S28, S29부터 2019-10~ 일간 자료 이어 붙임)', 1996, D => require('../candidates/S29_common.js').pc10(D)],
+  // S29: CNN 공포·탐욕 지수(0~100, 낮을수록 공포, 2011-01~, 시차 1일). 위험 방향(탐욕)이 높게
+  ['v_fg', 'vol', 'CNN 공포·탐욕 지수 (S29, 2011~)', 2011, D => S(D, 'FG_CNN', 1)],
 ];
 const BY = Object.fromEntries(CATALOG.map(c => [c[0], c]));
 
