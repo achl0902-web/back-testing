@@ -5,7 +5,7 @@ on:
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: [".github/workflows/history-fetch.yml", "qld/scripts/fetch_history.py", "qld/scripts/fetch_vintage.py", "qld/scripts/fetch_extra.py"]
+    paths: [".github/workflows/history-fetch.yml", "qld/scripts/fetch_history.py", "qld/scripts/fetch_vintage.py", "qld/scripts/fetch_extra.py", "qld/scripts/fetch_cboe_daily.py"]
 
 permissions:
   contents: write
@@ -32,11 +32,13 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python3 qld/scripts/fetch_extra.py || echo "extra fetch failed"
+      - name: Probe CBOE daily put/call pages (T16b)
+        run: python3 qld/scripts/fetch_cboe_daily.py || echo "cboe probe failed"
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add qld/research/data/hist qld/research/data/vintage qld/data/macro qld/research/data/extra_fetch_log.txt
+          git add qld/research/data/hist qld/research/data/vintage qld/data/macro qld/research/data/extra_fetch_log.txt qld/research/data/cboe_probe.txt
           git diff --cached --quiet || git commit -m "history data: pre-1986 S&P 500, Nasdaq Composite, Moody's yields"
           git pull --rebase -q origin main || true
           git push || echo "push skipped"
