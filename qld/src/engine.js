@@ -66,7 +66,7 @@ function prepData(raw, lev, er, spread) {
 
 const DEFAULTS = {
   weeklyKRW: 700000, fee: 0.001, fxSpread: 0.001, deduct: 2500000, taxRate: 0.22,
-  cashHaircut: 0.001, divTax: 0.154, harvest: true,
+  cashHaircut: 0.001, divTax: 0.154, harvest: true, lossHarvest: false,
   strategy: true, volHi: 0.35, volLo: 0.25, peakRatio: 2 / 3, reentryFrac: 1 / 3,
   rule: 'final', dnHi: 0.30, upHi: 0.35, crash: -0.08, rsiW: 45, expand: 1.6, votes: 2, strongVotes: 3, hold: 40,
   reMaxVotes: 1, useMacro: true, macroTh: 0.5,
@@ -162,6 +162,21 @@ function runBT(D, i0, i1, p, wantLog) {
     if (best[1] > 0 && best[0] > 0) {
       const before = cash; sell(a, best[1] * px[a][i], i); buy(a, cash - before, i); return best[0];
     }
+    return 0;
+  }
+  // loss harvest (T12): a year whose realized gain is above the deduction sells the oldest lots (FIFO, as the tax law orders them)
+  // while their running gain is negative, down to exactly the deduction, and re-buys at once. Skipped when the tax saved is below the round-trip fee.
+  function lossHarvestAsset(a, i) {
+    const excess = realized - p.deduct; if (excess <= 0 || !lots[a].length) return 0;
+    const gm = px[a][i] * D.fx[i] * (1 - p.fee);
+    let cum = 0, cumSh = 0, best = [0, 0];
+    for (const [sh, ck] of lots[a]) {
+      const g = gm - ck;
+      if (g < 0 && cum + sh * g <= -excess) { best = [-excess, cumSh + (-excess - cum) / g]; break; }
+      cum += sh * g; cumSh += sh; if (cum < best[0]) best = [cum, cumSh];
+    }
+    const cost = 2 * p.fee * best[1] * px[a][i] * D.fx[i];
+    if (best[1] > 0 && -best[0] * p.taxRate > cost) { const before = cash; sell(a, best[1] * px[a][i], i); buy(a, cash - before, i); return -best[0]; }
     return 0;
   }
   const valKRW = i => (sharesOf(0) * LX[i] + sharesOf(1) * D.ix[i] + sharesOf(2) * D.lx3[i] + cash) * D.fx[i];
@@ -361,6 +376,10 @@ function runBT(D, i0, i1, p, wantLog) {
       if (p.harvest && realized < p.deduct) {
         const r0 = realized; harvestAsset(0, i); harvestAsset(1, i); if (shTot[2] > 0) harvestAsset(2, i);
         if (realized - r0 > 1) L(i, 'harvest', `연말 비과세 한도 실현 후 재매수: 차익 ${fmt(realized - r0)}`);
+      }
+      if (p.lossHarvest && realized > p.deduct) {
+        const r0 = realized; for (const a of [0, 1, 2]) if (shTot[a] > 0 && realized > p.deduct) lossHarvestAsset(a, i);
+        if (r0 - realized > 1) L(i, 'harvest', `연말 손실 ${fmt(r0 - realized)}을 실현해 과세 차익을 줄이고 재매수`);
       }
       const t = Math.max(realized - p.deduct, 0) * p.taxRate;
       L(i, 'year', `${D.year[i]}년 실현손익 ${fmt(realized)} → 양도세 ${fmt(t)} (다음 해 6월 납부)`);

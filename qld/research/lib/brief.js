@@ -61,6 +61,7 @@ ${stepRows.join('\n')}
   - 추가형 훅은 params에 "strategy":true를 두고 rule은 생략(=final), extraName으로 로그 이름
 - 엔진의 다른 구조: rule "kelly"(변동성 비례 노출, sizing steps/kelly, maxLev), rule "vol"(이전 방어형), parkQQQ(이탈 시 QQQ로 감속)
 - 챔피언 행동 파라미터 (기본값이면 챔피언과 동일): fExit1(일반 이탈 때 파는 비율, 강신호 때 나머지), fCore(이탈해도 남기는 코어 비율), contribOut(이탈 중에도 QLD로 사는 적립금 비율), ddRe(252일 고점 대비 낙폭 이상 + 20일선 위면 역발상 복귀), maxOut(이탈 N거래일 경과 + 20일선 위면 복귀), slowMA·slowBand(보유 중 지수가 N일선 −band 아래면 QLD 대신 QQQ 1배로 감속, +band 위면 QLD 복귀; 훅 slowSig 0/1 배열로 직접 지정 가능, slowName 로그 이름), capQ(보유 중 QLD 비중 상한, 매월 첫 거래일 리밸런싱·나머지 SGOV; 0=끔), parkMacro(매크로 경보 단독 이탈 때만 매도대금 중 이 비율을 QQQ로 대기; 0=끔), votes·strongVotes·hold·reMaxVotes·dnHi·upHi·crash·rsiW·expand·macroTh
+- 세금 파라미터: lossHarvest(연말 과세 차익이 공제 한도를 넘으면 손실 난 오래된 매수분을 선입선출로 팔아 한도까지 상계 후 재매수, T12, 기본 꺼짐)
 
 ${criteria().replace(/^## /gm, '### ').replace('### 채택 기준표', '## 채택 기준 (PROTOCOL.md에서 자동 추출, 자동 판정은 battery.js)')}
 

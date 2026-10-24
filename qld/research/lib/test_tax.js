@@ -16,7 +16,7 @@ function data(rets, start) {
   return E.prepData(raw);
 }
 // independent simulator: DCA or forced exit/re-entry on given bar indices, optional harvest
-function indep(D, { exitAt = -1, enterAt = -1, harvest = false }) {
+function indep(D, { exitAt = -1, enterAt = -1, harvest = false, lossHarvest = false }) {
   const lots = []; let cash = 0, realized = 0, pending = 0, paid = 0, out = false;
   const P = i => D.lx[i];
   const buy = (usd, i) => { usd = Math.min(usd, cash); if (usd <= 0) return; /* never buy with money the account does not have */ cash -= usd; const sh = usd * (1 - FEE) / P(i); lots.push([sh, usd * FX / sh]); };
@@ -36,6 +36,15 @@ function indep(D, { exitAt = -1, enterAt = -1, harvest = false }) {
         const room = DED - realized, gm = P(i) * FX * (1 - FEE); let cum = 0, cumSh = 0, best = [0, 0];
         for (const [sh, ck] of lots) { const g = gm - ck; if (g > 0 && cum + sh * g >= room) { best = [room, cumSh + (room - cum) / g]; break; } cum += sh * g; cumSh += sh; if (cum > best[0]) best = [cum, cumSh]; }
         if (best[1] > 0 && best[0] > 0) { const c0 = cash; sellSh(best[1], i); buy(cash - c0, i); }
+      }
+      if (lossHarvest && realized > DED) { // candidate cut points: every lot boundary plus the exact point where the running gain reaches −excess
+        const excess = realized - DED, gm = P(i) * FX * (1 - FEE); let run = 0, sh = 0, cut = null;
+        const cands = [];
+        for (const [s, ck] of lots) { const g = gm - ck;
+          if (g < 0 && run > -excess && run + s * g < -excess) cands.push([-excess, sh + (-excess - run) / g]);
+          run += s * g; sh += s; cands.push([run, sh]); }
+        for (const c of cands) if (c[0] >= -excess - 1e-6 && c[0] < 0 && (!cut || c[0] < cut[0])) cut = c;
+        if (cut && -cut[0] * RATE > 2 * FEE * cut[1] * P(i) * FX) { const c0 = cash; sellSh(cut[1], i); buy(cash - c0, i); }
       }
       pending += Math.max(realized - DED, 0) * RATE; realized = 0;
     }
@@ -57,6 +66,11 @@ const cases = [];
   for (let k = 0; k < D.n; k++) { ex[k] = k >= 25 && k < 60 ? 1 : 0; en[k] = ex[k] ? 0 : 1; }
   // engine: signal on bar j executes on bar j+1 → exit on bar 26, re-entry on bar 61
   cases.push(['C 이탈(혼합 lot 전량 매도)·재진입·6월 납부', D, Object.assign({}, base, { harvest: false, exitSig: ex, enterSig: en }), { exitAt: 26, enterAt: 61 }]); }
+// D: big gain realized by an exit, re-entry in the same year, then a fall: year-end loss harvest offsets the gain down to the deduction
+{ const r = []; for (let k = 0; k < 80; k++) r.push(k < 20 ? 0.05 : k < 30 ? 0.01 : k < 50 ? -0.02 : 0.03);
+  const D = data(r, '2021-01-04'), ex = new Uint8Array(D.n), en = new Uint8Array(D.n).fill(1);
+  for (let k = 0; k < D.n; k++) { ex[k] = k >= 20 && k < 30 ? 1 : 0; en[k] = ex[k] ? 0 : 1; }
+  cases.push(['D 이탈 이익 뒤 같은 해 손실 하베스팅', D, Object.assign({}, base, { harvest: false, lossHarvest: true, exitSig: ex, enterSig: en }), { exitAt: 21, enterAt: 31, lossHarvest: true }]); }
 let fail = 0;
 for (const [name, D, p, o] of cases) {
   const R = E.runBT(D, 0, D.n - 1, Object.assign({ strategy: !!p.exitSig, harvest: false }, p), false), I = indep(D, o);
