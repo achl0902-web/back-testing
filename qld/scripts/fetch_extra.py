@@ -67,7 +67,11 @@ for nm, f in [('CBOE_TOTALPC.csv', 'totalpc.csv'), ('CBOE_EQUITYPC.csv', 'equity
 
 # 3b) CBOE daily market statistics JSON (free, by date, 2019-10-07 onward): fills the gap after the CSVs end
 try:
-    rows_t, rows_e, d, miss = [], [], dt.date(2019, 10, 7), 0
+    def _load(n):
+        p = os.path.join(OUT, n)
+        return [tuple(l.split(',')) for l in open(p).read().strip().split('\n')[1:]] if os.path.exists(p) else []
+    rows_t, rows_e = _load('CBOE_TOTALPC_D.csv'), _load('CBOE_EQUITYPC_D.csv'); miss = 0  # incremental: start after the last saved day
+    d = (dt.date.fromisoformat(rows_t[-1][0]) + dt.timedelta(days=1)) if rows_t else dt.date(2019, 10, 7)
     while d <= dt.date.today():
         if d.weekday() < 5:
             try:

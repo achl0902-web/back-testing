@@ -1,0 +1,44 @@
+# 정찰 기록 (qld-scout)
+
+## 1. 날짜·범위
+- 날짜: 2026-10-24 (첫 정찰)
+- 본 칸: IDEAS "정보 출처별 커버리지"의 빈 칸이나 얇은 칸. 심리 설문, 실적·밸류에이션, 수급·포지셔닝(COT, 펀드 흐름, 신용융자 월간 대안), 시장 폭, 유동성·통화, 이벤트(FOMC), 변동성 내재(스큐, 기간구조).
+- 확인 방법: WebSearch로 찾고 WebFetch로 열어 봄. 이 세션의 샌드박스는 aaii.com, cboe.com, cftc.gov, federalreserve.gov, spglobal.com 직접 접속을 모두 403으로 막았다. 그래서 "URL 확인"은 웹 페이지나 검색 결과에 그 URL이 나온 것까지를 뜻한다. **GitHub Actions에서 urllib로 받히는지는 아무것도 시험하지 않았다.** 처음 받을 때 확인할 것.
+- 표기: (확인) = 페이지에서 그 URL을 직접 봄. (미확인) = 같은 사이트 규칙으로 추정했거나 페이지가 열리지 않음.
+
+## 2. 후보 표
+
+| # | 지표 | 정보 출처 칸 | 근거 | 무료 자료원 | 시작 | 갱신 | 라이선스·조건 | 이미 썼나 |
+|---|---|---|---|---|---|---|---|---|
+| 1 | AAII 강세−약세 스프레드(역발상) | 심리 설문 | [Fisher & Statman 2000, FAJ](https://ideas.repec.org/a/taf/ufajxx/v56y2000i2p16-23.html): 개인 투자자 심리는 S&P500의 유의한 역지표 · [AAII 저널](https://www.aaii.com/journal/article/feature-investor-sentiment-as-a-contrarian-indicator) | `https://www.aaii.com/files/surveys/sentiment.xls` (확인: [AAII 결과 페이지](https://aaii.com/sentimentsurvey/sent_results)의 "Download Complete Historical Data" 링크). Actions 접속은 미확인 | 1987-07 | 매주(목) | 회원 사이트. 재배포 조건 명시 없음 → 연구용 개인 사용만 | – |
+| 2 | 변동성 위험 프리미엄 VRP = VIX²/12 − 지난 21일 실현분산 | 변동성 내재 | [Bollerslev·Tauchen·Zhou 2009, RFS](https://papers.ssrn.com/abstract=948309): 1990년 이후 분기 수익률 예측력이 P/E·신용 스프레드보다 큼 · [Bekaert & Hoerova 2014, NBER w18995](https://nber.org/papers/w18995) | **새 자료 필요 없음.** 이미 받는 VIX(VXN)와 지수 일간 수익률로 계산 | 1990 (VXN 2001) | 매일 | 보유 자료 | – (VIX 수준만 T01·S24 A에서 씀) |
+| 3 | VIX 기간구조 VIX/VIX3M (1 넘으면 역전) | 변동성 내재 | [Fassas & Hourvouliades 2019, JRFM](https://mdpi-res.com/d_attachment/jrfm/jrfm-12-00113/article_deploy/jrfm-12-00113-v2.pdf): 역전(백워데이션) 뒤 S&P500 수익률이 양(+), 역발상 복귀 신호 · [Johnson 2017, JFQA](https://ideas.repec.org/a/cup/jfinqa/v52y2017i06p2461-2490_00.html): 기울기는 분산 위험 가격 | FRED `VXVCLS` (확인, 2007-12-04~, 일간). Cboe `https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX3M_History.csv` (확인: [macroption](https://www.macroption.com/vix3m/)). VIX9D: `https://cdn-api.cboe.com/api/global/us_indices/daily_prices/VIX9D_History.csv` (확인: [Cboe 페이지](https://www.cboe.com/en/tradable-products/vix/vix-historical-data)) | VIX3M 2007-12, VIX9D 2011(미확인) | 매일 | FRED 시리즈 노트에 "Copyright Cboe, reprinted with permission" → 연구용 | – |
+| 4 | Cboe SKEW (꼬리위험 가격) | 옵션 시장(스큐) | [Bevilacqua & Tunaru 2021, J. Financial Stability](https://researchonline.lse.ac.uk/id/eprint/108198): 풋 쪽 SKEW가 하락·경기침체를 최대 1년 앞서 예측 · [Mora-Valencia 외 2021, NAJEF](https://ideas.repec.org/a/eee/ecofin/v56y2021ics1062940820302370.html) · 반론: [optionstradingiq](https://optionstradingiq.com/black-swan-index/) "급등이 늘 하락으로 이어지지는 않음" | `https://cdn.cboe.com/api/global/us_indices/daily_prices/SKEW_History.csv` (**미확인**, VIX3M과 같은 규칙으로 추정). 1990년 시작은 [thetrading.tools](https://www.thetrading.tools/skew-index)에서 확인 | 1990-01 | 매일 | Cboe 약관: "정확성 보장 없음". 재배포 조건 불명 → 연구용 | – (옵션 칸에서는 Put/Call만 씀) |
+| 5 | COT: E-mini S&P500·나스닥100 대형 투기자·자산운용사 순포지션 | 수급·포지셔닝 | [Wang 2003, Applied Fin. Econ.](https://ideas.repec.org/a/taf/apfiec/v13y2003i12p891-898.html): S&P 선물에서 대형 투기자는 추세 쪽, 헤저는 역발상 쪽, 극단값일수록 신뢰도 높음 · [CXO "COTs Timer"](https://www.cxoadvisory.com/sentiment-indicators/the-cots-timer-trading-system/): 2003년 이후에는 비용 차감 시 우위 소멸 | CFTC Socrata API (확인: [데이터셋 목록](https://publicreporting.cftc.gov/stories/s/inwp-fmhz)). TFF 선물 `gpe5-46if`, Legacy 선물 `6dca-aqww`. 엔드포인트 `https://publicreporting.cftc.gov/resource/gpe5-46if.csv`(미확인). 과거 zip 목록: [HistoricalCompressed](https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm)(이번 세션에서 열지 못함). 클론해 쓸 수 있는 저장소: [NDelventhal/cot_reports](https://github.com/NDelventhal/cot_reports) (MIT) | Legacy 1986, TFF 2006 | 매주(화요일 기준, 금요일 공표) | 미국 정부 자료, 공공. 저장소는 MIT | – |
+| 6 | 신용융자(FINRA margin debt) 월간: 전년 대비 증가율, 순신용잔고 | 수급·포지셔닝 | [Advisor Perspectives](https://www.advisorperspectives.com/dshort/updates/margin-debt): 2000·2007·2021년에는 신용융자 정점이 지수 정점보다 0~3개월 앞섬. 단 사례 수가 적다고 스스로 경고 · [thetrading.tools 해설](https://www.thetrading.tools/margin-debt) | **FINRA 403 대안**: `https://www.thetrading.tools/data/indicators/margin-debt.csv` (확인. 원자료는 FINRA margin-statistics.xlsx) | 1997-01 | 매월(월말 후 약 3주) | 제3자 미러이고 재배포 조건이 명시돼 있지 않음 → 연구용 개인 사용만. 원자료는 FINRA | S28 A·B는 분기 Z.1. 월간은 처음 |
+| 7 | 은행 대출 기준 SLOOS(C&I 대출 기준을 조인 은행의 순비율) | 유동성·통화(신용 공급) | [Chava·Gallmeyer·Park 2015, J. Monetary Econ.](https://pure.skku.edu/en/publications/credit-conditions-and-stock-return-predictability/): 기준을 조이면 이후 수익률이 낮음, 표본 밖에서도 유지 · [Lown & Morgan, NY Fed](https://www.newyorkfed.org/research/epr/00v06n2/0007lown.pdf) | FRED `DRTSCILM` (확인, 1990-04-01~) | 1990 | **분기** | 연준 자료, 공공 | – |
+| 8 | FOMC 주기: 발표 전 24시간 상승, 직전 회의 뒤 짝수 주 | 계절성·이벤트 | [Lucca & Moench, NY Fed SR 512 / JF 2015](https://econpapers.repec.org/RePEc:fip:fednsr:512): 1994년 이후 발표 전 24시간이 주식 프리미엄의 80% 이상 · [Cieslak·Morse·Vissing-Jorgensen 2019, JF](https://papers.ssrn.com/abstract=2687614): 1994년 이후 프리미엄은 짝수 주에만 발생 | 일정: [Fed fomccalendars](https://federalreserve.gov/monetarypolicy/fomccalendars.htm) (확인, 2021~2027). 그 전 일정: `https://www.federalreserve.gov/monetarypolicy/fomc_historical_year.htm` (미확인). 이미 정리된 CSV: [marcburri/ScrapeFOMC](https://github.com/marcburri/ScrapeFOMC) `FOMCData.csv` (1936~2016, 라이선스 표기 없음) | 1994(발표 시작) | 1년에 8번, 미리 공표 | 연준 자료, 공공 | 달력만 S09·S14 B에서 씀. FOMC는 처음 |
+| 9 | 소매 MMF 잔고 증감(대기 자금, 펀드 흐름의 대리 변수) | 수급·포지셔닝(펀드 흐름) | [Ben-Rephael·Kandel·Wohl 2012, JFE](https://ideas.repec.org/a/eee/jfinec/v104y2012i2p363-382.html): 주식형에서 채권형으로 옮기는 흐름이 심리 지표이고 일부는 되돌려짐(근거는 간접) · ICI 주간 흐름은 자료 접근을 확인하지 못함 | FRED `WRMFNS` (확인, 1980-02-04~, 주간. 원자료는 ICI, H.6) | 1980 | 매주 | FRED·연준. 원자료 ICI | – |
+| 10 | CAPE, 이익수익률 − 10년 금리("연준 모델") | 실적·밸류에이션 | [Dimensional](https://www.dimensional.com/no-en/insights/cape-fear-should-investors-be-concerned-with-market-valuations): CAPE의 10년 R² 29%, 타이밍에 쓸 근거 없음 · [Asness "Fight the Fed Model"(Alpha Architect 요약)](https://alphaarchitect.com/2017/05/fight-the-fed-model/): 연준 모델은 예측력 없음, E/P 자체가 더 나음 → **두 출처 모두 단기 타이밍에는 부정적** | Shiller `ie_data.xls`가 [shillerdata.com](https://shillerdata.com)에 있다는 것은 [thetrading.tools](https://www.thetrading.tools/shiller-cape)에서 확인(파일 직접 URL은 미확인). 미러 `https://www.thetrading.tools/data/indicators/shiller-cape.csv` (확인). [datahub core/s-and-p-500](https://datahub.io/core/s-and-p-500) CSV(PDDL)는 Shiller 필드가 2023-06에서 멈춤 | 1871 | 매월 | Shiller는 라이선스를 공표하지 않음, 출처 표기 → 연구용 | – |
+
+근거 부족으로 표에서 뺀 것:
+- **연준 순유동성(WALCL − WTREGEN − RRPONTSYD)**: 자료는 FRED에 있다(WALCL 2002-12~ 주간 확인, RRPONTSYD 2003-02~ 일간 확인). 하지만 실무 차트 말고는 근거가 없고, [eco3min](https://eco3min.fr/us-net-liquidity-index-dataset/)도 "관계가 불안정해 매매 규칙이 못 된다"고 적었다.
+- **집계 EPS 수정**: 근거는 [Fed FEDS 2024-049](https://www.federalreserve.gov/econres/feds/predicting-analysts-sp-500-earnings-forecast-errors-and-stock-market-returns-using-macroeconomic-data-and-nowcasts.htm) 하나다(애널리스트 예측과 매크로 예측의 괴리가 3개월 수익률을 예측). 무료 일간 자료도 찾지 못했다(아래 4절).
+
+## 3. 추천 5개
+1. **VRP(VIX² − 실현분산), 표 2번**: 새로 받을 자료가 없고 1990년부터 매일 있다. 학술 근거가 가장 두껍고, VXN으로 나스닥판도 만들 수 있다.
+2. **COT E-mini S&P500·나스닥100 포지셔닝, 표 5번**: Legacy는 1986년, TFF는 2006년부터 매주 받는다. 공공 자료이고 Socrata API라 urllib로 받기 쉽다. 단 2003년 이후 효과가 약해졌다는 반론이 있어 극단값만 보는 방식으로 시험한다.
+3. **AAII 강세−약세, 표 1번**: 비어 있는 "심리 설문" 칸을 채우는 유일한 무료 장기(1987~) 주간 설문이다. Actions에서 xls가 받히는지 먼저 확인해야 한다.
+4. **FOMC 주기·발표 전 구간, 표 8번**: 1994년부터 날짜만 있으면 된다. 근거는 JF 논문 2편이다. 이탈 신호보다는 "복귀를 언제 하나"의 보조 신호로 시험한다.
+5. **VIX/VIX3M 기간구조, 표 3번**: 2007년부터라 기준(2005)에 조금 못 미친다. 그래도 FRED 키로 매일 받을 수 있고, 역전 뒤 복귀가 유리하다는 근거가 있어 비어 있는 "변동성 내재 복귀" 칸에 바로 맞는다.
+
+(사용자 질문 "신용융자 월간 대안"에 대한 답은 표 6번이다. 1997년부터 월간이고 제3자 미러라 연구용으로만 쓴다.)
+
+## 4. 받기 어려운 것과 대안
+- **NYSE 상승·하락 종목 수, 신고가·신저가, 맥클렐런**: 무료 장기 원자료를 찾지 못했다. McClellan은 과거 자료를 [유료로 판매](https://mcoscillator.com/market_breadth_data/)하고, Unicorn(unicorn.us.com)은 이 세션에서 막혔다(미확인). 대안 1줄: RSP/SPY 비율(동일가중 대 시총가중, 2003~)로 대신하거나, [hanshof/sp500_constituents](https://github.com/hanshof/sp500_constituents)(1996~, MIT) 편입 이력과 종목 가격으로 "200일선 위 종목 비율"을 직접 계산한다(상장폐지 종목 가격 확보가 관건).
+- **FINRA 신용융자 원본(403)**: 대안은 표 6번 thetrading.tools CSV. Alphacast 미러는 로그인이 필요하다.
+- **NAAIM 노출 지수**: 공개 값은 3개월 늦게 나오고, 과거 자료와 상업적 사용은 [구독·허락이 필요](https://naaim.org/programs/naaim-exposure-index/)하다. 대안: AAII(표 1번).
+- **ICI 주간 펀드 흐름**: ici.org가 이 세션에서 막혔고 과거 파일 URL도 확인하지 못했다. 대안: FRED `WRMFNS`(표 9번).
+- **S&P 다우존스 `sp-500-eps-est.xlsx`(실적·추정치)**: spglobal.com이 막혀 URL을 확인하지 못했다(미확인). 매일 갱신되는 EPS 수정은 FactSet·IBES 같은 유료 자료뿐이다. 대안: Shiller 월간 EPS(표 10번).
+- **공매도 잔고 지수(Rapach·Ringgenberg·Zhou 2016, [CXO 요약](https://cxoadvisory.com/short-selling/aggregate-short-interest-and-future-stock-market-returns))**: 근거는 강하지만 원자료가 Compustat(유료)이거나 FINRA(403)다. 대안 없음.
+- **Investors Intelligence 설문, VIX 선물 정산가 장기 이력**: 앞의 것은 유료다. 뒤의 것은 [thetrading.tools](https://www.thetrading.tools/vix-term-structure)가 JSON(`/data/vix/vix_data.json`, 2009~)으로 주지만 조건이 명시돼 있지 않다. 대안: VIX/VIX3M 지수(표 3번).

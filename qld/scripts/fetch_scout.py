@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""T19: data recommended by the first scout (research/SCOUT.md, 2026-10-24). Each source independent; log to research/data/scout_fetch_log.txt.
+Outputs (qld/data/macro, date,value unless noted):
+  CBOE_SKEW.csv                 CBOE SKEW index daily (1990~)
+  AAII_BULL.csv / AAII_BEAR.csv / AAII_SPREAD.csv   AAII weekly sentiment (1987~), research use only
+  COT_LEGACY_ES.csv / COT_LEGACY_NQ.csv   CFTC legacy futures: non-commercial net / open interest (weekly, report date)
+  COT_TFF_ES.csv / COT_TFF_NQ.csv         CFTC TFF: leveraged-funds net / open interest and asset-manager net / OI (multi-column)
+  WRMFNS.csv, DRTSCILM.csv      FRED retail money funds (weekly), senior loan officer tightening C&I (quarterly)
+  MARGIN_FINRA_M.csv            FINRA margin debt monthly via thetrading.tools mirror (1997~), research use only
+"""
+import csv, datetime as dt, io, json, os, re, time, urllib.parse, urllib.request
+OUT = os.path.join('qld', 'data', 'macro'); LOG = os.path.join('qld', 'research', 'data', 'scout_fetch_log.txt')
+UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept': '*/*', 'Accept-Language': 'en-US,en;q=0.9'}
+KEY = os.environ.get('FRED_API_KEY'); log = []
+def get(u, extra=None, tries=3):
+    for k in range(tries):
+        try: return urllib.request.urlopen(urllib.request.Request(u, headers=dict(UA, **(extra or {}))), timeout=90).read()
+        except Exception:
+            if k == tries - 1: raise
+            time.sleep(5)
+def save(name, rows, src, header='date,value'):
+    rows = sorted({r[0]: r for r in rows}.values())
+    with open(os.path.join(OUT, name), 'w') as f: f.write(header + '\n' + ''.join(','.join(str(x) for x in r) + '\n' for r in rows))
+    log.append(f'{name} ({src}): {len(rows)} rows {rows[0][0]}..{rows[-1][0]}' if rows else f'{name} ({src}): 0 rows')
+def pdate(s):
+    for f in ('%m/%d/%Y', '%Y-%m-%d', '%m/%d/%y', '%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S'):
+        try: return dt.datetime.strptime(s.strip()[:26], f).date()
+        except ValueError: pass
+    return None
+
+# CBOE SKEW
+try:
+    t = get('https://cdn.cboe.com/api/global/us_indices/daily_prices/SKEW_History.csv').decode('utf8', 'ignore'); rows = []
+    for r in csv.reader(io.StringIO(t)):
+        if len(r) >= 2 and pdate(r[0]):
+            try: rows.append((pdate(r[0]).isoformat(), float(r[-1])))
+            except ValueError: pass
+    save('CBOE_SKEW.csv', rows, 'cdn.cboe.com SKEW_History.csv')
+except Exception as e: log.append(f'CBOE_SKEW: failed {e}')
+
+# AAII sentiment (xls)
+try:
+    import pandas as pd
+    raw = get('https://www.aaii.com/files/surveys/sentiment.xls', extra={'Referer': 'https://www.aaii.com/sentimentsurvey/sent_results'})
+    df = pd.read_excel(io.BytesIO(raw), header=None)
+    hdr = next(i for i in range(min(10, len(df))) if any(str(x).strip().lower().startswith('bull') for x in df.iloc[i]))
+    cols = [str(x).strip().lower() for x in df.iloc[hdr]]; ib, ie = next(k for k, c in enumerate(cols) if c.startswith('bull')), next(k for k, c in enumerate(cols) if c.startswith('bear'))
+    bull, bear = [], []
+    for _, r in df.iloc[hdr + 1:].iterrows():
+        try: d = pd.to_datetime(r.iloc[0]).date(); b, e = float(r.iloc[ib]), float(r.iloc[ie])
+        except Exception: continue
+        if b == b and e == e: bull.append((d.isoformat(), round(b, 4))); bear.append((d.isoformat(), round(e, 4)))
+    save('AAII_BULL.csv', bull, 'aaii.com sentiment.xls'); save('AAII_BEAR.csv', bear, 'aaii.com sentiment.xls')
+    save('AAII_SPREAD.csv', [(d, round(b - e, 4)) for (d, b), (_, e) in zip(bull, bear)], 'aaii bull-bear')
+except Exception as e: log.append(f'AAII: failed {type(e).__name__} {e}')
+
+# CFTC COT via Socrata (legacy futures-only 6dca-aqww; TFF futures-only gpe5-46if)
+def cot(ds, like):
+    q = urllib.parse.urlencode({'$where': f"upper(market_and_exchange_names) like '{like}'", '$limit': '50000', '$order': 'report_date_as_yyyy_mm_dd'})
+    return json.loads(get(f'https://publicreporting.cftc.gov/resource/{ds}.json?{q}'))
+for tag, like in [('ES', '%E-MINI S&P 500%'), ('NQ', '%NASDAQ%100%')]:
+    try:
+        js = cot('6dca-aqww', like); rows = []
+        for o in js:
+            if 'MINI' not in o.get('market_and_exchange_names', '').upper() and tag == 'NQ' and 'MICRO' in o.get('market_and_exchange_names', '').upper(): continue
+            try: d = o['report_date_as_yyyy_mm_dd'][:10]; nl, ns, oi = float(o['noncomm_positions_long_all']), float(o['noncomm_positions_short_all']), float(o['open_interest_all'])
+            except Exception: continue
+            rows.append((d, round((nl - ns) / oi, 5) if oi else ''))
+        names = sorted({o.get('market_and_exchange_names') for o in js})[:5]
+        save(f'COT_LEGACY_{tag}.csv', rows, f'cftc 6dca-aqww {names}')
+    except Exception as e: log.append(f'COT_LEGACY_{tag}: failed {e}')
+    try:
+        js = cot('gpe5-46if', like); rows = []
+        for o in js:
+            try:
+                d = o['report_date_as_yyyy_mm_dd'][:10]; oi = float(o['open_interest_all'])
+                lev = (float(o['lev_money_positions_long']) - float(o['lev_money_positions_short'])) / oi
+                am = (float(o['asset_mgr_positions_long']) - float(o['asset_mgr_positions_short'])) / oi
+            except Exception: continue
+            rows.append((d, round(lev, 5), round(am, 5)))
+        save(f'COT_TFF_{tag}.csv', rows, f'cftc gpe5-46if', header='date,levnet_oi,amnet_oi')
+    except Exception as e: log.append(f'COT_TFF_{tag}: failed {e}')
+
+# FRED weekly/quarterly
+for s in ['WRMFNS', 'DRTSCILM']:
+    try:
+        if not KEY: raise RuntimeError('no FRED key')
+        d = json.loads(get(f'https://api.stlouisfed.org/fred/series/observations?series_id={s}&file_type=json&api_key={KEY}'))
+        save(f'{s}.csv', [(o['date'], o['value']) for o in d['observations'] if o['value'] not in ('.', '')], f'FRED {s}')
+    except Exception as e: log.append(f'{s}: failed {e}')
+
+# FINRA margin debt monthly (third-party mirror)
+try:
+    t = get('https://www.thetrading.tools/data/indicators/margin-debt.csv', extra={'Referer': 'https://www.thetrading.tools/margin-debt'}).decode('utf8', 'ignore')
+    rd = list(csv.reader(io.StringIO(t))); hdr = [h.lower() for h in rd[0]]; rows = []
+    vi = next((k for k, h in enumerate(hdr) if 'debit' in h or 'margin' in h or 'value' in h), 1)
+    for r in rd[1:]:
+        d = pdate(r[0]) if r else None
+        if d:
+            try: rows.append((d.replace(day=1).isoformat(), float(r[vi])))
+            except (ValueError, IndexError): pass
+    save('MARGIN_FINRA_M.csv', rows, f'thetrading.tools margin-debt.csv cols {hdr[:4]}')
+except Exception as e: log.append(f'MARGIN_FINRA_M: failed {e}')
+
+open(LOG, 'w').write(dt.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ') + '\n' + '\n'.join(log) + '\n'); print('\n'.join(log))
