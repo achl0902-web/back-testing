@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // One research step as a code pipeline (PROTOCOL v3). The LLM only writes the plan + modules and judges flagged results.
 //   node lib/step.js prep                       pull, refresh data, next step number, wide screen only if catalog changed/data aged
-//   node lib/step.js check Sxx                  load every planned config: errors and signal on-rate (no scoring, not a trial)
+//   node lib/step.js check Sxx                  load every planned config: errors, signal on-rate, days whose holding state differs from the champion (no scoring, not a trial)
 //   node lib/step.js run Sxx                    commit the plan (pre-registration), screen all configs, battery the best per
 //                                               direction, write steps/Sxx.md, print a short digest with the review gate
 //   node lib/step.js close Sxx --verdict 기각 --why "..." [--ideas '[{"row","tested","result","gap"}]'] [--session URL]
@@ -75,6 +75,25 @@ else if (cmd === 'check') {
       const rates = Object.entries(out).filter(([, a]) => a && a.length === ND.n).map(([k, a]) => { let on = 0; for (let j = i99; j < ND.n; j++) on += a[j] ? 1 : 0; return `${k} ${(100 * on / (ND.n - i99)).toFixed(1)}%`; });
       console.log(`${c.name}: ${rates.join(' · ') || '배열 없음(확인 필요)'}`);
     } catch (e) { console.log(`${c.name}: 오류 ${String(e).slice(0, 160)}`); }
+  }
+  // does each config actually behave differently from the champion? days with a different holding state (in/out), whole history.
+  // Not a score: it says nothing about which is better. Below 0.3% on both indices the direction is effectively the champion (S23 A·C).
+  const { SP } = C.load(), champ = C.champion();
+  const regime = (cfg, D) => {
+    let k0 = 0; while (k0 < D.n && isNaN(D.rv[k0])) k0++;
+    const R = C.runner(cfg)(D, k0, D.n - 1, true), out = new Uint8Array(D.n), ev = R.log.filter(e => e.type === 'exit' || e.type === 'reentry');
+    let st = 0, q = 0; for (let i = k0; i < D.n; i++) { while (q < ev.length && ev[q].d <= D.day[i]) st = ev[q++].type === 'exit' ? 1 : 0; out[i] = st; }
+    return { out, k0 };
+  };
+  const base = { ND: regime(champ, ND), SP: regime(champ, SP) }, NONREG = /pauseSig|contribSig|qldTarget|slowSig|boostSig|contribOut|parkMacro|parkQQQ|capQ/;
+  console.log('\n챔피언과 보유 상태(QLD 보유/이탈)가 다른 날 (전체 기간, 점수 아님)');
+  for (const d of P.directions) for (const c of configs(step, d)) {
+    try {
+      const r = ['ND', 'SP'].map(k => { const D = k === 'ND' ? ND : SP, a = regime(strip(c), D).out, b = base[k]; let n = 0; for (let i = b.k0; i < D.n; i++) n += a[i] !== b.out[i] ? 1 : 0; return [n, n / (D.n - b.k0)]; });
+      const tiny = r.every(([, x]) => x < 0.003), nonreg = NONREG.test(JSON.stringify(c.params) + (c.signals ? fs.readFileSync(path.resolve(R, c.signals), 'utf8') : ''));
+      console.log(`${c.name}: 나스닥 ${r[0][0]}일 (${(100 * r[0][1]).toFixed(1)}%) · S&P 2배 ${r[1][0]}일 (${(100 * r[1][1]).toFixed(1)}%)`
+        + (tiny ? (nonreg ? ' (비중·적립만 바꾸는 훅이면 정상)' : ' ⚠ 챔피언과 거의 같음: 바꾸거나 빼기') : ''));
+    } catch (e) { console.log(`${c.name}: 비교 오류 ${String(e).slice(0, 160)}`); }
   }
 }
 
