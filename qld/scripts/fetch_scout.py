@@ -43,18 +43,12 @@ try:
     import pandas as pd
     raw = get('https://www.aaii.com/files/surveys/sentiment.xls', extra={'Referer': 'https://www.aaii.com/sentimentsurvey/sent_results'})
     df = pd.read_excel(io.BytesIO(raw), header=None)
-    hdr = next((i for i in range(min(60, len(df))) if any(str(x).strip().lower().startswith('bull') for x in df.iloc[i])), None)
-    if hdr is None: raise RuntimeError('no header; first rows: ' + ' | '.join(' ; '.join(str(x) for x in df.iloc[i].tolist()[:6]) for i in range(min(8, len(df)))))
-    cols = [str(x).strip().lower() for x in df.iloc[hdr]]
-    ib = next((k for k, c in enumerate(cols) if c == 'bullish'), None); ie = next((k for k, c in enumerate(cols) if c == 'bearish'), None)  # exact names: 'bull-bear spread' must not match
-    if ie is None:  # header split over two rows
-        c2 = [str(x).strip().lower() for x in df.iloc[hdr + 1]]; ie = next((k for k, c in enumerate(c2) if c == 'bearish'), None); ib = ib if ib is not None else next((k for k, c in enumerate(c2) if c == 'bullish'), None)
-    if ib is None or ie is None: raise RuntimeError(f'columns not found: row {hdr}: {cols[:10]} / next: {[str(x) for x in df.iloc[hdr + 1].tolist()[:10]]}')
+    # layout (checked 2026-10-24): col0 date, col1 bullish, col2 neutral, col3 bearish (shares of 1), col6 bull-bear spread; keep rows whose three shares sum to ~1
     bull, bear = [], []
-    for _, r in df.iloc[hdr + 1:].iterrows():
-        try: d = pd.to_datetime(r.iloc[0]).date(); b, e = float(r.iloc[ib]), float(r.iloc[ie])
+    for _, r in df.iterrows():
+        try: d = pd.to_datetime(r.iloc[0]).date(); b, n, e = float(r.iloc[1]), float(r.iloc[2]), float(r.iloc[3])
         except Exception: continue
-        if b == b and e == e: bull.append((d.isoformat(), round(b, 4))); bear.append((d.isoformat(), round(e, 4)))
+        if b == b and n == n and e == e and abs(b + n + e - 1) < 0.03: bull.append((d.isoformat(), round(b, 4))); bear.append((d.isoformat(), round(e, 4)))
     save('AAII_BULL.csv', bull, 'aaii.com sentiment.xls'); save('AAII_BEAR.csv', bear, 'aaii.com sentiment.xls')
     save('AAII_SPREAD.csv', [(d, round(b - e, 4)) for (d, b), (_, e) in zip(bull, bear)], 'aaii bull-bear')
 except Exception as e: log.append(f'AAII: failed {type(e).__name__} {e}')
