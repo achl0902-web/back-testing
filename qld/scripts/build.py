@@ -285,9 +285,9 @@ hold = fill(open(P('src', 'hold_tpl.html')).read(), hold_js)
 open(P('site', 'hold.html'), 'w').write(html.replace(page, hold))
 
 # ---------- daily signal: 최종 전략 v2 (since 2026-10-24; v1 and the exposure-step rule kept as references) ----------
-V2 = "{monthPad:2,inflBlock:true}"
+V2 = "{inflBlock:true}"  # D04 (2026-10-24): 월초 규칙은 빼고 인플레 복귀 금지만
 RULES = {
-    'final': ('최종 전략 v2 (v1 + 월초 창 + 인플레 복귀 금지)', V2),
+    'final': ('최종 전략 v2 (v1 + 인플레 과열 복귀 금지)', V2),
     'v1': ('최종 전략 v1 (기술 4축 + 매크로 경보)', "{}"),
     'tech': ('기술 4축만', "{useMacro:false}"),
     'kelly': ('노출 조절 (참고)', "{rule:'kelly'}"),
@@ -303,7 +303,7 @@ const ax=E.axesAt(D,P,j);
 const out={{rv20:D.rv[j],down20:D.vols.down20[j],up20:D.vols.up20[j],r10:D.r10[j],rsiw:D.rsiw[j],expand:D.vols.rv10[j]/D.v60[j],
   axes:ax,votes:ax.reduce((a,b)=>a+b,0),ms:isNaN(D.ms[j])?null:D.ms[j],
   macroOnset:E.macroOnset(D,P,j),reentry:ax.reduce((a,b)=>a+b,0)<=P.reMaxVotes&&D.px[j]>D.ma[20][j]&&D.vols.rv10[j]<D.v60[j],
-  px:D.px[j],ma20:D.ma[20][j],monthWin:!!E.monthWin(D,P.monthPad)[j],inflBlock:!!(D.ib&&D.ib[j]),inflReady:!!D.ib,rules:{{}}}};
+  px:D.px[j],ma20:D.ma[20][j],monthWin:P.monthPad>=0&&!!E.monthWin(D,P.monthPad)[j],inflBlock:!!(D.ib&&D.ib[j]),inflReady:!!D.ib,rules:{{}}}};
 // today's regime, and tomorrow's: replay one copied day so the engine executes today's signal at the next close
 const R=E.runBT(D,i0,j,P,true);
 const R2raw=Object.assign({{}},RAW,{{dd:RAW.dd.concat([RAW.weekDone===false?1:7]),weekDone:true,px:RAW.px.concat([RAW.px[j]]),rq:RAW.rq.concat([0]),tb:RAW.tb.concat([RAW.tb[j]]),fx:RAW.fx.concat([RAW.fx[j]]),
@@ -376,7 +376,7 @@ else:
         msgs.append(('**다음 거래일 종가에 QLD를 모두 팔아 SGOV로 옮깁니다.**' if action['type'] == 'exit' else '**다음 거래일 종가에 SGOV를 모두 QLD로 옮깁니다.**')
                     + f" 사유: {action['msg'].split(' → ')[0]}")
     if prev.get('strategy') != 'v2':
-        msgs.append(f"알림 기준이 **최종 전략 v2**(v1 + 월초 창에서는 기술 축 1개 더 + 인플레 과열 시 복귀 금지)로 바뀌었습니다. 현재 상태: **{NAME[status['regime']]}**.")
+        msgs.append(f"알림 기준이 **최종 전략 v2**(v1 + 인플레 과열 시 복귀 금지)로 바뀌었습니다. 현재 상태: **{NAME[status['regime']]}**.")
         if not action: status['title'] = f"[QLD] {last} 알림 기준 변경: 최종 전략 v2 · {NAME[status['regime']]}"
 json.dump(status, open(P('data', 'status.json'), 'w'), ensure_ascii=False, indent=1)
 json.dump(status, open(P('site', 'status.json'), 'w'), ensure_ascii=False, indent=1)
@@ -387,7 +387,7 @@ if msgs:
                  + f" · 10일/60일 변동성 {status['expand']}배 · 매크로 경보 {pv(status['macro'])}"
                  + (" · 월초 창(기술 축 1개 더 필요)" if status['monthWin'] else '')
                  + (f" · 인플레 과열 {'켜짐(복귀 금지)' if status['inflBlock'] else '꺼짐'}" if status['infl_ok'] else ' · 인플레 자료 없음'))
-    lines.append('규칙(최종 전략 v2): 기술 4축 중 2개 이상(복귀 후 40거래일은 3개, 월말·월초 창에서는 1개 더) 또는 매크로 경보 50% 신규 돌파 → 전량 SGOV. '
+    lines.append('규칙(최종 전략 v2): 기술 4축 중 2개 이상(복귀 후 40거래일은 3개) 또는 매크로 경보 50% 신규 돌파 → 전량 SGOV. '
                  '축 1개 이하 · 20일선 위 · 10일 변동성 < 60일 변동성이고 인플레 과열(달러·PPI·유가 중 2개 이상 z>1.5)이 아닐 때 → 전량 QLD.')
     lines.append(f"데이터 출처: {', '.join(used) or '저장값'} · 점검 {fresh['checked']}")
     open(P('alert.md'), 'w').write(f"**{last} 종가 기준**\n\n" + '\n'.join(lines) + '\n')

@@ -92,7 +92,6 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
         <h3>QLD를 모두 파는 때 (이탈)</h3>
         <ol>
           <li><b>기술 4축 중 2개 이상이 켜질 때.</b> ① 변동성: 20일 하방 변동성 30% 초과 또는 상방 35% 초과 ② 급락: 10거래일 −8% 이하 ③ 추세: 주봉 RSI 45 미만 ④ 급팽창: 10일 변동성이 60일 변동성의 1.6배 초과</li>
-          <li><b>월말·월초에는 1개 더.</b><span class="v2tag">v2</span> 판단하는 날이 그달의 마지막 5평일이거나 첫 3거래일이면 기술 축 3개가 켜져야 팝니다. 월말·월초는 돈이 들어와 오르는 날이 몰려 있어, 이때의 헛이탈이 비쌌습니다.</li>
           <li><b>또는 매크로 경보가 50%를 새로 넘을 때.</b> 신용 스프레드·금융 스트레스·실업수당 등 14개 지표 중 평소(지난 3년)보다 확연히 나쁜 지표의 비율입니다.</li>
           <li><b>파는 금액은 전량</b>이고, 이탈 중 적립금은 SGOV에 쌓습니다.</li>
         </ol>
@@ -103,7 +102,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
           <li><b>세 조건이 모두 맞을 때.</b> 켜진 기술 축 1개 이하, 나스닥100이 20일선 위, 10일 변동성이 60일 변동성보다 낮음(진정).</li>
           <li><b>인플레 과열이 아닐 때만.</b><span class="v2tag">v2</span> 달러 6개월 상승률, 생산자물가(PPI) 전년비, 유가 6개월 상승률 중 2개 이상이 지난 3년 평소보다 크게 높으면(z 1.5 초과) 조건이 맞아도 SGOV에 머뭅니다. 물가 급등기의 반등은 금리 인상에 다시 꺾이는 일이 많았습니다(2000, 2008, 1973~74).</li>
           <li><b>쌓인 SGOV를 전부 QLD로</b> 옮깁니다. 매크로 경보는 바닥에서 늦게 풀려 복귀에는 쓰지 않습니다.</li>
-          <li><b>복귀 후 40거래일</b>은 3축 이상(월말·월초에는 4축)일 때만 다시 이탈합니다(들어가자마자 흔들려 나오는 것 방지).</li>
+          <li><b>복귀 후 40거래일</b>은 3축 이상일 때만 다시 이탈합니다(들어가자마자 흔들려 나오는 것 방지).</li>
         </ol>
       </div>
     </div>
@@ -118,23 +117,23 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
     <div class="tablewrap"><table id="valTable">
       <thead><tr><th scope="col">구간</th><th scope="col">단순 적립</th><th scope="col">최종 전략 v2</th><th scope="col">v1</th></tr></thead>
       <tbody>
-        <tr><th scope="row">나스닥 10년<br><small>1999~2016 시작</small></th><td class="num">23.3% <small>최악 −19.3</small></td><td class="num win">28.2% <small>최악 14.1</small></td><td class="num">26.3% <small>최악 13.2</small></td></tr>
-        <tr><th scope="row">나스닥 10년<br><small>1986~1998 시작</small></th><td class="num">17.4% <small>최악 −7.9</small></td><td class="num win">35.7% <small>최악 14.3</small></td><td class="num">30.1% <small>최악 13.4</small></td></tr>
-        <tr><th scope="row">나스닥 5년</th><td class="num">25.0% <small>최악 −56.6</small></td><td class="num win">29.2% <small>최악 6.0</small></td><td class="num">28.0% <small>최악 5.2</small></td></tr>
-        <tr><th scope="row">S&amp;P 2배 10년</th><td class="num">15.5% <small>최악 −14.8</small></td><td class="num win">17.8% <small>최악 −0.9</small></td><td class="num">14.7% <small>최악 −0.7</small></td></tr>
-        <tr><th scope="row">S&amp;P 2배 5년</th><td class="num win">16.4% <small>최악 −29.9</small></td><td class="num">15.8% <small>최악 −31.6</small></td><td class="num">15.5% <small>최악 −30.6</small></td></tr>
-        <tr><th scope="row">1999년 3월~ 한 번에<br><small>세후 IRR, 시간가중 MDD</small></th><td class="num">21.6% <small>−99%</small></td><td class="num win">26.1% <small>−51%</small></td><td class="num">25.3% <small>−55%</small></td></tr>
-        <tr class="era"><th scope="row">새 시대 확인<br><small>S&amp;P 2배 10년, 1961~75 시작</small></th><td class="num">3.8% <small>최악 −15.5</small></td><td class="num win">7.7% <small>최악 −2.1</small></td><td class="num">4.3% <small>최악 −8.6</small></td></tr>
-        <tr><th scope="row">새 시대 확인<br><small>S&amp;P 2배 5년, 1961~80 시작</small></th><td class="num">6.2% <small>최악 −27.3</small></td><td class="num win">6.8% <small>최악 −19.1</small></td><td class="num">5.5% <small>최악 −19.7</small></td></tr>
+        <tr><th scope="row">나스닥 10년<br><small>1999~2016 시작</small></th><td class="num">23.3% <small>최악 −19.3</small></td><td class="num win">26.5% <small>최악 14.9</small></td><td class="num">26.3% <small>최악 13.2</small></td></tr>
+        <tr><th scope="row">나스닥 10년<br><small>1986~1998 시작</small></th><td class="num">17.4% <small>최악 −7.9</small></td><td class="num win">33.1% <small>최악 14.7</small></td><td class="num">30.1% <small>최악 13.4</small></td></tr>
+        <tr><th scope="row">나스닥 5년</th><td class="num">25.0% <small>최악 −56.6</small></td><td class="num win">28.0% <small>최악 5.6</small></td><td class="num">28.0% <small>최악 5.2</small></td></tr>
+        <tr><th scope="row">S&amp;P 2배 10년</th><td class="num">15.5% <small>최악 −14.8</small></td><td class="num win">14.7% <small>최악 0.2</small></td><td class="num">14.7% <small>최악 −0.7</small></td></tr>
+        <tr><th scope="row">S&amp;P 2배 5년</th><td class="num win">16.4% <small>최악 −29.9</small></td><td class="num">15.5% <small>최악 −29.7</small></td><td class="num">15.5% <small>최악 −30.6</small></td></tr>
+        <tr><th scope="row">1999년 3월~ 한 번에<br><small>세후 IRR, 시간가중 MDD</small></th><td class="num">21.6% <small>−99%</small></td><td class="num win">25.7% <small>−47%</small></td><td class="num">25.3% <small>−55%</small></td></tr>
+        <tr class="era"><th scope="row">새 시대 확인<br><small>S&amp;P 2배 10년, 1961~75 시작</small></th><td class="num">3.8% <small>최악 −15.5</small></td><td class="num win">8.1% <small>최악 −1.8</small></td><td class="num">4.3% <small>최악 −8.6</small></td></tr>
+        <tr><th scope="row">새 시대 확인<br><small>S&amp;P 2배 5년, 1961~80 시작</small></th><td class="num">6.2% <small>최악 −27.3</small></td><td class="num win">7.1% <small>최악 −18.2</small></td><td class="num">5.5% <small>최악 −19.7</small></td></tr>
       </tbody></table></div>
     <div class="hint val-notes">
-      <p>숫자는 연환산 수익률(IRR) 중앙값, 작은 글씨는 가장 나빴던 구간의 IRR입니다. 초록은 세 열 중 ‘중앙 + 0.5 × 최악’이 가장 높은 칸으로, 계산 전에 정한 판정 규칙입니다. v2는 v1보다 중앙값이 0.3~5.6%p 높고, S&amp;P 2배 5년의 최악만 1%p 나쁩니다. 새 시대 확인은 연구에 쓰지 않은 1960~85년 자료(1·7월 시작)로, 인플레이션 약세장(1969, 1973~74, 1979~80)에서 v2의 복귀 금지가 효과를 냈습니다.</p>
-      <p><b>한계.</b> 첫 하락(고점 대비 −8~−17%)은 막지 못하고, 2020·2025년처럼 빠르게 회복하는 장에서는 단순 적립보다 못합니다. v2의 이득은 1998, 2000, 2016년에 몰려 있습니다(그 셋을 빼도 v1보다 낫습니다).</p>
+      <p>숫자는 연환산 수익률(IRR) 중앙값, 작은 글씨는 가장 나빴던 구간의 IRR입니다. 초록은 세 열 중 ‘중앙 + 0.5 × 최악’이 가장 높은 칸으로, 계산 전에 정한 판정 규칙입니다. v2는 v1과 중앙값이 같거나 높고(나스닥 10년 표본 밖 +3.0%p), 모든 세트에서 최악이 0.4~1.3%p 좋습니다. 평소에는 v1과 똑같이 움직이고, 인플레 급등기의 복귀만 막기 때문입니다. 새 시대 확인은 연구에 쓰지 않은 1960~85년 자료(1·7월 시작)로, 인플레이션 약세장(1969, 1973~74, 1979~80)에서 v2의 복귀 금지가 효과를 냈습니다.</p>
+      <p><b>한계.</b> 첫 하락(고점 대비 −8~−17%)은 막지 못하고, 2020·2025년처럼 빠르게 회복하는 장에서는 단순 적립보다 못합니다. v2가 v1과 달라지는 사건은 몇 번뿐입니다(1986년 이후 2000, 2008년 등).</p>
     </div>
     <details class="val-more">
       <summary>사례 구간과 해석</summary>
       <ul>
-        <li>v2 채택(2026-10-24): 연구 조합 스텝 S26 A. 월초 규칙(S14 B)과 인플레 복귀 금지(S12 B)를 v1 위에 얹었고, 두 요소의 점수가 서로 방해 없이 더해졌습니다. 미리 2배로 올려 둔 개선 기준에는 근소하게 못 미쳤지만, 1960~85년 확인을 통과해 사용자 결정으로 채택했습니다.</li>
+        <li>v2 채택(2026-10-24): 연구 조합 스텝 S26 A(월초 규칙 + 인플레 복귀 금지)가 1960~85년 확인을 통과해 채택했다가, 같은 날 과최적화 점검에서 월초 규칙은 새 시대 효과가 0이라 빼고 두 시대 모두에서 확인된 인플레 복귀 금지(S12 B)만 남겼습니다(사용자 결정).</li>
         <li>사례 구간 IRR (단순 적립 / 최종 v1): 2000년 −14.5 / 22.4, 2008년 12.6 / 37.8, 2022년 18.8 / 29.0, 2020년 62.1 / 53.9, 2025년 33.4 / 30.3.</li>
         <li>노출 조절(변동성 계단표, TQQQ·QQQ·SGOV)은 중앙값은 비슷하거나 높지만 최악 구간이 크게 나빠 기본 전략에서 내렸습니다.</li>
         <li>매크로 경보 지표 중 금융스트레스·NFCI는 2010~11년에 공개된 지수라 그 이전 성적에는 사후 효과가 섞여 있습니다. 실제로 발표되던 2012년 이후 시작 구간에서도 매크로는 최악 구간을 1~3%p 개선했습니다(2026-10-20 점검).</li>
@@ -177,7 +176,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
         <legend><h2>전략</h2></legend>
         <div class="field"><label for="rule">비교할 전략</label>
           <select id="rule">
-            <option value="final">최종 전략 v2: v1 + 월초 규칙 + 인플레 복귀 금지 (기본)</option>
+            <option value="final">최종 전략 v2: v1 + 인플레 과열 복귀 금지 (기본)</option>
             <option value="v1">최종 전략 v1: 기술 4축 + 매크로 경보</option>
             <option value="tech">기술 4축만 (매크로 없이)</option>
             <option value="kelly">노출 조절: 변동성 계단표 (참고)</option>
@@ -327,7 +326,7 @@ __UI_JS__
   }
   setDefaults();
   const NAMES = { final: '최종 전략 v2', v1: '최종 전략 v1', tech: '기술 4축만', kelly: '노출 조절', off: '규칙 없음' };
-  const V2X = { monthPad: 2, inflBlock: true }; // 최종 전략 v2 = v1 + 월초 창 + 인플레 복귀 금지
+  const V2X = { inflBlock: true }; // 최종 전략 v2 = v1 + 인플레 과열 복귀 금지 (D04: 월초 규칙은 뺌)
   // reference exposure rule (the former page default): 20-day vol steps 25/35/45% -> 2.5/2/1/0x, raise only 3%p below a boundary
   const KELLY_REF = { rule: 'kelly', sizing: 'steps', maxLev: 2.5, band: 0.5, hyst: 0.03, steps: [[0.25, 2.5], [0.35, 2], [0.45, 1], [Infinity, 0]], check: 'd', capRule: 'none' };
   const CHAMP_V1 = { rule: 'final', votes: 2, dnHi: 0.30, upHi: 0.35, crash: -0.08, rsiW: 45, expand: 1.6, hold: 40, useMacro: true, macroTh: 0.5 };

@@ -1,9 +1,21 @@
 {
-  "name": "최종 전략 v2 · v1 + 월초 창 기술 축 +1 + 인플레 과열 복귀 금지",
+  "name": "최종 전략 v2 · v1 + 인플레 과열 복귀 금지",
   "adopted": "2026-10-24",
-  "step": "S26 A (T14 1960~85 확인, D03 사용자 결정)",
+  "step": "S12 B 요소(S26 A에서 월초 규칙 제외, D04)",
   "sim": "engine",
-  "params": { "strategy": true, "rule": "final", "monthPad": 2, "inflBlock": true },
-  "previous": { "name": "최종 전략 v1 · 기술 4축 + 매크로 이탈 경보", "adopted": "2026-10-17", "step": "S04", "params": { "strategy": true, "rule": "final" } },
-  "note": "src/engine.js DEFAULTS의 final 규칙 + monthPad·inflBlock. 인플레 복귀 금지 배열은 lib/v2.js(core.js runner가 D.ib로 붙임). 챔피언 위 후보(rule sig)는 candidates/champ_v2.js의 run(D, {훅})."
+  "params": {
+    "strategy": true,
+    "rule": "final",
+    "inflBlock": true
+  },
+  "previous": {
+    "name": "최종 전략 v1 · 기술 4축 + 매크로 이탈 경보",
+    "adopted": "2026-10-17",
+    "step": "S04",
+    "params": {
+      "strategy": true,
+      "rule": "final"
+    }
+  },
+  "note": "src/engine.js DEFAULTS의 final 규칙 + inflBlock. 인플레 복귀 금지 배열은 lib/v2.js(core.js runner가 D.ib로 붙임). 챔피언 위 후보(rule sig)는 candidates/champ_v2.js의 run(D, {훅}). monthPad(월초 규칙)는 D04로 제외."
 }
