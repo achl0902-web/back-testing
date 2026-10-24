@@ -1,4 +1,4 @@
-2026-10-24T09:51Z
+2026-10-24T10:19Z
 2004-06-01 https://www.cboe.com/us/options/market_statistics/daily/?dt=2004-06-01: 394696 bytes, ratios [], next_data 0, dates ['2004-06-01', '2019-10-07', '2026-10-23']
 2004-06-01 https://cdn.cboe.com/data/us/options/market_statistics/daily/2004-06-01_daily_options: ERROR HTTP Error 403: Forbidden
 2019-12-02 https://www.cboe.com/us/options/market_statistics/daily/?dt=2019-12-02: 425891 bytes, ratios [('TOTAL PUT/CALL RATIO', '0.99'), ('INDEX PUT/CALL RATIO', '1.34'), ('EQUITY PUT/CALL RATIO', '0.66')], next_data 0, dates ['2019-10-07', '2019-12-02', '2026-10-23']
