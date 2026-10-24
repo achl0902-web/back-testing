@@ -258,6 +258,9 @@ def fill(tpl, data):
 page = fill(open(P('src', 'page_tpl.html')).read(), data_js)
 html = ('<!doctype html><html lang="ko"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+        '<meta name="description" content="QLD 적립 전략 백테스터: 하락장 방어 규칙과 단순 적립을 세후 원화 기준으로 비교합니다.">'
+        '<meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)">'
+        '<meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)">'
         '<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}'
         'body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>'
         '</head><body>' + page + '</body></html>')

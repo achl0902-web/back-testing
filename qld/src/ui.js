@@ -122,5 +122,23 @@ const UI = (() => {
       mini.hidden = !(seen.get(ctl) && !seen.get(res)); }, { threshold: [0, 0.3] });
     io.observe(ctl); io.observe(res);
   }
+  // 바로 가기 줄: 지금 보는 구역 표시(aria-current), 오른쪽 끝까지 넘기면 흐림 해제
+  function watchJump() {
+    const nav = document.querySelector('.jump'); if (!nav) return;
+    const links = [...nav.querySelectorAll('a[href^="#"]')], secs = links.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+    const edge = () => nav.classList.toggle('end', nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 4);
+    nav.addEventListener('scroll', edge, { passive: true }); addEventListener('resize', edge); edge();
+    if (!('IntersectionObserver' in window)) return;
+    const seen = new Map();
+    const io = new IntersectionObserver(es => {
+      for (const e of es) seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null);
+      const cur = secs.find(s => seen.get(s.id) != null);
+      links.forEach(a => { const on = !!cur && a.getAttribute('href') === '#' + cur.id; if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+      const a = cur && links.find(l => l.getAttribute('href') === '#' + cur.id);
+      if (a && (a.offsetLeft < nav.scrollLeft || a.offsetLeft + a.offsetWidth > nav.scrollLeft + nav.clientWidth)) nav.scrollLeft = a.offsetLeft - 16;
+    }, { rootMargin: '-56px 0px -60% 0px' });
+    secs.forEach(s => io.observe(s));
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchJump); else watchJump();
   return { $, toDate, ymd, krw, pct, axisKrw, css, makeChart, makeBrush, subLabel, watchMini };
 })();

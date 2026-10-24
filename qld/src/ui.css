@@ -6,6 +6,7 @@
   --s-strat: #1d5fbf; --s-dca: #8a8f98; --s-paid: #b4b9c1; --s-x1: #0f7a58; --s-x2: #b26b00;
   --good: #247b50; --good-bg: #dcfae5; --warn: #92400e; --warn-bg: #fffbeb; --bad: #c4242a; --bad-bg: #ffedea;
   --band-out: rgba(196, 36, 42, 0.08); --band-staged: rgba(146, 64, 14, 0.10); --sel-fill: rgba(29, 95, 191, 0.10);
+  --shadow-tip: 0 4px 14px rgba(0, 0, 0, 0.12);
   --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
@@ -15,6 +16,7 @@
   --s-strat: #4d8fe8; --s-dca: #8c8c8c; --s-paid: #5c5c5c; --s-x1: #2fbf8f; --s-x2: #d99a3c;
   --good: #3fc07a; --good-bg: #172a1d; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #e5566f; --bad-bg: #2c1a20;
   --band-out: rgba(229, 86, 111, 0.12); --band-staged: rgba(226, 166, 59, 0.12); --sel-fill: rgba(77, 143, 232, 0.16);
+  --shadow-tip: 0 4px 14px rgba(0, 0, 0, 0.5);
   color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #0b0b0b; --surface: #141414; --sunken: #1c1c1c; --fg: #f2f2f2; --muted: #b4b4b4; --faint: #949494; --line: #262626; --control: #444444; --active: #2a2a2a;
@@ -22,8 +24,12 @@
   --s-strat: #4d8fe8; --s-dca: #8c8c8c; --s-paid: #5c5c5c; --s-x1: #2fbf8f; --s-x2: #d99a3c;
   --good: #3fc07a; --good-bg: #172a1d; --warn: #e2a63b; --warn-bg: #2b2213; --bad: #e5566f; --bad-bg: #2c1a20;
   --band-out: rgba(229, 86, 111, 0.12); --band-staged: rgba(226, 166, 59, 0.12); --sel-fill: rgba(77, 143, 232, 0.16);
+  --shadow-tip: 0 4px 14px rgba(0, 0, 0, 0.5);
   color-scheme: dark; }
 * { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body { -webkit-tap-highlight-color: transparent; }
+a, button, summary, select, label, input { touch-action: manipulation; }
 body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.55; font-variant-numeric: tabular-nums; }
 a { color: var(--link); }
 .wrap { max-width: 1120px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
@@ -34,7 +40,6 @@ h2 { font-size: 16px; font-weight: 600; margin: 0; text-wrap: balance; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 20px; min-width: 0; }
 .status { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
 .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 4px; font-weight: 500; font-size: 13px; white-space: nowrap; flex: none; }
-.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .pill.in { color: var(--good); background: var(--good-bg); }
 .pill.out { color: var(--bad); background: var(--bad-bg); }
 .pill.staged { color: var(--warn); background: var(--warn-bg); }
@@ -51,7 +56,7 @@ legend { padding: 0; margin-bottom: 4px; }
 input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
 select { width: 100%; font: inherit; height: 36px; padding: 0 9px; border: 1px solid var(--control); border-radius: 6px; background: var(--surface); color: var(--fg); }
 input[type=number] { width: 100%; font: inherit; font-family: var(--f-num); height: 36px; padding: 0 9px; border: 1px solid var(--control); border-radius: 6px; background: var(--surface); color: var(--fg); }
-input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus-visible, button:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .brush { position: relative; height: 88px; border-radius: 6px; background: var(--sunken); overflow: hidden; }
 .brush canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .brush input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; pointer-events: none; -webkit-appearance: none; appearance: none; }
@@ -92,7 +97,7 @@ td.num { font-family: var(--f-num); }
 .cv.short { height: 180px; }
 .cv.spark { height: 150px; }
 .cv canvas { width: 100%; height: 100%; display: block; touch-action: pan-y; }
-.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); white-space: nowrap; z-index: 3; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; font-size: 12px; box-shadow: var(--shadow-tip); white-space: nowrap; z-index: 3; }
 .tip .d { color: var(--faint); font-family: var(--f-num); margin-bottom: 2px; }
 .tip .r { display: flex; justify-content: space-between; gap: 12px; }
 .tip .r b { font-family: var(--f-num); font-weight: 500; }
@@ -117,7 +122,9 @@ td.num { font-family: var(--f-num); }
 .fn li b { display: block; }
 .fn li span { display: block; color: var(--muted); font-size: 13px; }
 .fn li span em { font-style: normal; font-weight: 600; color: var(--fg); }
-.sigs sup a { text-decoration: none; font-size: 11px; margin-left: 2px; color: var(--link); }
+/* 신호 뜻 보기(ⓘ): 글자는 작아도 누르는 자리는 28px (WCAG 2.5.8 최소 24px) */
+.info { display: inline-grid; place-items: center; width: 28px; height: 28px; margin: -6px -6px -6px -2px; vertical-align: middle; border-radius: 50%; font-size: 13px; line-height: 1; color: var(--link); text-decoration: none; }
+.info:hover { background: var(--sunken); }
 .sigs th[scope=row] { text-align: left; white-space: normal; font-weight: 500; } .sigs td:nth-child(3) { color: var(--muted); } #axTable th[scope=row] { white-space: nowrap; }
 .sigs th { text-align: left; }
 .sigs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -125,13 +132,16 @@ td.num { font-family: var(--f-num); }
 .st { display: inline-block; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
 .st.good { color: var(--good); background: var(--good-bg); } .st.warn { color: var(--warn); background: var(--warn-bg); } .st.bad { color: var(--bad); background: var(--bad-bg); } .st.mid { color: var(--muted); background: var(--sunken); }
 @media (max-width: 520px) { .ev { grid-template-columns: auto 1fr; } .ev .m { grid-column: 1 / -1; } }
-details summary { cursor: pointer; font-weight: 600; }
+details summary { cursor: pointer; font-weight: 600; padding-block: 4px; }
 details ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; max-width: 75ch; }
 /* 바로 가기(위에 붙는 칩 줄)와 폰 하단 요약 */
 .jump { position: sticky; top: 0; z-index: 5; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; padding: 6px 0; margin: -6px 0; background: var(--bg); border-bottom: 1px solid var(--line); }
 .jump::-webkit-scrollbar { display: none; }
 .jump a { flex: none; font-size: 14px; padding: 6px 10px; border-radius: 6px; color: var(--muted); text-decoration: none; }
 .jump a:hover { background: var(--sunken); color: var(--fg); }
+.jump a[aria-current="true"] { color: var(--fg); background: var(--sunken); font-weight: 600; }
+/* 오른쪽에 메뉴가 더 있으면 끝을 흐리게 (끝까지 넘기면 해제) */
+.jump:not(.end) { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); }
 .wrap [id] { scroll-margin-top: 56px; }
 .mini { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: grid; gap: 2px;
   padding: 10px 14px; border-radius: 8px; background: var(--fg); color: var(--bg); font-size: 13px; line-height: 1.4; text-decoration: none; }
@@ -145,3 +155,4 @@ body { word-break: keep-all; overflow-wrap: anywhere; }
 
 .stale { margin: 0 0 12px; padding: 10px 14px; border-radius: 6px; background: var(--bad-bg); color: var(--bad); }
 .stale b { display: block; margin-bottom: 2px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }

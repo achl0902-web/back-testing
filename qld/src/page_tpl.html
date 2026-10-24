@@ -5,6 +5,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
 .hint-line { font-size: 12px; color: var(--faint); margin-top: 6px; }
+.hint-line a { display: inline-block; padding-block: 4px; }
+.val-notes { margin-top: 8px; display: grid; gap: 6px; }
+.val-notes p { margin: 0; }
+.val-more { margin-top: 4px; font-size: 13px; color: var(--muted); }
+.val-more summary { font-size: 13px; padding: 6px 0; }
+.val-more ul { margin-top: 4px; }
 /* Layout: one strategy (최종 전략 v1). Today strip, rules, validation, then the interactive backtest. */
 __UI_CSS__
 @media (max-width: 430px) { th, td { padding: 6px 4px; } table { font-size: 12px; } #kpi th[scope=row], #cmp th[scope=row] { white-space: normal; min-width: 64px; } #cmp th:nth-child(5), #cmp td:nth-child(5) { display: none; } #valTable td small { font-size: 11px; } }
@@ -13,7 +19,6 @@ __UI_CSS__
 .next b { display: block; margin-bottom: 4px; font-size: 16px; font-weight: 600; color: var(--fg); }
 .now .status { gap: 16px; }
 #nowPill { font-size: 22px; font-weight: 600; padding: 6px 14px; border-radius: 6px; gap: 10px; }
-#nowPill::before { width: 10px; height: 10px; }
 #nowText { font-size: 14px; }
 @media (max-width: 520px) { .now .status { grid-template-columns: 1fr; gap: 10px; } #nowPill { justify-self: start; } }
 .gauge { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--muted); }
@@ -38,12 +43,12 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
   <header>
     <h1>QLD 방어 적립</h1>
     <p class="sub">평소에는 매주 QLD를 사고, 위험 신호가 겹치면 전량 SGOV로 피했다가 진정되면 돌아오는 <b>최종 전략 v1</b>을 단순 적립과 비교합니다.</p>
-    <p class="sub hint-line">세후 원화 기준 · 해외주식 양도세(선입선출, 연 250만원 공제, 22%)·환율·수수료·연말 하베스팅 반영 · <a href="hold.html">TQQQ·QQQ 반반 적립 비교 →</a></p>
+    <p class="sub hint-line">세후 원화 기준이며 해외주식 양도세(선입선출, 연 250만원 공제, 22%), 환율, 수수료, 연말 하베스팅을 반영합니다.<br><a href="hold.html">TQQQ·QQQ 반반 적립과 비교하기</a></p>
   </header>
   <nav class="jump" aria-label="바로 가기"><a href="#sNow">지금</a><a href="#sRules">규칙</a><a href="#sVal">검증</a><a href="#ctl">설정</a><a href="#sRes">결과</a><a href="#sCmp">전략 비교</a><a href="#sChart">차트</a><a href="#sLog">매매 기록</a></nav>
 
   <section class="panel now" id="sNow" aria-live="polite">
-    <div class="chart-head"><h2>지금</h2><span class="hint">데이터 __LASTDATE__ 종가까지 · 페이지 갱신 __BUILT__</span></div>
+    <div class="chart-head"><h2>지금</h2><span class="hint">데이터 __LASTDATE__ 종가까지, 페이지 갱신 __BUILT__</span></div>
     <p class="stale" id="staleBox" role="alert" hidden></p>
     <div class="status">
       <span id="nowPill" class="pill in">QLD 보유</span>
@@ -90,7 +95,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
       <div>
         <h3>다시 QLD로 돌아가는 때 (복귀)</h3>
         <ol>
-          <li><b>세 조건이 모두 맞을 때.</b> 켜진 기술 축 1개 이하 · 나스닥100이 20일선 위 · 10일 변동성이 60일 변동성보다 낮음(진정).</li>
+          <li><b>세 조건이 모두 맞을 때.</b> 켜진 기술 축 1개 이하, 나스닥100이 20일선 위, 10일 변동성이 60일 변동성보다 낮음(진정).</li>
           <li><b>쌓인 SGOV를 전부 QLD로</b> 옮깁니다. 매크로 경보는 바닥에서 늦게 풀려 복귀에는 쓰지 않습니다.</li>
           <li><b>복귀 후 40거래일</b>은 3축 이상일 때만 다시 이탈합니다(들어가자마자 흔들려 나오는 것 방지).</li>
         </ol>
@@ -103,7 +108,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
   </section>
 
   <section class="panel" id="sVal">
-    <div class="chart-head"><h2>검증 성적</h2><span class="hint">주 100만원 · 세후 · 모든 적립 구간 · 2026-10-16 데이터</span></div>
+    <div class="chart-head"><h2>검증 성적</h2><span class="hint">주 100만원, 세후, 모든 적립 구간 (2026-10-16 데이터)</span></div>
     <div class="tablewrap"><table id="valTable">
       <thead><tr><th scope="col">구간</th><th scope="col">단순 적립</th><th scope="col">최종 전략 v1</th><th scope="col">노출 조절<br><small>(참고)</small></th></tr></thead>
       <tbody>
@@ -111,10 +116,21 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
         <tr><th scope="row">나스닥 10년<br><small>1986~1998 시작</small></th><td class="num">17.4% <small>최악 −7.9</small></td><td class="num win">30.1% <small>최악 13.4</small></td><td class="num">26.4% <small>최악 4.6</small></td></tr>
         <tr><th scope="row">나스닥 5년</th><td class="num">25.0% <small>최악 −56.6</small></td><td class="num win">28.0% <small>최악 5.2</small></td><td class="num">27.7% <small>최악 −21.2</small></td></tr>
         <tr><th scope="row">S&amp;P 2배 10년</th><td class="num">15.5% <small>최악 −14.8</small></td><td class="num">14.7% <small>최악 −0.7</small></td><td class="num win">17.9% <small>최악 −4.8</small></td></tr>
-        <tr><th scope="row">S&amp;P 2배 5년</th><td class="num">16.4% <small>최악 −29.9</small></td><td class="num win">15.5% <small>최악 −30.6</small></td><td class="num">17.8% <small>최악 −46.1</small></td></tr>
-        <tr><th scope="row">1999년~ 한 번에<br><small>세후 IRR · 시간가중 MDD</small></th><td class="num">21.7% <small>−98%</small></td><td class="num win">25.5% <small>−55%</small></td><td class="num">24.0% <small>−76%</small></td></tr>
+        <tr><th scope="row">S&amp;P 2배 5년</th><td class="num win">16.4% <small>최악 −29.9</small></td><td class="num">15.5% <small>최악 −30.6</small></td><td class="num">17.8% <small>최악 −46.1</small></td></tr>
+        <tr><th scope="row">1999년~ 한 번에<br><small>세후 IRR, 시간가중 MDD</small></th><td class="num">21.7% <small>−98%</small></td><td class="num win">25.5% <small>−55%</small></td><td class="num">24.0% <small>−76%</small></td></tr>
       </tbody></table></div>
-    <p class="hint" style="margin-top:8px">숫자는 연환산 수익률(IRR) 중앙값, 작은 글씨는 가장 나빴던 구간의 IRR입니다. 초록은 ‘중앙 + 0.5 × 최악’이 더 높은 쪽으로, 계산 전에 정한 판정 규칙입니다(최종 전략 v1이 5개 중 4개 우세). 노출 조절(변동성 계단표, TQQQ·QQQ·SGOV)은 중앙값은 비슷하거나 높지만 최악 구간이 크게 나빠 기본 전략에서 내렸습니다. 사례 구간 IRR(단순 적립 / 최종 v1): 2000년 −14.5 / 22.4 · 2008년 12.6 / 37.8 · 2022년 18.8 / 29.0 · 2020년 62.1 / 53.9 · 2025년 33.4 / 30.3. 매크로 경보 지표 중 금융스트레스·NFCI는 2010~11년에 공개된 지수라 그 이전 성적에는 사후 효과가 섞여 있습니다. 실제로 발표되던 2012년 이후 시작 구간에서도 매크로는 최악 구간을 1~3%p 개선했습니다(2026-10-20 점검). 첫 하락(고점 대비 −8~−17%)은 막지 못하고, 2020·2025년처럼 빠르게 회복하는 장에서는 단순 적립보다 못합니다.</p>
+    <div class="hint val-notes">
+      <p>숫자는 연환산 수익률(IRR) 중앙값, 작은 글씨는 가장 나빴던 구간의 IRR입니다. 초록은 세 열 중 ‘중앙 + 0.5 × 최악’이 가장 높은 칸으로, 계산 전에 정한 판정 규칙입니다. 단순 적립과만 비교하면 최종 전략 v1이 5개 중 4개에서 앞섭니다.</p>
+      <p><b>한계.</b> 첫 하락(고점 대비 −8~−17%)은 막지 못하고, 2020·2025년처럼 빠르게 회복하는 장에서는 단순 적립보다 못합니다.</p>
+    </div>
+    <details class="val-more">
+      <summary>사례 구간과 해석</summary>
+      <ul>
+        <li>사례 구간 IRR (단순 적립 / 최종 v1): 2000년 −14.5 / 22.4, 2008년 12.6 / 37.8, 2022년 18.8 / 29.0, 2020년 62.1 / 53.9, 2025년 33.4 / 30.3.</li>
+        <li>노출 조절(변동성 계단표, TQQQ·QQQ·SGOV)은 중앙값은 비슷하거나 높지만 최악 구간이 크게 나빠 기본 전략에서 내렸습니다.</li>
+        <li>매크로 경보 지표 중 금융스트레스·NFCI는 2010~11년에 공개된 지수라 그 이전 성적에는 사후 효과가 섞여 있습니다. 실제로 발표되던 2012년 이후 시작 구간에서도 매크로는 최악 구간을 1~3%p 개선했습니다(2026-10-20 점검).</li>
+      </ul>
+    </details>
   </section>
 
   <div class="layout">
@@ -152,9 +168,9 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
         <legend><h2>전략</h2></legend>
         <div class="field"><label for="rule">비교할 전략</label>
           <select id="rule">
-            <option value="final">최종 전략 v1 · 기술 4축 + 매크로 경보 (기본)</option>
+            <option value="final">최종 전략 v1: 기술 4축 + 매크로 경보 (기본)</option>
             <option value="tech">기술 4축만 (매크로 없이)</option>
-            <option value="kelly">노출 조절 · 변동성 계단표 (참고)</option>
+            <option value="kelly">노출 조절: 변동성 계단표 (참고)</option>
             <option value="off">규칙 없음 (단순 적립과 같음)</option>
           </select></div>
         <label class="toggle" for="harvest">연말 비과세 한도 하베스팅 <input type="checkbox" id="harvest" checked></label>
@@ -253,7 +269,7 @@ details.adv > div { display: grid; gap: 10px; margin-top: 10px; }
         <ul>
           <li>데이터: 1985년 10월 ~ __LASTDATE__ 나스닥100 일간 종가, QQQ 배당 포함 수익률(1999년 3월 이전은 지수 + 연 0.3%로 근사), 미국 3개월 국채금리, 원/달러 일간 환율.</li>
           <li>QLD 수익률: QQQ 일간 수익률의 2배 − (3개월 금리 + 0.5%) 차입비용 − 연 0.95% 보수. QLD 상장(2006년) 이전은 이 합성값입니다. SGOV: 3개월 국채금리 − 0.1%, 분배금에 배당소득세 15.4% 차감 후 재투자.</li>
-          <li>낙폭 세 가지: <b>MDD(시간가중)</b> = 적립·입출금 영향을 뺀 수익률 지수(매일 평가액 ÷ (전날 평가액 + 그날 입금))의 고점 대비 최대 하락 — 전략끼리 위험을 비교할 때 쓰는 값. <b>평가액 최대 낙폭</b> = 계좌 평가액(원화)의 고점 대비 최대 하락 — 적립금이 계속 들어와 시간가중보다 얕게 보일 수 있음. <b>원금 대비 최악</b> = (평가액 ÷ 그때까지 넣은 원금 − 1)의 최솟값.</li>
+          <li>낙폭 세 가지: <b>MDD(시간가중)</b> = 적립·입출금 영향을 뺀 수익률 지수(매일 평가액 ÷ (전날 평가액 + 그날 입금))의 고점 대비 최대 하락으로, 전략끼리 위험을 비교할 때 쓰는 값. <b>평가액 최대 낙폭</b> = 계좌 평가액(원화)의 고점 대비 최대 하락(적립금이 계속 들어와 시간가중보다 얕게 보일 수 있음). <b>원금 대비 최악</b> = (평가액 ÷ 그때까지 넣은 원금 − 1)의 최솟값.</li>
           <li>데이터 신선도: 빌드할 때 마지막 정상 거래일(미국 휴장일 반영)과 데이터의 마지막 종가를 비교해, 하루라도 늦으면 맨 위에 경고를 띄우고 매수·매도 알림을 보내지 않습니다.</li>
           <li>매매: 신호는 종가 기준, 체결은 다음 거래일 종가. 적립은 매주 첫 거래일에 원화를 환전 스프레드를 내고 달러로 바꿔 매수합니다.</li>
           <li>세금: 종목별 선입선출로 원화 취득가 대비 양도차익을 계산하고, 연 기본공제 차감 후 세율 적용, 다음 해 6월에 SGOV(부족하면 QLD)를 팔아 납부합니다. 하베스팅: 12월 마지막 거래일에 남은 공제 한도만큼 차익을 실현하고 즉시 재매수합니다.</li>
@@ -388,9 +404,10 @@ __UI_JS__
     $('fnBody').innerHTML = `<h3>기술 축</h3><ol>${ax}</ol><h3>매크로 지표</h3><ol>${mc}</ol>
       <p class="hint">z점수 = (오늘 값 − 지난 3년 평균) ÷ 지난 3년 표준편차. 지표마다 단위가 달라 이렇게 맞춥니다. +1을 넘으면 평소보다 확연히 위험한 쪽이라 경보, 0.5~1은 주의입니다. 위험 방향(높을수록 위험인지 낮을수록 위험인지)은 수익률에 맞추지 않고 경제적 의미로 미리 정했습니다.</p>`;
   }
-  const fnLink = id => `<sup><a href="#${id}" data-fn="${id}">ⓘ</a></sup>`;
+  const fnLink = (id, name) => `<a class="info" href="#${id}" data-fn="${id}" aria-label="${name} 뜻 보기">ⓘ</a>`;
+  const smooth = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
   document.addEventListener('click', e => { const a = e.target.closest('a[data-fn]'); if (!a) return; e.preventDefault(); $('fnBox').open = true;
-    const el = $(a.dataset.fn); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); history.replaceState(null, '', '#' + a.dataset.fn);
+    const el = $(a.dataset.fn); if (el) { el.scrollIntoView({ behavior: smooth(), block: 'center' }); history.replaceState(null, '', '#' + a.dataset.fn);
       document.querySelectorAll('.fn li.on').forEach(x => x.classList.remove('on')); el.classList.add('on'); } });
 
   // ---------- today (always the champion with research defaults, whatever the sliders say) ----------
@@ -417,28 +434,28 @@ __UI_JS__
     } else {
       const okv = c <= p.reMaxVotes, okma = D.px[j] > D.ma[20][j], okc = D.vols.rv10[j] < D.v60[j];
       next = okv && okma && okc ? `<b>다음 거래일 종가에 SGOV를 모두 QLD로 옮깁니다.</b>복귀 조건 세 가지가 모두 맞았습니다.`
-        : `<b>할 일: 적립금은 SGOV에 쌓아 둡니다.</b>복귀 조건 — 켜진 축 1개 이하(${okv ? '충족' : '미충족'}) · 20일선 위(${okma ? '충족' : '미충족'}) · 단기 변동성 진정(${okc ? '충족' : '미충족'}). 모두 맞으면 다음 거래일에 전량 QLD로 돌아갑니다.`;
+        : `<b>할 일: 적립금은 SGOV에 쌓아 둡니다.</b>복귀 조건: 켜진 축 1개 이하(${okv ? '충족' : '미충족'}), 20일선 위(${okma ? '충족' : '미충족'}), 단기 변동성 진정(${okc ? '충족' : '미충족'}). 모두 맞으면 다음 거래일에 전량 QLD로 돌아갑니다.`;
     }
     // stale data: the build found missing NYSE sessions, or the page itself has not been rebuilt for 3+ days
     const age = (Date.now() - Date.parse(FRESH.builtUtc)) / 36e5;
     if (FRESH.stale || age > 80) {
       const box = $('staleBox'); box.hidden = false;
-      box.innerHTML = FRESH.stale ? `<b>데이터가 오래됐어요.</b>마지막 종가 ${FRESH.last}, 정상이라면 ${FRESH.expected}까지 있어야 해요(빠진 거래일 ${FRESH.missing}일). 아래 신호로 매매하지 마세요. 매일 알림도 멈춰 있어요.`
-        : `<b>페이지가 ${Math.floor(age / 24)}일째 갱신되지 않았어요.</b>마지막 종가 ${FRESH.last} 기준이에요. 자동 갱신이 멈췄을 수 있으니 아래 신호를 그대로 믿지 마세요.`;
+      box.innerHTML = FRESH.stale ? `<b>데이터가 복구될 때까지 매매하지 않습니다.</b>마지막 종가가 ${FRESH.last}인데, 정상이라면 ${FRESH.expected}까지 있어야 합니다(빠진 거래일 ${FRESH.missing}일). 아래 신호는 참고만 하세요. 매일 알림도 멈춰 있습니다.`
+        : `<b>페이지가 ${Math.floor(age / 24)}일째 갱신되지 않았습니다.</b>마지막 종가 ${FRESH.last} 기준입니다. 자동 갱신이 멈췄을 수 있으니 아래 신호로 매매하지 마세요.`;
       pill.className = 'pill staged'; pill.textContent = '데이터 지연';
-      next = `<b>데이터가 복구될 때까지 매매하지 않습니다.</b>` + next.replace(/^<b>[^<]*<\/b>/, '');
+      next = null;
     }
-    $('nextBox').innerHTML = next;
+    $('nextBox').hidden = !next; if (next) $('nextBox').innerHTML = next;
     const rows = [
-      ['① 변동성', `↓${pct(D.vols.down20[j], 0)} · ↑${pct(D.vols.up20[j], 0)}`, `↓30% · ↑35% 초과`, ax[0]],
+      ['① 변동성', `↓${pct(D.vols.down20[j], 0)} ↑${pct(D.vols.up20[j], 0)}`, `↓30%, ↑35% 초과`, ax[0]],
       ['② 급락', pct(D.r10[j]), `10일 −8% 이하`, ax[1]],
       ['③ 추세', `RSI ${D.rsiw[j].toFixed(1)}`, `주봉 45 미만`, ax[2]],
       ['④ 급팽창', `${(D.vols.rv10[j] / D.v60[j]).toFixed(2)}배`, `1.6배 초과`, ax[3]],
     ];
-    $('axTable').querySelector('tbody').innerHTML = rows.map(([a, b, cc, on], k) => `<tr><th scope="row">${a}${fnLink('fn-ax' + k)}</th><td class="num">${b}</td><td>${cc}</td><td>${on ? S('bad', '켜짐') : S('good', '꺼짐')}</td></tr>`).join('');
+    $('axTable').querySelector('tbody').innerHTML = rows.map(([a, b, cc, on], k) => `<tr><th scope="row">${a}${fnLink('fn-ax' + k, a.slice(2))}</th><td class="num">${b}</td><td>${cc}</td><td>${on ? S('bad', '켜짐') : S('good', '꺼짐')}</td></tr>`).join('');
     const on = MNOW.filter(m => m.z != null && m.z > 1).length, avail = MNOW.filter(m => m.z != null).length, msv = isNaN(ms) ? 0 : ms;
-    $('macroGauge').innerHTML = `<span>매크로 경보</span><span class="bar"><i style="width:${Math.min(100, msv * 100)}%"></i><s style="left:50%"></s></span><b class="num">${isNaN(ms) ? '–' : Math.round(ms * 100) + '%'}</b><span>${on}/${avail}개 경보 · 50%를 새로 넘으면 이탈</span>`;
-    $('mcTable').querySelector('tbody').innerHTML = MNOW.map((m, k) => `<tr><th scope="row" title="${m.h}">${m.l}${fnLink('fn-mc' + k)}</th><td class="num">${m.z == null ? '–' : (m.z >= 0 ? '+' : '') + m.z.toFixed(2)}</td><td>${m.z == null ? S('mid', '자료 없음') : m.z > 1 ? S('bad', '경보') : m.z > 0.5 ? S('warn', '주의') : S('good', '평온')}</td></tr>`).join('');
+    $('macroGauge').innerHTML = `<span>매크로 경보</span><span class="bar"><i style="width:${Math.min(100, msv * 100)}%"></i><s style="left:50%"></s></span><b class="num">${isNaN(ms) ? '–' : Math.round(ms * 100) + '%'}</b><span>${on}/${avail}개 경보, 50%를 새로 넘으면 이탈</span>`;
+    $('mcTable').querySelector('tbody').innerHTML = MNOW.map((m, k) => `<tr><th scope="row" title="${m.h}">${m.l}${fnLink('fn-mc' + k, m.l)}</th><td class="num">${m.z == null ? '–' : (m.z >= 0 ? '+' : '') + m.z.toFixed(2)}</td><td>${m.z == null ? S('mid', '자료 없음') : m.z > 1 ? S('bad', '경보') : m.z > 0.5 ? S('warn', '주의') : S('good', '평온')}</td></tr>`).join('');
   }
 
   // ---------- last 6 months ----------
@@ -512,7 +529,7 @@ __UI_JS__
     const yrs = (D.day[i1] - D.day[i0]) / 365.25, KEL = p._rule === 'kelly';
     $('mini').innerHTML = `<span><b>${NAMES[p._rule]}</b> <span class="num">연 ${pct(S.irr)} · MDD ${pct(S.mddTwr, 0)} · ${krw(S.finalAfter)}</span></span>`
       + `<span><b>${baseName(p)}</b> <span class="num">연 ${pct(B.irr)} · MDD ${pct(B.mddTwr, 0)} · ${krw(B.finalAfter)}</span></span>`;
-    $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])} · ${yrs.toFixed(1)}년 · 납입 ${krw(S.contributed)}`;
+    $('periodNote').textContent = `${ymd(D.day[i0])} ~ ${ymd(D.day[i1])}, ${yrs.toFixed(1)}년, 납입 ${krw(S.contributed)}`;
     $('kpi').querySelector('tbody').innerHTML = [
       row('세후 청산가치', S.finalAfter, B.finalAfter, krw, dKrw, 'up'),
       row('수익 배수 (세후 ÷ 납입)', S.finalAfter / S.contributed, B.finalAfter / B.contributed, v => v.toFixed(2) + '배', (x, y) => ({ v: x - y, txt: ((x - y) >= 0 ? '+' : '−') + Math.abs(x - y).toFixed(2) }), 'up'),
