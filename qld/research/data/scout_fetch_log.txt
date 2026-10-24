@@ -1,4 +1,4 @@
-2026-10-24T10:19Z
+2026-10-24T10:22Z
 CBOE_SKEW.csv (cdn.cboe.com SKEW_History.csv): 9255 rows 1990-01-02..2026-10-23
 AAII_BULL.csv (aaii.com sentiment.xls): 2046 rows 1987-07-24..2026-10-22
 AAII_BEAR.csv (aaii.com sentiment.xls): 2046 rows 1987-07-24..2026-10-22
@@ -10,6 +10,11 @@ COT_TFF_NQ.csv (cftc gpe5-46if): 1063 rows 2006-06-13..2026-10-20
 WRMFNS.csv (FRED WRMFNS): 2431 rows 1980-02-04..2026-08-31
 DRTSCILM.csv (FRED DRTSCILM): 146 rows 1990-04-01..2026-07-01
 MARGIN_FINRA_M.csv (thetrading.tools margin-debt.csv cols ['date', 'debit_balances', 'debit_yoy', 'spy_yoy']): 357 rows 1997-01-01..2026-09-01
-USMPD sheet README: cols ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2']
-FOMC_DATES.csv (frbsf USMPD.xlsx first sheet, all date-like cells): 0 rows
+USMPD sheet README: (52, 3)
+USMPD sheet Statements: (279, 36)
+USMPD sheet Press Conferences: (95, 34)
+USMPD sheet Monetary Events: (279, 37)
+USMPD sheet Minutes: (206, 34)
+USMPD chosen column Statements:Date (279 dates)
+FOMC_DATES.csv (frbsf USMPD.xlsx first sheet, all date-like cells): 279 rows 1994-02-04..2026-09-16
 FF48_DAILY_VW.csv: 26317 rows 19260701..20260831, 48 industries (percent returns, value-weighted)
