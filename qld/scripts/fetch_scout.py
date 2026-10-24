@@ -43,7 +43,8 @@ try:
     import pandas as pd
     raw = get('https://www.aaii.com/files/surveys/sentiment.xls', extra={'Referer': 'https://www.aaii.com/sentimentsurvey/sent_results'})
     df = pd.read_excel(io.BytesIO(raw), header=None)
-    hdr = next(i for i in range(min(10, len(df))) if any(str(x).strip().lower().startswith('bull') for x in df.iloc[i]))
+    hdr = next((i for i in range(min(60, len(df))) if any(str(x).strip().lower().startswith('bull') for x in df.iloc[i])), None)
+    if hdr is None: raise RuntimeError('no header; first rows: ' + ' | '.join(' ; '.join(str(x) for x in df.iloc[i].tolist()[:6]) for i in range(min(8, len(df)))))
     cols = [str(x).strip().lower() for x in df.iloc[hdr]]; ib, ie = next(k for k, c in enumerate(cols) if c.startswith('bull')), next(k for k, c in enumerate(cols) if c.startswith('bear'))
     bull, bear = [], []
     for _, r in df.iloc[hdr + 1:].iterrows():
@@ -55,12 +56,13 @@ try:
 except Exception as e: log.append(f'AAII: failed {type(e).__name__} {e}')
 
 # CFTC COT via Socrata (legacy futures-only 6dca-aqww; TFF futures-only gpe5-46if)
+MAIN = lambda o: not any(w in o.get('market_and_exchange_names', '').upper() for w in ('MICRO', 'CONSOLIDATED'))  # one main contract per date
 def cot(ds, like):
     q = urllib.parse.urlencode({'$where': f"upper(market_and_exchange_names) like '{like}'", '$limit': '50000', '$order': 'report_date_as_yyyy_mm_dd'})
     return json.loads(get(f'https://publicreporting.cftc.gov/resource/{ds}.json?{q}'))
 for tag, like in [('ES', '%E-MINI S&P 500%'), ('NQ', '%NASDAQ%100%')]:
     try:
-        js = cot('6dca-aqww', like); rows = []
+        js = [o for o in cot('6dca-aqww', like) if MAIN(o)]; rows = []
         for o in js:
             if 'MINI' not in o.get('market_and_exchange_names', '').upper() and tag == 'NQ' and 'MICRO' in o.get('market_and_exchange_names', '').upper(): continue
             try: d = o['report_date_as_yyyy_mm_dd'][:10]; nl, ns, oi = float(o['noncomm_positions_long_all']), float(o['noncomm_positions_short_all']), float(o['open_interest_all'])
@@ -70,7 +72,7 @@ for tag, like in [('ES', '%E-MINI S&P 500%'), ('NQ', '%NASDAQ%100%')]:
         save(f'COT_LEGACY_{tag}.csv', rows, f'cftc 6dca-aqww {names}')
     except Exception as e: log.append(f'COT_LEGACY_{tag}: failed {e}')
     try:
-        js = cot('gpe5-46if', like); rows = []
+        js = [o for o in cot('gpe5-46if', like) if MAIN(o)]; rows = []
         for o in js:
             try:
                 d = o['report_date_as_yyyy_mm_dd'][:10]; oi = float(o['open_interest_all'])
