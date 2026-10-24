@@ -22,15 +22,23 @@ description: QLD 적립 전략을 한 스텝씩 연구할 때 사용. 한 스텝
 2. `cd /home/claude/back-testing/qld/research && node lib/step.js prep`(timeout 15분). 출력의 스텝 번호 `Sxx`를 쓴다.
 3. 사용자에게 한 문장으로 시작을 알린다.
 
+## 1b. 정찰 (조건부: 스텝 번호가 3의 배수, 직전 3스텝이 모두 기각, 또는 사용자 요청)
+
+1. `qld-scout`를 띄운다(없으면 general-purpose에 "먼저 /home/claude/back-testing/.claude/agents/qld-scout.md를 읽고 그 지시를 그대로 따르라"). 프롬프트: 비어 있는 정보 출처 칸을 우선으로 찾으라는 한 줄.
+2. 결과 `SCOUT.md`의 추천 중 무료·매일 갱신 가능한 것을 `qld/scripts/fetch_extra.py`에 소스로 추가하고 푸시한다(history-fetch 워크플로가 돌아 `qld/data/macro`에 커밋). 로그 `qld/research/data/extra_fetch_log.txt`가 바뀔 때까지 `git fetch`로 기다린다. 이 컴퓨터의 셸은 외부 사이트에 못 나가니 직접 받지 않는다. GitHub 공개 저장소(MIT 등)는 clone으로 받을 수 있다.
+3. 받은 자료는 catalog에 한 줄 넣지 않아도 된다(전략가가 넣는다). IDEAS "정보 출처별 커버리지"의 자료 칸만 고친다.
+
 ## 2. 전략가 (에이전트 1명)
 
-`qld-strategist`를 띄운다. 목록에 없으면 general-purpose에 "먼저 /home/claude/back-testing/.claude/agents/qld-strategist.md를 읽고 그 지시를 그대로 따르라"를 붙인다. 프롬프트는 5줄 이내: 스텝 번호, 사용자 아이디어(있으면 방향 하나로), 사용자 제약.
+`qld-strategist`를 띄운다. 목록에 없으면 general-purpose에 "먼저 /home/claude/back-testing/.claude/agents/qld-strategist.md를 읽고 그 지시를 그대로 따르라"를 붙인다. 프롬프트는 5줄 이내: 스텝 번호, 사용자 아이디어(있으면 방향 하나로, IDEAS "사용자 제안" 절에도 적는다), 사용자 제약. 새로움 할당량(방향 최소 1개는 처음 쓰는 정보 출처)과 `dataRequest`는 전략가 정의에 있으니 다시 쓰지 않는다.
+- plan에 `dataRequest`가 있으면 run 뒤에 1b-2처럼 받아 두고, 다음 스텝 전략가에게 "요청 자료 도착"을 알린다.
 
 ## 3. 실행 (코드)
 
 `node lib/step.js run Sxx`(timeout 30분). 사전 등록 커밋, 스크린, 배터리, 스텝 문서, 게이트까지 한다.
 - 계획 오류가 나오면 메시지대로 plan의 해당 칸만 고치고 다시 run한다.
 - 한 방향이 "결과 없음(오류)"이면 그대로 두고 보고에 적는다.
+- plan goal에 추가 기준이 사전 등록돼 있으면 run 뒤에 돌린다: `node lib/recentcheck.js Sxx`(2011~ 재확인), `node lib/histcheck.js Sxx`(1960~85 재확인). 게이트를 통과한 방향도 이 기준에 미달이면 채택하지 않는다. 그 시대에 새 요소가 행동을 바꾼 날이 0이면 "미검증"으로 적는다.
 
 ## 4. 검토 (게이트가 "검토 필요"일 때만)
 
@@ -51,11 +59,14 @@ node lib/step.js close Sxx --verdict "<방향별 판정 한 줄>" --why "<핵심
 2. 방향 표(유형 · 내용 · 최고 점수 · 판정)
 3. 검토 요지와 반대 의견(검토가 있었을 때만)
 4. 과최적화 점검(게이트 줄 기준)
-5. 다음 스텝 후보 2~3개
-6. 채택이면 "백테스터와 매일 알림에 반영할까요?"
+5. 이번에 처음 쓴 정보 출처와 IDEAS 두 축에서 아직 빈 칸
+6. 다음 스텝 후보 2~3개
+7. 채택이면 "백테스터와 매일 알림에 반영할까요?"
 
 사용자가 요청하면 토큰 사용량(에이전트별 + 메인 추정)과 구조 진단을 붙인다.
 
 ## 규칙을 고칠 때
+
+"빈칸이 소진됐다"는 말은 IDEAS의 행동 축과 정보 출처 축이 둘 다 찼을 때만 쓴다. 행동 칸만 찼으면 정찰을 돌린다.
 
 사용자가 규칙을 바꾸거나 판단이 틀렸다고 하면, 그 규칙이 사는 파일의 문장을 다시 쓴다(덧붙이지 않는다). 기준·흐름·검증 세트는 `PROTOCOL.md`, 진행자 절차는 이 파일, 역할별 지시는 에이전트 정의, 바뀐 이유는 LEDGER의 해당 스텝 행이나 D 행에 남긴다. 코드로 막을 수 있으면 `step.js` 검사로 옮긴다.
