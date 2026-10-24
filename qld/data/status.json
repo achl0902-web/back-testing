@@ -44,7 +44,7 @@
  "infl_ok": true,
  "rules": {
   "final": {
-   "name": "최종 전략 v2 (v1 + 월초 창 + 인플레 복귀 금지)",
+   "name": "최종 전략 v2 (v1 + 인플레 과열 복귀 금지)",
    "regime": "in"
   },
   "v1": {
@@ -77,7 +77,7 @@
   "cugold": -1.73
  },
  "macro_ok": true,
- "built": "2026-10-24 17:34 KST",
+ "built": "2026-10-24 17:37 KST",
  "sources": [
   "yahoo(5/5)"
  ],
@@ -118,7 +118,7 @@
    "Y_COPPER": "2026-10-23",
    "Y_GOLD": "2026-10-23"
   },
-  "checked": "2026-10-24T08:34Z"
+  "checked": "2026-10-24T08:37Z"
  },
  "stale": false,
  "title": "[QLD] 2026-10-23 QLD 보유"
