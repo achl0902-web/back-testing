@@ -1,8 +1,6 @@
-2026-10-24T09:33Z
+2026-10-24T09:49Z
 CBOE_SKEW.csv (cdn.cboe.com SKEW_History.csv): 9255 rows 1990-01-02..2026-10-23
-AAII_BULL.csv (aaii.com sentiment.xls): 2032 rows 1987-09-11..2026-10-22
-AAII_BEAR.csv (aaii.com sentiment.xls): 2032 rows 1987-09-11..2026-10-22
-AAII_SPREAD.csv (aaii bull-bear): 2032 rows 1987-09-11..2026-10-22
+AAII: failed RuntimeError columns not found: row 1: ['nan', 'nan', 'nan', 'nan', 'nan', 'bullish', 'nan', 'nan', 'bullish', 'bullish'] / next: ['Reported', 'nan', 'nan', 'nan', 'nan', '8-week', 'Bull-Bear', 'Bullish', 'Average', 'Average']
 COT_LEGACY_ES.csv (cftc 6dca-aqww ['E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE', 'E-MINI S&P 500 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE', 'E-MINI S&P 500 STOCK INDEX - INTERNATIONAL MONETARY MARKET']): 1514 rows 1997-09-16..2026-10-20
 COT_TFF_ES.csv (cftc gpe5-46if): 1063 rows 2006-06-13..2026-10-20
 COT_LEGACY_NQ.csv (cftc 6dca-aqww ['NASDAQ-100 Consolidated - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX (MINI) - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX (MINI) - INTERNATIONAL MONETARY MARKET', 'NASDAQ-100 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX - INTERNATIONAL MONETARY MARKET']): 1594 rows 1996-04-16..2026-10-20
