@@ -51,6 +51,8 @@ description: QLD 적립 전략을 한 스텝씩 연구할 때 사용. 한 스텝
 node lib/step.js close Sxx --verdict "<방향별 판정 한 줄>" --why "<핵심 근거 한 줄>" --ideas '[{"row":"<IDEAS 행동 유형 행>","tested":"<이번 시험 요약>","result":"<결론>","gap":"<남은 빈칸>"}]' --session <세션 URL>
 ```
 
+close 뒤 풀에 요소가 새로 들어가면 `candidates/POOL.js`에 그 요소를 넣고(값 고정, 원 모듈 논리 복사) 새 요소가 든 부분집합만 `node lib/score.js`로 전수 채점한다(T21 방식, trials에 기록). 상위가 지금 챔피언보다 높으면 T-plan으로 사전 등록하고 배터리(k2)·histcheck·recentcheck로 확인한다(T22 방식).
+
 close 뒤 `ELEMENTS.md`를 갱신한다: 이번 스텝에서 점수 > 0이었거나 특정 약점을 고친 요소는 풀에 한 줄 추가(고정값·구현 위치·점수·장기 확인), 반증된 것은 "쓰지 말 것"으로.
 
 채택이면 close 전에 `champion.json`과 LEDGER 챔피언 절을 고친다. 페이지와 매일 알림은 사용자 승인 뒤에만 바꾼다(승인되면: engine·page·build 수정 → 로컬 빌드와 playwright 렌더 확인 → 푸시 → Actions 성공 확인).
