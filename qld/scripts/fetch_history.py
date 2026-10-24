@@ -22,7 +22,7 @@ def fred(s):
     open(os.path.join(OUT, f'{s}.csv'), 'w').write('date,value\n' + '\n'.join(f'{a},{b}' for a, b in rows) + '\n')
     log.append(f'FRED {s}: {len(rows)} rows {rows[0][0]}..{rows[-1][0]}')
 
-for s in ['BAA', 'AAA']:
+for s in ['BAA', 'AAA', 'WTISPLC', 'TWEXMMTH']:  # T14: monthly oil (1946~) and trade-weighted dollar (1973~) for the 1960~85 check of S26 A
     for k in range(3):
         try: fred(s); break
         except Exception as e:
