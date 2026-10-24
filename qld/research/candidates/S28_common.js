@@ -21,6 +21,7 @@ exports.pc = D => { const key = D.n + '|' + D.day[0] + '|' + D.day[D.n - 1]; if 
   const o = nan(D.n); let k = -1;
   for (let j = 0; j < D.n; j++) { while (k + 1 < obs.length && obs[k + 1][0] <= D.day[j]) k++; if (k >= 0 && D.day[j] - obs[k][0] <= 5) o[j] = obs[k][1]; }
   cache.set(key, o); return o; };
-// Put/Call 10거래일 평균(10일 모두 값이 있을 때만)
-exports.pc10 = D => { const a = exports.pc(D), o = nan(D.n);
-  for (let j = 9; j < D.n; j++) { let s = 0, ok = true; for (let i = j - 9; i <= j; i++) { if (!isFinite(a[i])) { ok = false; break; } s += a[i]; } if (ok) o[j] = s / 10; } return o; };
+// Put/Call k거래일 평균(k일 모두 값이 있을 때만)
+exports.pcAvg = (D, k) => { const a = exports.pc(D), o = nan(D.n);
+  for (let j = k - 1; j < D.n; j++) { let s = 0, ok = true; for (let i = j - k + 1; i <= j; i++) { if (!isFinite(a[i])) { ok = false; break; } s += a[i]; } if (ok) o[j] = s / k; } return o; };
+exports.pc10 = D => exports.pcAvg(D, 10);
