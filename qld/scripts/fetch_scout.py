@@ -115,16 +115,21 @@ except Exception as e: log.append(f'MARGIN_FINRA_M: failed {e}')
 try:
     import pandas as pd
     x = pd.read_excel(io.BytesIO(get('https://www.frbsf.org/wp-content/uploads/USMPD.xlsx', extra={'Referer': 'https://www.frbsf.org/research-and-insights/data-and-indicators/us-monetary-policy-event-study-database/'})), sheet_name=None)
-    rows = set()
+    best = (0, None, set())
     for nm, df in x.items():
-        for c in df.columns:
-            for v in df[c].tolist():
-                try:
-                    d = pd.to_datetime(v)
-                    if 1994 <= d.year <= 2030 and getattr(d, 'hour', 0) == 0: rows.add(d.date().isoformat())
-                except Exception: pass
-        log.append(f'USMPD sheet {nm}: cols {list(df.columns)[:6]}')
-        break  # first sheet: one row per event
+        for hdr_row in range(0, 6):  # header may sit below a title block
+            cols = [str(c) for c in df.columns] if hdr_row == 0 else [str(v) for v in df.iloc[hdr_row - 1].tolist()]
+            for k, c in enumerate(cols):
+                if 'date' not in c.lower(): continue
+                got = set()
+                for v in df.iloc[hdr_row:, k].tolist():
+                    try:
+                        d = pd.to_datetime(v)
+                        if 1994 <= d.year <= 2030: got.add(d.date().isoformat())
+                    except Exception: pass
+                if len(got) > best[0]: best = (len(got), f'{nm}:{c}', got)
+        log.append(f'USMPD sheet {nm}: {df.shape}')
+    rows = best[2]; log.append(f'USMPD chosen column {best[1]} ({best[0]} dates)')
     save('FOMC_DATES.csv', [(d, 1) for d in sorted(rows)], 'frbsf USMPD.xlsx first sheet, all date-like cells')
 except Exception as e:
     log.append(f'FOMC USMPD: failed {e}')
