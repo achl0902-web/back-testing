@@ -1,8 +1,11 @@
-2026-10-24T08:38Z
+2026-10-24T08:55Z
 MARGIN_Z1.csv (FRED BOGZ1FL663067003Q): 305 rows 1945-10-01..2026-04-01
 FINRA page: HTTP Error 403: Forbidden
 FINRA_MARGIN: failed HTTP Error 403: Forbidden
 CBOE_TOTALPC.csv (cdn.cboe.com/totalpc.csv): 3253 rows 2006-11-01..2019-10-04
 CBOE_EQUITYPC.csv (cdn.cboe.com/equitypc.csv): 3253 rows 2006-11-01..2019-10-04
 CBOE_PCARCHIVE.csv (cdn.cboe.com/pcratioarchive.csv): 2077 rows 1995-09-27..2003-12-31
-CNN_FG: failed HTTP Error 418: Unknown Error
+CBOE_TOTALPC_D.csv (cdn.cboe.com daily json, 67 weekdays missing (holidays included)): 1773 rows 2019-10-07..2026-10-23
+CBOE_EQUITYPC_D.csv (cdn.cboe.com daily json): 1773 rows 2019-10-07..2026-10-23
+CNN_FG: failed HTTP Error 500: Internal Server Error
+FG_FINHACKER: no rows parsed; head: <!DOCTYPE html> <html lang="en">   <head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# gumroad: http://ogp.me/ns/fb/gumroad#">     <link rel="dns-prefetch" href="//assets.gumroad.com">     <link rel="dns-prefetch" href="//static-2.gumroad.com">     <link rel="dns-prefetch" href="//public-fi
