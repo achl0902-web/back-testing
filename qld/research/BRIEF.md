@@ -93,13 +93,13 @@
 
 ## 카탈로그 커버리지 (가족: 지표(최고 점수))
 - price: p_ret21(0.0) p_ret63(-0.4) p_ret126(-1.1) p_ret252(0.2) p_ma50(0.3) p_ma200(-0.7) p_ma200slope(-0.5) p_dd252(-0.3) p_low63(0.0) p_rsi14(0.0) p_rsiw(-0.2) p_macdw(-0.1)
-- vol: v_rv20(-0.8) v_down20(-0.4) v_up20(-1.0) v_ratio(0.0) v_volvol(-0.1) v_vix(-0.1) v_vixterm(0.1) v_vxn(-0.4) v_move(-1.0) v_pc(미시험)
+- vol: v_rv20(-0.8) v_down20(-0.4) v_up20(-1.0) v_ratio(0.0) v_volvol(-0.1) v_vix(-0.1) v_vixterm(0.1) v_vxn(-0.4) v_move(-1.0) v_pc(-1.7)
 - xasset: x_ndxspx(-0.0) x_small(-0.2) x_rsp(-0.5) x_semis(-0.0) x_xlyxlp(-0.9) x_fin(-0.6) x_kre(0.1) x_cugold(0.0) x_gold(-1.5) x_dxy(1.1) x_oil(0.5) x_tlt(0.3) x_breadth(-1.7) x_sbcorr(-0.2)
 - credit: c_baa(-0.5) c_baa63(-0.3) c_dflt(-0.2) c_hyg(-3.1) c_lqd(-0.3)
 - rates: r_tnx63(-0.1) r_tnx126(0.0) r_dgs2(0.2) r_hike(-1.4) r_cut(-1.9) r_inv(-2.4) r_steep(-0.6) r_real(-0.0)
 - inflation: i_cpi(-0.6) i_core(-0.4) i_cpiacc(-0.8) i_ppi(1.0) i_be(0.2)
 - labor: l_claims(-0.2) l_sahm(-0.6) l_unrate(-0.1)
-- liquidity: f_nfci(-0.0) f_nfcir(-0.5) f_stl(-0.7) f_m2(0.0) f_walcl(-0.5) f_ms(-3.4) f_margin(미시험)
+- liquidity: f_nfci(-0.0) f_nfcir(-0.5) f_stl(-0.7) f_m2(0.0) f_walcl(-0.5) f_ms(-3.4) f_margin(-1.7)
 
 상위 시험 결과: B:S26 A(달력 pad=2 + 인플레 합의 복귀 금지 z=1.5) + S21 C 충격 이탈 기억(이탈일 주봉 RSI ≥50·매크로 50% 미만이면 켜진 축 수 없이 20일선 위·10일<60일 변동성으로 복귀, 인플레 금지 중에는 막음) 2.99 [S27] · B:복귀 후 H거래일 이상 연속 보유 중이면 합성 3배·H=40 2.62 [S16] · A:S26 A(S14 B 월말·월초 창 기술 이탈 +1표 pad=2 + S12 B 달러·PPI·유가 중 2개 z>1.5면 복귀 금지) + S25 B 2년물 252일 +1.5%p 인상 국면이면 보호기간 3표→2표 2.05 [S27] · A:S14 B 월말·월초 창 기술 이탈 +1표(pad=2) + S12 B 달러·PPI·유가 중 2개 z>1.5면 복귀 금지 2.00 [S26] · action·maxOut_120 1.94 [S11] · C:S14 B 달력(pad=2) + S13 B veto=2(축①을 하방 변동성 20일 >30%로만 세어 이탈 판정) + S21 C 충격 이탈 기억 복귀(rsiShock=50) 1.44 [S27] · D:3배 보유 중 매크로 경보 비율이 th 이상이면 즉시 2배(이탈 문턱 50%보다 낮은 부분 경보)·th=0.2 1.34 [S17] · B:월말·월초 창(−1..+3거래일)의 수익을 놓치는 기술 이탈은 1표 더 요구·pad=2 1.34 [S14]
 
