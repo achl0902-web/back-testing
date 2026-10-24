@@ -11,7 +11,7 @@ module.exports = (D, p, H, L) => {
   }
   const r = base(D, p, H, L), k = p._shift % D.n, out = {};
   for (const [key, v] of Object.entries(r)) {
-    if (v && typeof v.length === 'number' && v.length === D.n) { const a = new Uint8Array(D.n); for (let i = 0; i < D.n; i++) a[(i + k) % D.n] = v[i]; out[key] = a; }
+    if (v && typeof v.length === 'number' && v.length === D.n) { const a = new (v.constructor === Uint8Array ? Uint8Array : Float64Array)(D.n); for (let i = 0; i < D.n; i++) a[(i + k) % D.n] = v[i]; out[key] = a; // keep real-valued arrays (qldTarget weights) as they are (S36) }
     else out[key] = v;
   }
   return out;
