@@ -1,6 +1,6 @@
 {
  "date": "2026-10-23",
- "strategy": "final",
+ "strategy": "v2",
  "regime": "in",
  "next": "in",
  "action": null,
@@ -26,8 +26,28 @@
  "rv20": 0.1862,
  "ndx": 28957.53,
  "ma20": 30223.53,
+ "monthWin": false,
+ "inflBlock": false,
+ "inflNow": {
+  "z": [
+   1.06,
+   2.65,
+   0.19
+  ],
+  "on": false,
+  "keys": [
+   "달러 6개월 상승",
+   "PPI 전년비",
+   "유가 6개월 상승"
+  ]
+ },
+ "infl_ok": true,
  "rules": {
   "final": {
+   "name": "최종 전략 v2 (v1 + 월초 창 + 인플레 복귀 금지)",
+   "regime": "in"
+  },
+  "v1": {
    "name": "최종 전략 v1 (기술 4축 + 매크로 경보)",
    "regime": "in"
   },
@@ -57,7 +77,7 @@
   "cugold": -1.73
  },
  "macro_ok": true,
- "built": "2026-10-24 13:25 KST",
+ "built": "2026-10-24 14:31 KST",
  "sources": [
   "yahoo(5/5)"
  ],
@@ -98,8 +118,8 @@
    "Y_COPPER": "2026-10-23",
    "Y_GOLD": "2026-10-23"
   },
-  "checked": "2026-10-24T04:25Z"
+  "checked": "2026-10-24T05:31Z"
  },
  "stale": false,
- "title": "[QLD] 2026-10-23 QLD 보유"
+ "title": "[QLD] 2026-10-23 알림 기준 변경: 최종 전략 v2 · QLD 보유"
 }
