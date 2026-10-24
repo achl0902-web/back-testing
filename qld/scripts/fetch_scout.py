@@ -45,7 +45,11 @@ try:
     df = pd.read_excel(io.BytesIO(raw), header=None)
     hdr = next((i for i in range(min(60, len(df))) if any(str(x).strip().lower().startswith('bull') for x in df.iloc[i])), None)
     if hdr is None: raise RuntimeError('no header; first rows: ' + ' | '.join(' ; '.join(str(x) for x in df.iloc[i].tolist()[:6]) for i in range(min(8, len(df)))))
-    cols = [str(x).strip().lower() for x in df.iloc[hdr]]; ib, ie = next(k for k, c in enumerate(cols) if c.startswith('bull')), next(k for k, c in enumerate(cols) if c.startswith('bear'))
+    cols = [str(x).strip().lower() for x in df.iloc[hdr]]
+    ib = next((k for k, c in enumerate(cols) if c.startswith('bull')), None); ie = next((k for k, c in enumerate(cols) if 'bear' in c), None)
+    if ie is None:  # header split over two rows
+        c2 = [str(x).strip().lower() for x in df.iloc[hdr + 1]]; ie = next((k for k, c in enumerate(c2) if 'bear' in c), None); ib = ib if ib is not None else next((k for k, c in enumerate(c2) if 'bull' in c), None)
+    if ib is None or ie is None: raise RuntimeError(f'columns not found: row {hdr}: {cols[:10]} / next: {[str(x) for x in df.iloc[hdr + 1].tolist()[:10]]}')
     bull, bear = [], []
     for _, r in df.iloc[hdr + 1:].iterrows():
         try: d = pd.to_datetime(r.iloc[0]).date(); b, e = float(r.iloc[ib]), float(r.iloc[ie])
@@ -56,13 +60,21 @@ try:
 except Exception as e: log.append(f'AAII: failed {type(e).__name__} {e}')
 
 # CFTC COT via Socrata (legacy futures-only 6dca-aqww; TFF futures-only gpe5-46if)
-MAIN = lambda o: not any(w in o.get('market_and_exchange_names', '').upper() for w in ('MICRO', 'CONSOLIDATED'))  # one main contract per date
+MAIN = lambda o: 'MICRO' not in o.get('market_and_exchange_names', '').upper()
+def biggest(js):  # one row per report date: the contract with the largest open interest (names change over time)
+    best = {}
+    for o in js:
+        d = o.get('report_date_as_yyyy_mm_dd', '')[:10]
+        try: oi = float(o.get('open_interest_all', 0))
+        except ValueError: continue
+        if d and (d not in best or oi > float(best[d].get('open_interest_all', 0))): best[d] = o
+    return list(best.values())
 def cot(ds, like):
     q = urllib.parse.urlencode({'$where': f"upper(market_and_exchange_names) like '{like}'", '$limit': '50000', '$order': 'report_date_as_yyyy_mm_dd'})
     return json.loads(get(f'https://publicreporting.cftc.gov/resource/{ds}.json?{q}'))
 for tag, like in [('ES', '%E-MINI S&P 500%'), ('NQ', '%NASDAQ%100%')]:
     try:
-        js = [o for o in cot('6dca-aqww', like) if MAIN(o)]; rows = []
+        js = biggest([o for o in cot('6dca-aqww', like) if MAIN(o)]); rows = []
         for o in js:
             if 'MINI' not in o.get('market_and_exchange_names', '').upper() and tag == 'NQ' and 'MICRO' in o.get('market_and_exchange_names', '').upper(): continue
             try: d = o['report_date_as_yyyy_mm_dd'][:10]; nl, ns, oi = float(o['noncomm_positions_long_all']), float(o['noncomm_positions_short_all']), float(o['open_interest_all'])
@@ -72,7 +84,7 @@ for tag, like in [('ES', '%E-MINI S&P 500%'), ('NQ', '%NASDAQ%100%')]:
         save(f'COT_LEGACY_{tag}.csv', rows, f'cftc 6dca-aqww {names}')
     except Exception as e: log.append(f'COT_LEGACY_{tag}: failed {e}')
     try:
-        js = [o for o in cot('gpe5-46if', like) if MAIN(o)]; rows = []
+        js = biggest([o for o in cot('gpe5-46if', like) if MAIN(o)]); rows = []
         for o in js:
             try:
                 d = o['report_date_as_yyyy_mm_dd'][:10]; oi = float(o['open_interest_all'])
