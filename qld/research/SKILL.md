@@ -51,6 +51,8 @@ description: QLD 적립 전략을 한 스텝씩 연구할 때 사용. 한 스텝
 node lib/step.js close Sxx --verdict "<방향별 판정 한 줄>" --why "<핵심 근거 한 줄>" --ideas '[{"row":"<IDEAS 행동 유형 행>","tested":"<이번 시험 요약>","result":"<결론>","gap":"<남은 빈칸>"}]' --session <세션 URL>
 ```
 
+close 뒤 `ELEMENTS.md`를 갱신한다: 이번 스텝에서 점수 > 0이었거나 특정 약점을 고친 요소는 풀에 한 줄 추가(고정값·구현 위치·점수·장기 확인), 반증된 것은 "쓰지 말 것"으로.
+
 채택이면 close 전에 `champion.json`과 LEDGER 챔피언 절을 고친다. 페이지와 매일 알림은 사용자 승인 뒤에만 바꾼다(승인되면: engine·page·build 수정 → 로컬 빌드와 playwright 렌더 확인 → 푸시 → Actions 성공 확인).
 
 ## 6. 보고 (휴대폰에서 읽기 좋게)
