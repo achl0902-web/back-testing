@@ -3,10 +3,11 @@
 Probe mode (default): fetch a few dates, save what the page returns for each, log parsed ratios.
 Writes qld/research/data/cboe_probe.txt only.
 """
-import datetime as dt, json, re, time, urllib.request
+import datetime as dt, json, re, time
+import fetchlib
 UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept': 'text/html,application/json,*/*'}
 def get(u):
-    try: return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60).read().decode('utf8', 'ignore'), None
+    try: return fetchlib.get(u, tries=1, timeout=60, headers=UA).decode('utf8', 'ignore'), None
     except Exception as e: return '', str(e)
 out = [dt.datetime.utcnow().strftime('%Y-%m-%dT%H:%MZ')]
 for d in ['2004-06-01', '2019-12-02', '2020-03-16', '2023-06-05', '2026-10-22']:

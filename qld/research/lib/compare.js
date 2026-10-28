@@ -2,8 +2,8 @@
 // Side-by-side scorecard of whole strategies (not candidates vs champion): IRR median / worst / MDD median per set, cases, 1999~ run.
 // usage: node lib/compare.js [--weekly 1000000]
 const C = require('./core.js');
-const args = process.argv.slice(2), opt = (f, d) => { const k = args.indexOf(f); return k >= 0 ? args[k + 1] : d; };
-const money = { weekly: +opt('--weekly', 700000) };
+const { opt } = require('./args.js')({ weekly: 'string' });
+const money = { weekly: +opt('weekly', 700000) };
 const S = { '단순 적립': { strategy: false }, '최종 전략 v1': { strategy: true }, '노출 조절': { strategy: true, rule: 'kelly' } };
 const res = {};
 for (const [nm, p] of Object.entries(S)) {

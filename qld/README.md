@@ -72,7 +72,7 @@ TQQQ+QQQ 대 QLD, UPRO+SPY 대 SSO를 같은 날 같은 돈으로 적립·거치
 | `scripts/build.py` | 최신 데이터 추가, 페이지 생성, 신호·알림 계산 |
 | `../.github/workflows/qld-update.yml` | 매일 실행과 Pages 배포 (저장소 루트) |
 
-직접 실행: `python3 scripts/build.py` (Python 3.10+, Node 18+, 선택적으로 `pip install yfinance pandas`) 후 `site/index.html`을 엽니다. `--offline`을 붙이면 새 데이터를 받지 않고 저장된 데이터로만 만듭니다(화면 수정 확인용).
+직접 실행: `python3 scripts/build.py` (Python 3.10+, Node 18+, 선택적으로 `pip install yfinance pandas exchange_calendars`) 후 `site/index.html`을 엽니다. `--offline`을 붙이면 새 데이터를 받지 않고 저장된 데이터로만 만듭니다(화면 수정 확인용).
 
 ## 주의
 

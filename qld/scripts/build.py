@@ -196,21 +196,15 @@ last = iso(days[-1])
 y, m, d_ = last.split('-')
 
 # ---------- freshness: compare the data's last close with the last completed NYSE session ----------
-def nyse_holidays(yr):
-    from datetime import date, timedelta as td
-    def obs(d):  # Saturday -> Friday, Sunday -> Monday
-        return d - td(1) if d.weekday() == 5 else d + td(1) if d.weekday() == 6 else d
-    def nth(mo, wd, k):  # k-th weekday wd of month (k = -1: last)
-        if k > 0: d = date(yr, mo, 1); d += td((wd - d.weekday()) % 7); return d + td(7 * (k - 1))
-        d = date(yr, mo + 1, 1) - td(1) if mo < 12 else date(yr, 12, 31); return d - td((d.weekday() - wd) % 7)
-    a = yr % 19; b, c = divmod(yr, 100); dd_ = (19 * a + b - b // 4 - (b - (8 * b + 13) // 25) + 15) % 30
-    e = (32 + 2 * (b % 4) + 2 * (c // 4) - dd_ - c % 4) % 7; f_ = dd_ + e - 7 * ((a + 11 * dd_ + 22 * e) // 451) + 114
-    easter = date(yr, f_ // 31, f_ % 31 + 1)
-    h = {nth(1, 0, 3), nth(2, 0, 3), easter - td(2), nth(5, 0, -1), obs(date(yr, 7, 4)), nth(9, 0, 1), nth(11, 3, 4), obs(date(yr, 12, 25))}
-    if date(yr, 1, 1).weekday() != 5: h.add(obs(date(yr, 1, 1)))   # New Year on Saturday is not observed
-    if yr >= 2022: h.add(obs(date(yr, 6, 19)))
-    return h
-def is_session(d): return d.weekday() < 5 and d not in nyse_holidays(d.year)
+# NYSE trading days (holidays, special closures such as 2025-01-09) from exchange_calendars;
+# without the package, weekdays only (holidays then show up as "missing" days in the freshness check)
+try:
+    import exchange_calendars as _xcals
+    _XNYS = _xcals.get_calendar('XNYS', start=(dt.date.today() - dt.timedelta(days=5 * 365)).isoformat())
+    def is_session(d): return bool(_XNYS.is_session(d.isoformat()))
+except Exception as e:
+    print('exchange_calendars unavailable, weekdays only:', type(e).__name__, e, file=sys.stderr)
+    def is_session(d): return d.weekday() < 5
 def expected_session(now_utc):
     from zoneinfo import ZoneInfo
     ny = now_utc.astimezone(ZoneInfo('America/New_York')); d = ny.date()

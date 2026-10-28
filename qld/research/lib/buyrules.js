@@ -1,7 +1,7 @@
 // Buy-rule strategy vs daily DCA. Same daily KRW inflow; strategy may hold cash in SGOV.
 const E = require('../../src/engine.js');
 const DEF = E.DEFAULTS;
-function xirr(fl){const t0=fl[0][0];const f=r=>{let s=0;for(const[d,c]of fl)s+=c/Math.pow(1+r,(d-t0)/365.25);return s;};let lo=-0.99,hi=3;for(let k=0;k<200;k++){const m=(lo+hi)/2;if(f(m)>0)lo=m;else hi=m;}return (lo+hi)/2;}
+const { xirr } = E;  // money-weighted return: same function as the engine
 // signals on the leveraged price (QLD); H/L optional arrays (same length) else close-only
 function signals(D, H, L) {
   const c = D.lx, n = D.n, rsi = new Float64Array(n).fill(NaN), ath = new Uint8Array(n), sk = new Float64Array(n).fill(NaN), sd = new Float64Array(n).fill(NaN);

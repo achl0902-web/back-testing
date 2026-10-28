@@ -7,7 +7,7 @@
 const fs = require('fs'), path = require('path');
 const { E, load, day } = require('./data.js');
 const R = path.join(__dirname, '..');
-const args = process.argv.slice(2), cmd = args[0], opt = (f, d) => { const k = args.indexOf(f); return k >= 0 ? args[k + 1] : d; };
+const { opt, positionals: [cmd] } = require('./args.js')({ n: 'string', seed: 'string' });
 const W = 1e6, med = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const q = (a, p) => { const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.max(0, Math.round(p * (s.length - 1))))]; };
 const pc = x => (x * 100).toFixed(1);
@@ -75,8 +75,8 @@ else if (cmd === 'sanity' || cmd === 'boot') {
       continue;
     }
     // mulberry32 (the LCG used for placebo shifts repeats paths here: successive draws are correlated)
-    let seed = (+opt('--seed', 7)) >>> 0; const rnd = () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const N = +opt('--n', 1000), LEN = 300 + 2520, MB = 63;
+    let seed = (+opt('seed', 7)) >>> 0; const rnd = () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const N = +opt('n', 1000), LEN = 300 + 2520, MB = 63;
     const out = { s: [], d: [] };
     for (let k = 0; k < N; k++) {
       const idx = []; while (idx.length < LEN) { let s = 1 + Math.floor(rnd() * (n - 2)); do { idx.push(s); s++; } while (s < n && idx.length < LEN && rnd() > 1 / MB); }

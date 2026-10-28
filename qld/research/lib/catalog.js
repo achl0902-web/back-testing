@@ -22,6 +22,8 @@ function dret(a) { const o = nanArr(a.length); for (let i = 1; i < a.length; i++
 const yoy = a => ret(a, 252);
 
 // trailing z-score, O(n) with valid-value counts
+// macro.js z()와 같은 정의(최근 win일 표준화, ±4 상한)지만 이동 합으로 계산해 소수점 끝자리가 조금 다르다.
+// 지난 스텝 점수를 그대로 재현하려고 둘을 합치지 않는다.
 function zscore(a, win = 756, min = 252) {
   const n = a.length, o = nanArr(n); let s = 0, s2 = 0, c = 0;
   for (let i = 0; i < n; i++) {
