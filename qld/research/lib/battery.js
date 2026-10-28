@@ -8,12 +8,12 @@ const fs = require('fs');
 const path = require('path');
 const C = require('./core.js');
 const { E, load, day } = C;
-const args = process.argv.slice(2);
-const opt = (f, d) => { const k = args.indexOf(f); return k >= 0 ? args[k + 1] : d; };
-const src = args.find((a, i) => !a.startsWith('--') && !(args[i - 1] || '').startsWith('--'));
+const { opt, flag, positionals } = require('./args.js')({ step: 'string', placebo: 'string', neighbors: 'string', intl: 'boolean',
+  dir: 'string', k2: 'string', json: 'string', md: 'string', quiet: 'boolean' });
+const src = positionals[0];
 const cfg = src.trim().startsWith('{') ? JSON.parse(src) : JSON.parse(fs.readFileSync(src));
-const step = opt('--step', cfg.step || 'S00'); cfg.step = step; cfg.by = cfg.by || 'battery';
-const nPlacebo = +opt('--placebo', 20);
+const step = opt('step', cfg.step || 'S00'); cfg.step = step; cfg.by = cfg.by || 'battery';
+const nPlacebo = +opt('placebo', 20);
 const out = [];
 const P = s => out.push(s);
 const f1 = x => (x >= 0 ? '+' : '') + (x * 100).toFixed(1);
@@ -23,7 +23,7 @@ const s = C.summarize(C.evaluate(cfg), cfg); C.logTrial(cfg, s, 'battery');
 P(`## 배터리 · ${cfg.name || 'candidate'}`); P('```'); P(JSON.stringify({ signals: cfg.signals, params: cfg.params })); P(C.printFull(cfg.name || 'candidate', s)); P('```');
 
 // ---- 2. neighbours (A4)
-let neighbors = opt('--neighbors') ? JSON.parse(opt('--neighbors')) : null;
+let neighbors = opt('neighbors') ? JSON.parse(opt('neighbors')) : null;
 if (!neighbors && cfg.params && cfg.params.z != null) neighbors = { z: [+(cfg.params.z * 0.8).toFixed(2), +(cfg.params.z * 1.2).toFixed(2)] };
 const nb = [];
 if (neighbors) for (const [k, vs] of Object.entries(neighbors)) for (const v of vs) {
@@ -87,7 +87,7 @@ const r99c = C.runner(champCfg)(ND, i99, ND.n - 1, true), r99x = C.runner(cfg)(N
 P(`\n**실행** (1999~ 주 70만): 이탈 ${r99x.exits}회 (챔피언 ${r99c.exits}) · 납부 양도세 ${(r99x.taxesPaid / 1e8).toFixed(0)}억 (챔피언 ${(r99c.taxesPaid / 1e8).toFixed(0)}억) · 최장 시장 밖 ${longestOut(r99x)}거래일 (챔피언 ${longestOut(r99c)}) · 세후 최종 ${(r99x.finalAfter / 1e8).toFixed(0)}억 (챔피언 ${(r99c.finalAfter / 1e8).toFixed(0)}억)`);
 
 // ---- 5b. international synthetic 2x (only with --intl; user decision 2026-10-18: validation scope is Nasdaq + S&P)
-if (args.includes('--intl')) try {
+if (flag('intl')) try {
   const I = require('./intl.js'); const it = Object.values(I.evaluate(cfg));
   const changed = it.filter(v => v.changed > 0);
   P(`\n**해외 합성 2배** (챔피언 대비 Δ중앙/Δ최악, 달라진 구간 승-패): ` + it.map(v => `${v.label} ${f1(v.dMed)}/${f1(v.dMin)} ${v.win}-${v.lose}`).join(' · ') + ` → 발동한 시장 ${changed.length}/5`);
@@ -95,9 +95,9 @@ if (args.includes('--intl')) try {
 
 // ---- 6. auto-gate
 // multiple testing (A9): with --dir <id>, count only this direction's trials (configs named "<id>:..."), see PROTOCOL v3
-const dir = opt('--dir', null);
+const dir = opt('dir', null);
 const trials = fs.readFileSync(path.join(C.R, 'trials.jsonl'), 'utf8').split('\n').filter(l => l.includes(`"step":"${step}"`) && (!dir || l.includes(`"name":"${dir}:`))).length;
-const k2 = Math.max(trials > 30 ? 2 : 1, +opt('--k2', 1)); // --k2: forced multiplier for follow-ups of an earlier direction (plan field k2)
+const k2 = Math.max(trials > 30 ? 2 : 1, +opt('k2', 1)); // --k2: forced multiplier for follow-ups of an earlier direction (plan field k2)
 const A1raw = ['N10oos', 'S10', 'S5'].every(k => s.sets[k].dMed >= -0.01 && s.sets[k].dMin >= -0.02);
 const untouched = ['S10', 'S5'].every(k => Math.abs(s.sets[k].dMed) < 1e-6 && Math.abs(s.sets[k].dMin) < 1e-6);
 const A1 = A1raw && !untouched;
@@ -118,6 +118,6 @@ P(`→ 숫자 기준 ${pass ? '모두 통과 (A6·A8 확인 필요)' : '미달'}
 const text = out.join('\n');
 // hold is only for A2-pass candidates whose A4 or A5 is the only doubt (PROTOCOL)
 const hold = !pass && (A1 || untouched) && A2 && A3 && A7 && A10 !== false && !(A4 === false && A5 === false); // incl. A1 unconfirmable (S09 rule)
-if (opt('--json')) fs.writeFileSync(path.resolve(opt('--json')), JSON.stringify({ name: cfg.name, score: s.overall.score, trials, k2, gates: { A1: untouched ? null : A1, A2, A3, A4, A5, A7, A10 }, untouched, pass, hold, placebo: placeboPct, years: diffs.slice(0, 4).map(([y, d]) => [y, +(d * 100).toFixed(1)]), exTop2: +(exTop2 * 100).toFixed(1), top2: top2.map(d => d[0]), maxYearShare: gross > 0 ? +(Math.abs(diffs[0] ? diffs[0][1] : 0) / gross).toFixed(2) : 0, exits: r99x.exits }));
-if (!args.includes('--quiet')) console.log(text);
-if (opt('--md')) fs.appendFileSync(path.resolve(opt('--md')), text + '\n\n');
+if (opt('json')) fs.writeFileSync(path.resolve(opt('json')), JSON.stringify({ name: cfg.name, score: s.overall.score, trials, k2, gates: { A1: untouched ? null : A1, A2, A3, A4, A5, A7, A10 }, untouched, pass, hold, placebo: placeboPct, years: diffs.slice(0, 4).map(([y, d]) => [y, +(d * 100).toFixed(1)]), exTop2: +(exTop2 * 100).toFixed(1), top2: top2.map(d => d[0]), maxYearShare: gross > 0 ? +(Math.abs(diffs[0] ? diffs[0][1] : 0) / gross).toFixed(2) : 0, exits: r99x.exits }));
+if (!flag('quiet')) console.log(text);
+if (opt('md')) fs.appendFileSync(path.resolve(opt('md')), text + '\n\n');

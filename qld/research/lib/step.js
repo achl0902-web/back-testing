@@ -12,8 +12,7 @@
 //     "vary":{"key":[v1,v2,v3]}}, ...]}
 const fs = require('fs'), path = require('path'), { execSync } = require('child_process');
 const R = path.join(__dirname, '..'), Q = path.join(R, '..'), ROOT = path.join(Q, '..');
-const args = process.argv.slice(2), cmd = args[0], step = args[1];
-const opt = (f, d) => { const k = args.indexOf(f); return k >= 0 ? args[k + 1] : d; };
+const { opt, positionals: [cmd, step] } = require('./args.js')({ verdict: 'string', why: 'string', ideas: 'string', session: 'string' });
 const sh = (c, o = {}) => execSync(c, Object.assign({ cwd: R, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, o));
 const hash = f => require('crypto').createHash('sha1').update(fs.readFileSync(f)).digest('hex').slice(0, 12);
 const iso = d => new Date(d * 864e5).toISOString().slice(0, 10);
@@ -150,7 +149,7 @@ else if (cmd === 'run') {
 }
 
 else if (cmd === 'close') {
-  const { P } = loadPlan(step), verdict = opt('--verdict'), why = opt('--why', '');
+  const { P } = loadPlan(step), verdict = opt('verdict'), why = opt('why', '');
   if (!verdict) { console.error('--verdict 필요'); process.exit(1); }
   const sd = path.join(R, 'steps', `${step}.md`);
   fs.appendFileSync(sd, `## 결론\n\n**${verdict}** — ${why}\n`);
@@ -160,9 +159,9 @@ else if (cmd === 'close') {
   if (same >= 0) L[same] = row; // close again = replace, not a second row
   else L.splice(L.map((l, i) => /^\| S\d+ /.test(l) ? i : -1).filter(i => i >= 0).pop() + 1, 0, row);
   fs.writeFileSync(lf, L.join('\n'));
-  if (opt('--ideas')) {
+  if (opt('ideas')) {
     const If = path.join(R, 'IDEAS.md'); let I = fs.readFileSync(If, 'utf8');
-    for (const u of JSON.parse(opt('--ideas'))) {
+    for (const u of JSON.parse(opt('ideas'))) {
       // keep the row's history: append to "tested", replace "result" and "gap" (a new row goes after the last table row)
       const re = new RegExp(`^\\| ${u.row} \\|(.*)$`, 'm'), m = I.match(re);
       if (m) { const c = m[1].split('|').map(x => x.trim()); const t = c[0].includes(u.tested) ? c[0] : `${c[0]}, ${u.tested}`; I = I.replace(re, `| ${u.row} | ${t} | ${u.result} | ${u.gap} |`); }
@@ -171,7 +170,7 @@ else if (cmd === 'close') {
     fs.writeFileSync(If, I);
   }
   sh('node lib/brief.js', {});
-  const trailer = `-m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` + (opt('--session') ? `\nClaude-Session: ${opt('--session')}` : '') + '"';
+  const trailer = `-m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` + (opt('session') ? `\nClaude-Session: ${opt('session')}` : '') + '"';
   sh('git add -A', { cwd: ROOT });
   try { sh(`git commit -qm "${step} ${verdict}: ${P.goal.replace(/"/g, "'").slice(0, 60)}" ${trailer}`, { cwd: ROOT }); } catch { }
   try { sh('git pull -q --rebase && git push -q', { cwd: ROOT, timeout: 180000 }); console.log(`${step} 기록·푸시 완료`); } catch (e) { console.log('푸시 실패: ' + String(e.stderr || e).slice(0, 160)); }

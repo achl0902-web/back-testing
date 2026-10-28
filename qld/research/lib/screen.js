@@ -11,12 +11,12 @@ const path = require('path');
 const { fork } = require('child_process');
 const os = require('os');
 
-const args = process.argv.slice(2);
-const opt = (f, d) => { const k = args.indexOf(f); return k >= 0 ? args[k + 1] : d; };
+const { opt } = require('./args.js')({ worker: 'string', step: 'string', fam: 'string', hooks: 'string', z: 'string', top: 'string',
+  pairs: 'string', pairTop: 'string', extra: 'string' });
 
-if (args[0] === '--worker') {
+if (opt('worker')) {
   const C = require('./core.js');
-  const list = JSON.parse(fs.readFileSync(args[1]));
+  const list = JSON.parse(fs.readFileSync(opt('worker')));
   for (const cfg of list) {
     try { const s = C.summarize(C.evaluate(cfg), cfg); process.send({ cfg, s }); }
     catch (e) { process.send({ cfg, err: String(e).slice(0, 200) }); }
@@ -27,11 +27,11 @@ if (args[0] === '--worker') {
 if (require.main !== module) return;
 const C = require('./core.js');
 const { CATALOG } = require('./catalog.js');
-const step = opt('--step', 'S00');
-const fams = opt('--fam', null) ? opt('--fam').split(',') : null;
-const hooks = opt('--hooks', 'vote,alarm,block').split(',');
-const zs = opt('--z', '1,1.5,2').split(',').map(Number);
-const top = +opt('--top', 25);
+const step = opt('step', 'S00');
+const fams = opt('fam', null) ? opt('fam').split(',') : null;
+const hooks = opt('hooks', 'vote,alarm,block').split(',');
+const zs = opt('z', '1,1.5,2').split(',').map(Number);
+const top = +opt('top', 25);
 
 const list = [];
 for (const [key, fam, label] of CATALOG) {
@@ -40,16 +40,16 @@ for (const [key, fam, label] of CATALOG) {
     list.push({ name: `${key}·${hook}·z${z}`, step, by: 'screen', fam, label, signals: 'lib/catsig.js', params: { strategy: true, ind: key, hook, z } });
 }
 // pairwise AND of the best indicators from an earlier screen: --pairs <screen.jsonl> [--pairTop 10]
-if (opt('--pairs')) {
-  const prev = fs.readFileSync(path.resolve(opt('--pairs')), 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(r => r.cfg && r.cfg.params && r.cfg.params.ind && !r.cfg.params.ind2);
+if (opt('pairs')) {
+  const prev = fs.readFileSync(path.resolve(opt('pairs')), 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(r => r.cfg && r.cfg.params && r.cfg.params.ind && !r.cfg.params.ind2);
   const best = {}; for (const r of prev) { const k = r.cfg.params.ind; if (!best[k] || r.overall.score > best[k].overall.score) best[k] = r; }
-  const topInd = Object.values(best).sort((a, b) => b.overall.score - a.overall.score).slice(0, +opt('--pairTop', 10)).map(r => r.cfg.params.ind);
+  const topInd = Object.values(best).sort((a, b) => b.overall.score - a.overall.score).slice(0, +opt('pairTop', 10)).map(r => r.cfg.params.ind);
   list.length = 0;
   for (let a = 0; a < topInd.length; a++) for (let b = a + 1; b < topInd.length; b++) for (const hook of hooks.filter(h => h !== 'alarm'))
     list.push({ name: `${topInd[a]}&${topInd[b]}·${hook}·z1`, step, by: 'screen', fam: 'pair', label: '두 지표 동시', signals: 'lib/catsig.js', params: { strategy: true, ind: topInd[a], ind2: topInd[b], hook, z: 1, z2: 1 } });
 }
 // structural action variants (no indicator): de-lever to QQQ instead of SGOV when out; volatility-sized exposure rules
-if (!opt('--pairs') && (!fams || fams.includes('action'))) {
+if (!opt('pairs') && (!fams || fams.includes('action'))) {
   for (const [nm, p] of [['volsteps2x', { rule: 'kelly', sizing: 'steps', maxLev: 2 }], ['volsteps2.5x', { rule: 'kelly', sizing: 'steps', maxLev: 2.5 }], ['kellyHalf', { rule: 'kelly', sizing: 'kelly', kellyFrac: 0.5, maxLev: 2 }], ['oldVol35', { rule: 'vol', peakRatio: 0.67 }], ['votes3', { votes: 3 }], ['noMacro', { useMacro: false }], ['hold20', { hold: 20 }], ['hold60', { hold: 60 }],
     // action types (S09): staged exit, core holding, buying while out, contrarian re-entry, cap on time out
     ...[0.33, 0.5, 0.67].map(v => [`fExit1_${v}`, { fExit1: v }]), ...[0.2, 0.33, 0.5].map(v => [`fCore_${v}`, { fCore: v }]),
@@ -60,8 +60,8 @@ if (!opt('--pairs') && (!fams || fams.includes('action'))) {
     list.push({ name: `action·${nm}`, step, by: 'screen', fam: 'action', label: '구조 변형', params: Object.assign({ strategy: true }, p) });
 }
 // structural action variants (no indicator): de-lever to QQQ instead of SGOV when out
-if (!opt('--pairs') && (!fams || fams.includes('action'))) for (const pq of [0.5, 1]) list.push({ name: `action·parkQQQ${pq}`, step, by: 'screen', fam: 'action', label: `이탈 시 QQQ ${pq * 100}%로 감속`, params: { strategy: true, parkQQQ: pq } });
-if (opt('--extra')) for (const c of JSON.parse(fs.readFileSync(opt('--extra')))) list.push(Object.assign({ step, by: 'strategist', fam: 'extra' }, c));
+if (!opt('pairs') && (!fams || fams.includes('action'))) for (const pq of [0.5, 1]) list.push({ name: `action·parkQQQ${pq}`, step, by: 'screen', fam: 'action', label: `이탈 시 QQQ ${pq * 100}%로 감속`, params: { strategy: true, parkQQQ: pq } });
+if (opt('extra')) for (const c of JSON.parse(fs.readFileSync(opt('extra')))) list.push(Object.assign({ step, by: 'strategist', fam: 'extra' }, c));
 
 // warm the baseline cache once before forking
 C.cached('dca', {}); C.cached('champ', {});

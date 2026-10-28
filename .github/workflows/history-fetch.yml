@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install data library
-        run: pip install --quiet yfinance pandas openpyxl xlrd
+        run: pip install --quiet yfinance pandas openpyxl xlrd exchange_calendars
       - name: Download history
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}

@@ -8,16 +8,12 @@ Outputs (qld/data/macro, date,value unless noted):
   WRMFNS.csv, DRTSCILM.csv      FRED retail money funds (weekly), senior loan officer tightening C&I (quarterly)
   MARGIN_FINRA_M.csv            FINRA margin debt monthly via thetrading.tools mirror (1997~), research use only
 """
-import csv, datetime as dt, io, json, os, re, time, urllib.parse, urllib.request
+import csv, datetime as dt, io, json, os, re, time, urllib.parse
+import fetchlib
 OUT = os.path.join('qld', 'data', 'macro'); LOG = os.path.join('qld', 'research', 'data', 'scout_fetch_log.txt')
 UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept': '*/*', 'Accept-Language': 'en-US,en;q=0.9'}
-KEY = os.environ.get('FRED_API_KEY'); log = []
-def get(u, extra=None, tries=3):
-    for k in range(tries):
-        try: return urllib.request.urlopen(urllib.request.Request(u, headers=dict(UA, **(extra or {}))), timeout=90).read()
-        except Exception:
-            if k == tries - 1: raise
-            time.sleep(5)
+log = []
+def get(u, extra=None, tries=3): return fetchlib.get(u, extra, tries, timeout=90, headers=UA)
 def save(name, rows, src, header='date,value'):
     rows = sorted({r[0]: r for r in rows}.values())
     with open(os.path.join(OUT, name), 'w') as f: f.write(header + '\n' + ''.join(','.join(str(x) for x in r) + '\n' for r in rows))
@@ -92,9 +88,8 @@ for tag, like in [('ES', '%E-MINI S&P 500%'), ('NQ', '%NASDAQ%100%')]:
 # FRED weekly/quarterly
 for s in ['WRMFNS', 'DRTSCILM']:
     try:
-        if not KEY: raise RuntimeError('no FRED key')
-        d = json.loads(get(f'https://api.stlouisfed.org/fred/series/observations?series_id={s}&file_type=json&api_key={KEY}'))
-        save(f'{s}.csv', [(o['date'], o['value']) for o in d['observations'] if o['value'] not in ('.', '')], f'FRED {s}')
+        save(f'{s}.csv', [(o['date'], o['value']) for o in fetchlib.fred_observations(s, tries=3, timeout=90, headers=UA)
+                          if o['value'] not in ('.', '')], f'FRED {s}')
     except Exception as e: log.append(f'{s}: failed {e}')
 
 # FINRA margin debt monthly (third-party mirror)

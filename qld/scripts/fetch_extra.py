@@ -7,16 +7,12 @@ Writes date,value CSVs into qld/data/macro (read by research/lib/macro.js) and a
   CNN_FG.csv       CNN Fear & Greed index (daily, unofficial endpoint; history starts around 2011 at best)
 Each source is independent: a failure is logged and the others still run.
 """
-import csv, datetime as dt, io, json, os, re, time, urllib.request
+import csv, datetime as dt, io, json, os, re, time
+import fetchlib
 OUT = os.path.join('qld', 'data', 'macro'); LOG = os.path.join('qld', 'research', 'data', 'extra_fetch_log.txt')
 UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'Accept': '*/*'}
-KEY = os.environ.get('FRED_API_KEY'); log = []
-def get(u, tries=3, extra=None):
-    for k in range(tries):
-        try: return urllib.request.urlopen(urllib.request.Request(u, headers=dict(UA, **(extra or {}))), timeout=60).read()
-        except Exception as e:
-            if k == tries - 1: raise
-            time.sleep(5)
+log = []
+def get(u, tries=3, extra=None): return fetchlib.get(u, extra, tries, timeout=60, headers=UA)
 def save(name, rows, src):
     rows = sorted({d: v for d, v in rows}.items())
     with open(os.path.join(OUT, name), 'w') as f: f.write('date,value\n' + ''.join(f'{d},{v}\n' for d, v in rows))
@@ -24,12 +20,7 @@ def save(name, rows, src):
 
 # 1) Fed Z.1 margin accounts (FRED)
 try:
-    u = (f'https://api.stlouisfed.org/fred/series/observations?series_id=BOGZ1FL663067003Q&file_type=json&api_key={KEY}' if KEY
-         else 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=BOGZ1FL663067003Q')
-    t = get(u).decode()
-    rows = ([(o['date'], o['value']) for o in json.loads(t)['observations'] if o['value'] not in ('.', '')] if KEY
-            else [tuple(l.split(',')) for l in t.strip().split('\n')[1:] if not l.endswith(',.')])
-    save('MARGIN_Z1.csv', rows, 'FRED BOGZ1FL663067003Q')
+    save('MARGIN_Z1.csv', fetchlib.fred_rows('BOGZ1FL663067003Q', tries=3, timeout=60, headers=UA), 'FRED BOGZ1FL663067003Q')
 except Exception as e: log.append(f'MARGIN_Z1: failed {e}')
 
 # 2) FINRA margin statistics (xlsx); the site answered 403 to a bare request, so send browser-like headers
@@ -72,8 +63,12 @@ try:
         return [tuple(l.split(',')) for l in open(p).read().strip().split('\n')[1:]] if os.path.exists(p) else []
     rows_t, rows_e = _load('CBOE_TOTALPC_D.csv'), _load('CBOE_EQUITYPC_D.csv'); miss = 0  # incremental: start after the last saved day
     d = (dt.date.fromisoformat(rows_t[-1][0]) + dt.timedelta(days=1)) if rows_t else dt.date(2019, 10, 7)
+    try:  # CBOE publishes on US trading days only
+        import exchange_calendars as xcals
+        _cal = xcals.get_calendar('XNYS', start='2019-01-01'); trading = lambda x: bool(_cal.is_session(x.isoformat()))
+    except Exception: trading = lambda x: x.weekday() < 5
     while d <= dt.date.today():
-        if d.weekday() < 5:
+        if trading(d):
             try:
                 j = json.loads(get(f'https://cdn.cboe.com/data/us/options/market_statistics/daily/{d.isoformat()}_daily_options', tries=2))
                 r = {x['name'].upper(): x['value'] for x in j.get('ratios', [])}
@@ -82,7 +77,7 @@ try:
             except Exception: miss += 1
             time.sleep(0.2)
         d += dt.timedelta(days=1)
-    save('CBOE_TOTALPC_D.csv', rows_t, f'cdn.cboe.com daily json, {miss} weekdays missing (holidays included)')
+    save('CBOE_TOTALPC_D.csv', rows_t, f'cdn.cboe.com daily json, {miss} trading days missing')
     save('CBOE_EQUITYPC_D.csv', rows_e, 'cdn.cboe.com daily json')
 except Exception as e: log.append(f'CBOE daily: failed {e}')
 

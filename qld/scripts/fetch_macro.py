@@ -6,6 +6,7 @@ Yahoo Finance (yfinance) for market-based series such as the semiconductor index
 Run from the repository root: python3 qld/scripts/fetch_macro.py
 """
 import csv, datetime as dt, io, os, sys, time, urllib.request, urllib.error
+import fetchlib
 
 OUT = os.path.join('qld', 'data', 'macro')
 os.makedirs(OUT, exist_ok=True)
@@ -22,9 +23,7 @@ URLS = ['https://fred.stlouisfed.org/graph/fredgraph.csv?id={s}',
         'https://fred.stlouisfed.org/series/{s}/downloaddata/{s}.csv']
 
 def get(url):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=25) as r:
-        return r.status, r.read().decode('utf-8', 'replace')
+    return 200, fetchlib.get(url, tries=1, timeout=25, headers=UA).decode('utf-8', 'replace')  # non-200 raises
 
 fails = 0 if not os.environ.get('FRED_API_KEY') else 99
 def write_merged(path, header, rows):
@@ -89,12 +88,9 @@ try:
 except Exception as e:
     log.append(f'FRED API probe: {type(e).__name__} {str(e)[:120]}')
 if KEY:
-    import json as _json
     for s in FRED:
         try:
-            u = f'https://api.stlouisfed.org/fred/series/observations?series_id={s}&file_type=json&api_key={KEY}'
-            with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60) as r:
-                obs = _json.loads(r.read())['observations']
+            obs = fetchlib.fred_observations(s, KEY, timeout=60, headers=UA)
             write_merged(os.path.join(OUT, f'{s}.csv'), 'observation_date,' + s, [[o['date'], o['value'] if o['value'] != '.' else ''] for o in obs])
             log.append(f'FRED-API {s}: ok {len(obs)} rows {obs[0]["date"]}..{obs[-1]["date"]}')
         except Exception as e:

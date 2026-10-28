@@ -630,4 +630,4 @@ function xirr(flows) {
   return (lo + hi) / 2;
 }
 
-if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, mixBT, idxOfDay, DEFAULTS, axesAt, macroOnset, monthWin, kellyTarget, targetFrom, mixOf };
+if (typeof module !== 'undefined') module.exports = { prepData, runBT, holdBT, mixBT, idxOfDay, DEFAULTS, axesAt, macroOnset, monthWin, kellyTarget, targetFrom, mixOf, xirr };

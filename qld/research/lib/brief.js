@@ -14,8 +14,7 @@ function criteria() {
 module.exports = { criteria };
 if (require.main === module) {
 const { CATALOG } = require('./catalog.js');
-const args = process.argv.slice(2);
-const opt = (f, d) => { const k = args.indexOf(f); return k >= 0 ? args[k + 1] : d; };
+const { opt } = require('./args.js')({ step: 'string', goal: 'string' });
 
 // coverage from all screen files
 const best = {}; const tested = {};
@@ -44,7 +43,7 @@ for (const [k, fam] of CATALOG) (fams[fam] = fams[fam] || []).push(k + (best[k] 
 const top = Object.entries(best).sort((a, b) => b[1].score - a[1].score).slice(0, 8).map(([k, v]) => `${v.name} ${v.score.toFixed(2)} [${v.step}]`);
 
 const B = `# BRIEF (자동 생성: node lib/brief.js) — 연구 에이전트는 이 파일만 읽고 시작한다
-${opt('--step') ? `\n## 이번 스텝\n${opt('--step')}: ${opt('--goal', '')}\n` : ''}
+${opt('step') ? `\n## 이번 스텝\n${opt('step')}: ${opt('goal', '')}\n` : ''}
 ## 현재 챔피언
 ${champSec}
 
