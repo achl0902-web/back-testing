@@ -1,4 +1,4 @@
-fetched 2026-10-30 22:59 UTC
+fetched 2026-10-31 01:31 UTC
 FRED BAA10Y: skipped after 3 consecutive failures
 FRED AAA10Y: skipped after 3 consecutive failures
 FRED BAMLH0A0HYM2: skipped after 3 consecutive failures
@@ -73,11 +73,11 @@ FRED-API TB3MS: ok 1113 rows 1934-01-01..2026-09-01
 FRED-API FEDFUNDS: ok 867 rows 1954-07-01..2026-09-01
 FRED-API M2SL: ok 813 rows 1959-01-01..2026-09-01
 FRED-API WALCL: ok 1246 rows 2002-12-18..2026-10-28
-YAHOO N225 ^N225: ok 11513 rows 1980-01-04..2026-10-29 (Adj Close)
+YAHOO N225 ^N225: ok 11514 rows 1980-01-04..2026-10-30 (Adj Close)
 YAHOO GDAXI ^GDAXI: ok 9822 rows 1987-12-30..2026-10-30 (Adj Close)
-YAHOO KS11 ^KS11: ok 7354 rows 1996-12-11..2026-10-29 (Adj Close)
+YAHOO KS11 ^KS11: ok 7355 rows 1996-12-11..2026-10-30 (Adj Close)
 YAHOO FTSE ^FTSE: ok 10820 rows 1984-01-03..2026-10-30 (Adj Close)
-YAHOO HSI ^HSI: ok 9829 rows 1986-12-31..2026-10-29 (Adj Close)
+YAHOO HSI ^HSI: ok 9830 rows 1986-12-31..2026-10-30 (Adj Close)
 YAHOO STOXX50E ^STOXX50E: ok 4911 rows 2007-03-30..2026-10-30 (Adj Close)
 YAHOO MOVE ^MOVE: ok 5927 rows 2002-11-12..2026-10-30 (Adj Close)
 YAHOO TNX ^TNX: ok 11740 rows 1980-01-02..2026-10-30 (Adj Close)
