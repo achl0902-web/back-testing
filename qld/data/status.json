@@ -1,5 +1,5 @@
 {
- "date": "2026-10-30",
+ "date": "2026-11-02",
  "strategy": "v2",
  "regime": "in",
  "next": "in",
@@ -8,31 +8,31 @@
   "date": "2025-04-28",
   "type": "reentry"
  },
- "votes": 0,
+ "votes": 1,
  "axes": [
-  0,
+  1,
   0,
   0,
   0
  ],
- "down20": 0.2979,
- "up20": 0.1332,
- "r10": -0.0275,
+ "down20": 0.306,
+ "up20": 0.1258,
+ "r10": -0.0521,
  "rsiw": 46.8,
- "expand": 1.55,
+ "expand": 1.51,
  "macro": 0.077,
  "macroOnset": false,
  "reentryOK": false,
- "rv20": 0.2276,
- "ndx": 28384.85,
- "ma20": 29933.09,
+ "rv20": 0.225,
+ "ndx": 27989.82,
+ "ma20": 29778.76,
  "monthWin": false,
  "inflBlock": false,
  "inflNow": {
   "z": [
-   1.2,
-   2.58,
-   -0.42
+   1.07,
+   2.56,
+   -0.29
   ],
   "on": false,
   "keys": [
@@ -61,38 +61,38 @@
   }
  },
  "macroNow": {
-  "baa": -1.04,
-  "baa3m": -0.69,
-  "dflt": -1.22,
-  "curve": -0.57,
+  "baa": -0.74,
+  "baa3m": -0.42,
+  "dflt": -1.45,
+  "curve": -0.76,
   "cut": -1.43,
   "stl": 0.11,
-  "nfcir": -0.68,
+  "nfcir": -0.67,
   "ted": null,
-  "vterm": -0.06,
-  "claims": -2.02,
+  "vterm": 0.64,
+  "claims": -2.01,
   "sahm": -1.79,
-  "dxy": 1.25,
+  "dxy": 1.17,
   "small": 0.58,
-  "cugold": -2.08
+  "cugold": -2.22
  },
  "macro_ok": true,
- "built": "2026-10-31 10:31 KST",
+ "built": "2026-11-03 08:02 KST",
  "sources": [
   "yahoo(5/5)"
  ],
- "added_rows": 11,
+ "added_rows": 12,
  "fresh": {
-  "data_last": "2026-10-30",
-  "expected_last": "2026-10-30",
+  "data_last": "2026-11-02",
+  "expected_last": "2026-11-02",
   "stale": false,
   "missing_sessions": [],
   "series_last": {
-   "ndx": "2026-10-30",
-   "qqq": "2026-10-30",
-   "fx": "2026-10-30",
-   "tb": "2026-10-30",
-   "vix": "2026-10-30"
+   "ndx": "2026-11-02",
+   "qqq": "2026-11-02",
+   "fx": "2026-11-02",
+   "tb": "2026-11-02",
+   "vix": "2026-11-02"
   },
   "series_source": {
    "ndx": "yahoo",
@@ -102,24 +102,24 @@
    "vix": "yahoo"
   },
   "macro_last": {
-   "BAA10Y": "2026-10-29",
-   "AAA10Y": "2026-10-29",
-   "T10Y3M": "2026-10-30",
-   "DFF": "2026-10-29",
+   "BAA10Y": "2026-10-30",
+   "AAA10Y": "2026-10-30",
+   "T10Y3M": "2026-11-02",
+   "DFF": "2026-10-30",
    "STLFSI4": "2026-10-23",
    "NFCIRISK": "2026-10-23",
-   "VIXCLS": "2026-10-29",
-   "VXVCLS": "2026-10-29",
+   "VIXCLS": "2026-10-30",
+   "VXVCLS": "2026-10-30",
    "ICSA": "2026-10-24",
    "SAHMREALTIME": "2026-09-01",
-   "Y_DXY": "2026-10-30",
-   "Y_RUT": "2026-10-30",
-   "Y_SPX": "2026-10-30",
-   "Y_COPPER": "2026-10-30",
-   "Y_GOLD": "2026-10-30"
+   "Y_DXY": "2026-11-02",
+   "Y_RUT": "2026-11-02",
+   "Y_SPX": "2026-11-02",
+   "Y_COPPER": "2026-11-02",
+   "Y_GOLD": "2026-11-02"
   },
-  "checked": "2026-10-31T01:31Z"
+  "checked": "2026-11-02T23:02Z"
  },
  "stale": false,
- "title": "[QLD] 2026-10-30 QLD 보유"
+ "title": "[QLD] 2026-11-02 QLD 보유"
 }
