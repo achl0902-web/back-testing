@@ -1,38 +1,41 @@
 {
- "date": "2026-11-04",
+ "date": "2026-11-05",
  "strategy": "v2",
  "regime": "in",
- "next": "in",
- "action": null,
+ "next": "out",
+ "action": {
+  "type": "exit",
+  "msg": "기술 3축(변동성·급락·급팽창) → QLD 전량 매도 32418.81억원 (실현손익 11639.98억원)"
+ },
  "lastTrade": {
   "date": "2025-04-28",
   "type": "reentry"
  },
- "votes": 1,
+ "votes": 3,
  "axes": [
   1,
+  1,
   0,
-  0,
-  0
+  1
  ],
- "down20": 0.3058,
+ "down20": 0.4363,
  "up20": 0.1361,
- "r10": -0.0465,
+ "r10": -0.0804,
  "rsiw": 46.8,
- "expand": 1.51,
- "macro": 0.154,
+ "expand": 1.76,
+ "macro": 0.077,
  "macroOnset": false,
  "reentryOK": false,
- "rv20": 0.2317,
- "ndx": 28437.17,
- "ma20": 29490.4,
+ "rv20": 0.3117,
+ "ndx": 26629.81,
+ "ma20": 29285.6,
  "monthWin": false,
  "inflBlock": false,
  "inflNow": {
   "z": [
    1.08,
-   2.54,
-   -0.45
+   2.53,
+   -0.16
   ],
   "on": false,
   "keys": [
@@ -61,38 +64,38 @@
   }
  },
  "macroNow": {
-  "baa": -0.66,
+  "baa": -0.8,
   "baa3m": -0.41,
   "dflt": -1.45,
-  "curve": -0.42,
+  "curve": -0.54,
   "cut": -1.43,
-  "stl": 0.11,
+  "stl": 0.39,
   "nfcir": -0.37,
   "ted": null,
-  "vterm": 1.32,
-  "claims": -1.99,
-  "sahm": -1.78,
-  "dxy": 1.09,
+  "vterm": -0.13,
+  "claims": -2.05,
+  "sahm": -1.77,
+  "dxy": 1.12,
   "small": 0.68,
-  "cugold": -1.85
+  "cugold": -1.56
  },
  "macro_ok": true,
- "built": "2026-11-05 10:43 KST",
+ "built": "2026-11-06 08:09 KST",
  "sources": [
   "yahoo(5/5)"
  ],
- "added_rows": 14,
+ "added_rows": 15,
  "fresh": {
-  "data_last": "2026-11-04",
-  "expected_last": "2026-11-04",
+  "data_last": "2026-11-05",
+  "expected_last": "2026-11-05",
   "stale": false,
   "missing_sessions": [],
   "series_last": {
-   "ndx": "2026-11-04",
-   "qqq": "2026-11-03",
+   "ndx": "2026-11-05",
+   "qqq": "2026-11-05",
    "fx": "2026-11-05",
-   "tb": "2026-11-04",
-   "vix": "2026-11-04"
+   "tb": "2026-11-05",
+   "vix": "2026-11-05"
   },
   "series_source": {
    "ndx": "yahoo",
@@ -102,24 +105,24 @@
    "vix": "yahoo"
   },
   "macro_last": {
-   "BAA10Y": "2026-11-03",
-   "AAA10Y": "2026-11-03",
-   "T10Y3M": "2026-11-04",
-   "DFF": "2026-11-03",
+   "BAA10Y": "2026-11-04",
+   "AAA10Y": "2026-11-04",
+   "T10Y3M": "2026-11-05",
+   "DFF": "2026-11-04",
    "STLFSI4": "2026-10-30",
    "NFCIRISK": "2026-10-30",
-   "VIXCLS": "2026-11-03",
-   "VXVCLS": "2026-11-03",
-   "ICSA": "2026-10-24",
+   "VIXCLS": "2026-11-04",
+   "VXVCLS": "2026-11-04",
+   "ICSA": "2026-10-31",
    "SAHMREALTIME": "2026-09-01",
-   "Y_DXY": "2026-11-04",
-   "Y_RUT": "2026-11-04",
-   "Y_SPX": "2026-11-04",
-   "Y_COPPER": "2026-11-04",
-   "Y_GOLD": "2026-11-04"
+   "Y_DXY": "2026-11-05",
+   "Y_RUT": "2026-11-05",
+   "Y_SPX": "2026-11-05",
+   "Y_COPPER": "2026-11-05",
+   "Y_GOLD": "2026-11-05"
   },
-  "checked": "2026-11-05T01:43Z"
+  "checked": "2026-11-05T23:09Z"
  },
  "stale": false,
- "title": "[QLD] 2026-11-04 QLD 보유"
+ "title": "[QLD] 2026-11-05 다음 거래일 이탈: QLD 전량 매도 → SGOV"
 }
