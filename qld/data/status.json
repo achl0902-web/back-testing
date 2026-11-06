@@ -1,41 +1,38 @@
 {
- "date": "2026-11-05",
+ "date": "2026-11-06",
  "strategy": "v2",
- "regime": "in",
+ "regime": "out",
  "next": "out",
- "action": {
-  "type": "exit",
-  "msg": "기술 3축(변동성·급락·급팽창) → QLD 전량 매도 32106.69억원 (실현손익 11327.86억원)"
- },
+ "action": null,
  "lastTrade": {
-  "date": "2025-04-28",
-  "type": "reentry"
+  "date": "2026-11-06",
+  "type": "exit"
  },
  "votes": 3,
  "axes": [
   1,
-  1,
   0,
+  1,
   1
  ],
  "down20": 0.4363,
- "up20": 0.1361,
- "r10": -0.0804,
- "rsiw": 46.8,
- "expand": 1.76,
- "macro": 0.077,
+ "up20": 0.1499,
+ "r10": -0.0679,
+ "rsiw": 39.4,
+ "expand": 1.82,
+ "macro": 0.154,
  "macroOnset": false,
  "reentryOK": false,
- "rv20": 0.3117,
- "ndx": 26629.81,
- "ma20": 29285.6,
+ "rv20": 0.3174,
+ "ndx": 26989.99,
+ "ma20": 29090.95,
  "monthWin": false,
  "inflBlock": false,
  "inflNow": {
   "z": [
-   1.09,
-   2.53,
-   -0.16
+   1.4,
+   2.51,
+   -0.14
   ],
   "on": false,
   "keys": [
@@ -48,15 +45,15 @@
  "rules": {
   "final": {
    "name": "최종 전략 v2 (v1 + 인플레 과열 복귀 금지)",
-   "regime": "in"
+   "regime": "out"
   },
   "v1": {
    "name": "최종 전략 v1 (기술 4축 + 매크로 경보)",
-   "regime": "in"
+   "regime": "out"
   },
   "tech": {
    "name": "기술 4축만",
-   "regime": "in"
+   "regime": "out"
   },
   "kelly": {
    "name": "노출 조절 (참고)",
@@ -64,38 +61,38 @@
   }
  },
  "macroNow": {
-  "baa": -0.8,
-  "baa3m": -0.41,
-  "dflt": -1.45,
-  "curve": -0.54,
+  "baa": -0.43,
+  "baa3m": -0.08,
+  "dflt": -1.61,
+  "curve": -0.71,
   "cut": -1.43,
-  "stl": 0.39,
+  "stl": 0.4,
   "nfcir": -0.37,
   "ted": null,
-  "vterm": -0.13,
+  "vterm": 3.18,
   "claims": -2.05,
   "sahm": -1.77,
-  "dxy": 1.12,
-  "small": 0.68,
-  "cugold": -1.56
+  "dxy": 1.07,
+  "small": 0.48,
+  "cugold": -1.32
  },
  "macro_ok": true,
- "built": "2026-11-06 10:44 KST",
+ "built": "2026-11-07 08:04 KST",
  "sources": [
   "yahoo(5/5)"
  ],
- "added_rows": 15,
+ "added_rows": 16,
  "fresh": {
-  "data_last": "2026-11-05",
-  "expected_last": "2026-11-05",
+  "data_last": "2026-11-06",
+  "expected_last": "2026-11-06",
   "stale": false,
   "missing_sessions": [],
   "series_last": {
-   "ndx": "2026-11-05",
-   "qqq": "2026-11-04",
+   "ndx": "2026-11-06",
+   "qqq": "2026-11-06",
    "fx": "2026-11-06",
-   "tb": "2026-11-05",
-   "vix": "2026-11-05"
+   "tb": "2026-11-06",
+   "vix": "2026-11-06"
   },
   "series_source": {
    "ndx": "yahoo",
@@ -105,24 +102,24 @@
    "vix": "yahoo"
   },
   "macro_last": {
-   "BAA10Y": "2026-11-04",
-   "AAA10Y": "2026-11-04",
-   "T10Y3M": "2026-11-05",
-   "DFF": "2026-11-04",
+   "BAA10Y": "2026-11-05",
+   "AAA10Y": "2026-11-05",
+   "T10Y3M": "2026-11-06",
+   "DFF": "2026-11-05",
    "STLFSI4": "2026-10-30",
    "NFCIRISK": "2026-10-30",
-   "VIXCLS": "2026-11-04",
-   "VXVCLS": "2026-11-04",
+   "VIXCLS": "2026-11-05",
+   "VXVCLS": "2026-11-05",
    "ICSA": "2026-10-31",
-   "SAHMREALTIME": "2026-09-01",
-   "Y_DXY": "2026-11-05",
-   "Y_RUT": "2026-11-05",
-   "Y_SPX": "2026-11-05",
-   "Y_COPPER": "2026-11-05",
-   "Y_GOLD": "2026-11-05"
+   "SAHMREALTIME": "2026-10-01",
+   "Y_DXY": "2026-11-06",
+   "Y_RUT": "2026-11-06",
+   "Y_SPX": "2026-11-06",
+   "Y_COPPER": "2026-11-06",
+   "Y_GOLD": "2026-11-06"
   },
-  "checked": "2026-11-06T01:44Z"
+  "checked": "2026-11-06T23:04Z"
  },
  "stale": false,
- "title": "[QLD] 2026-11-05 다음 거래일 이탈: QLD 전량 매도 → SGOV"
+ "title": "[QLD] 2026-11-06 이탈 중 (SGOV)"
 }
