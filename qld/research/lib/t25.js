@@ -247,7 +247,7 @@ else if (cmd === 'sealed') {
 
 // =====================================================================================================================
 else if (cmd === 'boot') {
-  const h = args[1], N = +opt('--n', 500), names = ['v2r', 'G1 200일선', h, 'DCA'];
+  const hs = String(args[1] || '').split(',').filter(Boolean), N = +opt('--n', 500), names = ['v2r', 'G1 200일선', ...hs, 'DCA'];
   const mkRnd = s0 => { let seed = s0 >>> 0; return () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
   const { ND, SP, H60, H28 } = datasets();
   // pools: [label, sources [{D, lev/er}], mode]. Era mix (tech): S&P 1928~49, 1960~85, 1986~ in proportion to their length
@@ -308,7 +308,7 @@ else if (cmd === 'dsr') {
   const Ntr = fs.readFileSync(path.join(R, 'trials.jsonl'), 'utf8').trim().split('\n').length, T = bh.length;
   const names = ['v2(엔진)', 'v2r', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7'], R2 = {};
   for (const nm of names) R2[nm] = rets(S[nm](D).p);
-  for (const nm of [...new Set(['v2(엔진)', h])]) { const m = mom(R2[nm].map((x, t) => x - bh[t]));
+  for (const nm of [...new Set(['v2(엔진)', ...String(h || '').split(',').filter(Boolean)])]) { const m = mom(R2[nm].map((x, t) => x - bh[t]));
     const psr = sr0 => Phi((m.sr - sr0) * Math.sqrt(T - 1) / Math.sqrt(1 - m.sk * m.sr + (m.ku - 1) / 4 * m.sr * m.sr));
     const ds = [500, Ntr].map(Nt => `시도 ${Nt}개 ${pc(psr(Math.sqrt(vS) * ((1 - g) * PhiInv(1 - 1 / Nt) + g * PhiInv(1 - 1 / (Nt * Math.E)))))}%`);
     console.log(`■ ${nm} 초과수익(− QLD 보유, 거치, 전체 모드) 연 샤프 ${(m.sr * Math.sqrt(252)).toFixed(2)} · PSR(0) ${pc(psr(0))}% · DSR ${ds.join(' · ')} (설정군 샤프 표준편차 ${(Math.sqrt(vS) * Math.sqrt(252)).toFixed(2)}/년)`); }
