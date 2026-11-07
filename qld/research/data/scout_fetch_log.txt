@@ -1,20 +1,20 @@
-2026-10-24T10:22Z
-CBOE_SKEW.csv (cdn.cboe.com SKEW_History.csv): 9255 rows 1990-01-02..2026-10-23
-AAII_BULL.csv (aaii.com sentiment.xls): 2046 rows 1987-07-24..2026-10-22
-AAII_BEAR.csv (aaii.com sentiment.xls): 2046 rows 1987-07-24..2026-10-22
-AAII_SPREAD.csv (aaii bull-bear): 2046 rows 1987-07-24..2026-10-22
-COT_LEGACY_ES.csv (cftc 6dca-aqww ['E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE', 'E-MINI S&P 500 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE', 'E-MINI S&P 500 STOCK INDEX - INTERNATIONAL MONETARY MARKET']): 1514 rows 1997-09-16..2026-10-20
-COT_TFF_ES.csv (cftc gpe5-46if): 1063 rows 2006-06-13..2026-10-20
-COT_LEGACY_NQ.csv (cftc 6dca-aqww ['NASDAQ-100 Consolidated - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX (MINI) - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX (MINI) - INTERNATIONAL MONETARY MARKET', 'NASDAQ-100 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX - INTERNATIONAL MONETARY MARKET']): 1594 rows 1996-04-16..2026-10-20
-COT_TFF_NQ.csv (cftc gpe5-46if): 1063 rows 2006-06-13..2026-10-20
-WRMFNS.csv (FRED WRMFNS): 2431 rows 1980-02-04..2026-08-31
-DRTSCILM.csv (FRED DRTSCILM): 146 rows 1990-04-01..2026-07-01
+2026-11-07T04:12Z
+CBOE_SKEW.csv (cdn.cboe.com SKEW_History.csv): 9265 rows 1990-01-02..2026-11-06
+AAII_BULL.csv (aaii.com sentiment.xls): 2048 rows 1987-07-24..2026-11-05
+AAII_BEAR.csv (aaii.com sentiment.xls): 2048 rows 1987-07-24..2026-11-05
+AAII_SPREAD.csv (aaii bull-bear): 2048 rows 1987-07-24..2026-11-05
+COT_LEGACY_ES.csv (cftc 6dca-aqww ['E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE', 'E-MINI S&P 500 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE', 'E-MINI S&P 500 STOCK INDEX - INTERNATIONAL MONETARY MARKET']): 1516 rows 1997-09-16..2026-11-03
+COT_TFF_ES.csv (cftc gpe5-46if): 1065 rows 2006-06-13..2026-11-03
+COT_LEGACY_NQ.csv (cftc 6dca-aqww ['NASDAQ-100 Consolidated - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX (MINI) - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX (MINI) - INTERNATIONAL MONETARY MARKET', 'NASDAQ-100 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE', 'NASDAQ-100 STOCK INDEX - INTERNATIONAL MONETARY MARKET']): 1596 rows 1996-04-16..2026-11-03
+COT_TFF_NQ.csv (cftc gpe5-46if): 1065 rows 2006-06-13..2026-11-03
+WRMFNS.csv (FRED WRMFNS): 2436 rows 1980-02-04..2026-10-05
+DRTSCILM.csv (FRED DRTSCILM): 147 rows 1990-04-01..2026-10-01
 MARGIN_FINRA_M.csv (thetrading.tools margin-debt.csv cols ['date', 'debit_balances', 'debit_yoy', 'spy_yoy']): 357 rows 1997-01-01..2026-09-01
 USMPD sheet README: (52, 3)
-USMPD sheet Statements: (279, 36)
-USMPD sheet Press Conferences: (95, 34)
-USMPD sheet Monetary Events: (279, 37)
-USMPD sheet Minutes: (206, 34)
-USMPD chosen column Statements:Date (279 dates)
-FOMC_DATES.csv (frbsf USMPD.xlsx first sheet, all date-like cells): 279 rows 1994-02-04..2026-09-16
-FF48_DAILY_VW.csv: 26317 rows 19260701..20260831, 48 industries (percent returns, value-weighted)
+USMPD sheet Statements: (280, 36)
+USMPD sheet Press Conferences: (96, 34)
+USMPD sheet Monetary Events: (280, 37)
+USMPD sheet Minutes: (207, 34)
+USMPD chosen column Statements:Date (280 dates)
+FOMC_DATES.csv (frbsf USMPD.xlsx first sheet, all date-like cells): 280 rows 1994-02-04..2026-10-28
+FF48_DAILY_VW.csv: 26338 rows 19260701..20260930, 48 industries (percent returns, value-weighted)
