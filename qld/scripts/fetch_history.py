@@ -39,5 +39,25 @@ try:
         log.append(f'YAHOO {tk}: {len(s)} rows {s.index[0].date()}..{s.index[-1].date()}')
 except Exception as e:
     log.append(f'YAHOO failed: {e}')
+
+# T23 (2026-11-07): the 1928~1949 era was never loaded by any research step, so it is an untouched check of the technical core
+# (S&P 2x only, the user's scope). New files only; the 1950~ outputs above stay as they were.
+#   GSPC_1927.csv  S&P composite daily close 1927-12~1950-01 (Yahoo ^GSPC)
+#   short rates before TB3MS (1934-01): NBER commercial paper (New York) and short-term government yields, monthly (FRED)
+for s in ['M13002US35620M156NNBR', 'M1329AUSM193NNBR', 'M13029USM156NNBR']:
+    for k in range(3):
+        try: fred(s); break
+        except Exception as e:
+            if k == 2: log.append(f'FRED {s}: failed {e}')
+            time.sleep(5)
+try:
+    import yfinance as yf, pandas as pd
+    df = yf.download('^GSPC', start='1927-12-01', end='1950-02-01', auto_adjust=False, progress=False, threads=False)
+    if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
+    s = df['Close'].dropna()
+    s.rename('value').to_csv(os.path.join(OUT, 'GSPC_1927.csv'), index_label='date', float_format='%.4f')
+    log.append(f'YAHOO ^GSPC 1927~: {len(s)} rows {s.index[0].date()}..{s.index[-1].date()}')
+except Exception as e:
+    log.append(f'YAHOO ^GSPC 1927~ failed: {e}')
 open(os.path.join(OUT, 'fetch_log.txt'), 'w').write('\n'.join(log) + '\n')
 print('\n'.join(log))
