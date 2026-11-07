@@ -44,5 +44,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add qld/research/data/hist qld/research/data/vintage qld/data/macro qld/research/data/extra_fetch_log.txt qld/research/data/cboe_probe.txt qld/research/data/scout_fetch_log.txt
           git diff --cached --quiet || git commit -m "history data: pre-1986 S&P 500, Nasdaq Composite, Moody's yields"
-          git pull --rebase -q origin main || true
+          if [ "$GITHUB_REF_NAME" = main ]; then git pull --rebase -q origin main || true; fi  # a dispatched research branch pushes to itself
           git push || echo "push skipped"
