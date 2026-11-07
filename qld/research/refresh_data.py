@@ -5,7 +5,9 @@ The daily GitHub Actions run already keeps research/data/ndx_ms.json fresh (scri
 commits it), so this only matters when working offline. It runs scripts/build.py with --research: the build writes the
 research series only if it is not older than the saved one, and never touches data/status.json or alert.md
 (an earlier version overwrote the live status with stale mirror data; T09).
-The S&P 2x series (spx_ms.json) is a fixed snapshot used only as an out-of-sample market; it is not refreshed.
+The S&P 2x series (spx_ms.json) is a fixed snapshot used only as an out-of-sample market; it is not refreshed. Its macro alarm
+share is frozen too: recomputed from today's data/macro it differs on 12 days in 1994~2016 (one alarm onset, 2000-05-18), which
+leaves the champion's score unchanged (T24 B0 = 0.00).
 Run from qld/: python3 research/refresh_data.py
 """
 import os, subprocess, sys

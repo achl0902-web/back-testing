@@ -39,6 +39,7 @@ description: QLD 적립 전략을 한 스텝씩 연구할 때 사용. 한 스텝
 - 계획 오류가 나오면 메시지대로 plan의 해당 칸만 고치고 다시 run한다.
 - 한 방향이 "결과 없음(오류)"이면 그대로 두고 보고에 적는다.
 - plan goal에 추가 기준이 사전 등록돼 있으면 run 뒤에 돌린다: `node lib/recentcheck.js Sxx`(2011~ 재확인), `node lib/histcheck.js Sxx`(1960~85 재확인). 게이트를 통과한 방향도 이 기준에 미달이면 채택하지 않는다. 그 시대에 새 요소가 행동을 바꾼 날이 0이면 "미검증"으로 적는다.
+- 결재자가 채택이라고 판정한 방향에만, close 전에 A11 봉인 구간 확인을 한 번 돌린다: `node lib/histcheck.js '<그 설정 JSON>' --era 1928`. 미달이면 채택하지 않는다. 결과를 보고 설정을 고치지 않는다. 챔피언 교체 보고에는 `node lib/audit.js pbo`(DSR·PBO)와 `node lib/t24.js simple`(단순 규칙 기준선)을 붙인다.
 
 ## 4. 검토 (게이트가 "검토 필요"일 때만)
 
