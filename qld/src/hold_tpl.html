@@ -1,8 +1,9 @@
 <title>2배 만드는 법 비교</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<script src="/stock-advisor-web/assets/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
 <style>
 /* Layout: a trading-desk rulebook. Status strip, control sheet, result ledger, three stacked charts, event log. */
 __UI_CSS__
@@ -21,6 +22,7 @@ __UI_CSS__
 </style>
 <div class="wrap">
   <header>
+    <span data-theme-switch></span>
     <a class="back" href="./">← QLD 방어 적립</a>
     <div class="hint" style="margin-top:8px">매수 위주 · 실제 ETF 가격 · 세후 원화 기준</div>
     <h1>3배+1배 섞기 vs 2배 하나</h1>
@@ -339,6 +341,7 @@ function buildAssets(RAW, D) {
   document.querySelectorAll('[data-i]').forEach(bt => bt.addEventListener('click', () => { $('initial').value = bt.dataset.i; $('weekly').value = bt.dataset.w; render(); }));
   const redraw = () => { chV.draw(); chD.draw(); chE.draw(); drawBrush(); };
   try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
+  window.addEventListener('sa-theme', redraw);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
   render();
 })();
