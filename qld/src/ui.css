@@ -1,7 +1,7 @@
 /* 두 페이지(index·hold)가 함께 쓰는 스타일. 색 토큰, 기본 배치, 표, 차트, 기록. 페이지 고유 스타일은 각 템플릿에. */
 :root {
   /* 판단 일지·시세판과 같은 톤: 60 바탕 · 30 패널 · 10 형광 포인트. 기본 블랙 라임,
-     <html data-palette="espresso">면 에스프레소 민트(stock-advisor-web assets/theme.js가 정함). 라이트 모드 없음. */
+     <html data-palette>로 에스프레소 민트·스톰 오렌지·코발트 옐로(stock-advisor-web assets/theme.js가 정함). 라이트 모드 없음. */
   color-scheme: dark;
   --bg: #000000; --surface: #121212; --sunken: #1c1c1c; --fg: #f2f2f2; --muted: #b4b4b4; --faint: #8a8a8a; --line: #262626; --control: #3a3a3a; --active: #262626;
   --accent: #c8ff2e; --accent-ink: #000000; --link: #c8ff2e;
@@ -15,6 +15,14 @@
 :root[data-palette="espresso"] {
   --bg: #140f0b; --surface: #201913; --sunken: #2b221a; --fg: #f4ede5; --muted: #c0ae9b; --faint: #a69584; --line: #3a2e24; --control: #4d3e31; --active: #3a2e24;
   --accent: #6cf5cf; --accent-ink: #140f0b; --link: #6cf5cf; --s-strat: #6cf5cf; --sel-fill: rgba(108, 245, 207, 0.12);
+}
+:root[data-palette="storm"] {
+  --bg: #3a3e44; --surface: #17181b; --sunken: #25272b; --fg: #f3f4f6; --muted: #b9bec6; --faint: #9aa0a8; --line: #2f3237; --control: #4a4f56; --active: #2f3237;
+  --accent: #ff5f00; --accent-ink: #120800; --link: #ff8a3d; --s-strat: #ff5f00; --sel-fill: rgba(255, 95, 0, 0.14);
+}
+:root[data-palette="cobalt"] {
+  --bg: #18204a; --surface: #0c1029; --sunken: #1a2150; --fg: #eef0ff; --muted: #b2b8e0; --faint: #939ac6; --line: #252d5c; --control: #343d72; --active: #252d5c;
+  --accent: #ffd60a; --accent-ink: #1a1500; --link: #ffd60a; --s-strat: #ffd60a; --s-x1: #8db4ff; --sel-fill: rgba(255, 214, 10, 0.12);
 }
 * { box-sizing: border-box; }
 html, body { overflow-x: clip; }
