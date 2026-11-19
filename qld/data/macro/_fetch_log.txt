@@ -1,4 +1,4 @@
-fetched 2026-11-19 03:43 UTC
+fetched 2026-11-19 07:47 UTC
 FRED BAA10Y: skipped after 3 consecutive failures
 FRED AAA10Y: skipped after 3 consecutive failures
 FRED BAMLH0A0HYM2: skipped after 3 consecutive failures
@@ -84,9 +84,9 @@ YAHOO TNX ^TNX: ok 11753 rows 1980-01-02..2026-11-18 (Adj Close)
 YAHOO TLT TLT: ok 6117 rows 2002-07-30..2026-11-18 (Adj Close)
 YAHOO SOX ^SOX: ok 8192 rows 1994-05-04..2026-11-18 (Adj Close)
 YAHOO VIX3M ^VIX3M: ok 5119 rows 2006-07-17..2026-11-18 (Adj Close)
-YAHOO DXY DX-Y.NYB: ok 11946 rows 1980-01-02..2026-11-18 (Adj Close)
-YAHOO COPPER HG=F: ok 6585 rows 2000-08-30..2026-11-18 (Adj Close)
-YAHOO GOLD GC=F: ok 6581 rows 2000-08-30..2026-11-18 (Adj Close)
+YAHOO DXY DX-Y.NYB: ok 11947 rows 1980-01-02..2026-11-19 (Adj Close)
+YAHOO COPPER HG=F: ok 6586 rows 2000-08-30..2026-11-19 (Adj Close)
+YAHOO GOLD GC=F: ok 6582 rows 2000-08-30..2026-11-19 (Adj Close)
 YAHOO RUT ^RUT: ok 9873 rows 1987-09-10..2026-11-18 (Adj Close)
 YAHOO SPX ^GSPC: ok 11817 rows 1980-01-02..2026-11-18 (Adj Close)
 YAHOO QQQ QQQ: ok 6968 rows 1999-03-10..2026-11-18 (Adj Close)
